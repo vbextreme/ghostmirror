@@ -1,0 +1,10 @@
+option('ebug', type: 'integer', value: 0, description: 'set debug level, 0 disable 4 full')
+option('shortpath', type: 'integer', value: 1, description: 'set debug path to short, enable 1, disable 0')
+option('shortfn', type: 'integer', value: 1, description: 'set debug function allineated to 24, enable 1, disable 0')
+option('olor', type: 'integer', value: 4, description: 'color debug, 0 disable 1 active')
+option('assert', type: 'integer', value: 1, description: 'enable assertion')
+option('optimize', type: 'integer', value: 2, description: 'enable optimization')
+option('openmp', type: 'integer', value: 1, description: 'enable openmp')
+option('gprof', type: 'integer', value: 0, description: 'enable gprof')
+option('autovectorization', type: 'integer', value: 1, description: 'enable vectorization')
+
