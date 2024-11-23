@@ -10,11 +10,12 @@
 #include <fcntl.h>
 
 #define DEFAULT_THREADS 4
-#define DEFAULT_TOUT    10
+#define DEFAULT_TOUT    20
 #define DEFAULT_ARCH    "x86_64"
 
+//commit:
+
 //TODO
-//	--speed find download speed, workcase first mirror
 //	--like  find all mirror like current mirror, workcase fallbackmirror
 //		if mark status != UNKNOW with !like mirrro? in compare_db?
 //	--list  create a list with Server=mirror
@@ -32,6 +33,7 @@ typedef enum{
 	O_t,
 	O_o,
 	O_p,
+	O_s,
 	O_h
 }OPT_E;
 
@@ -42,8 +44,9 @@ option_s OPT[] = {
 	{'C', "--country-list", "show all possibile country"                                 , OPT_NOARG, 0, 0},
 	{'u', "--uncommented" , "use only uncommented mirror"                                , OPT_NOARG, 0, 0},
 	{'t', "--threads"     , "set numbers of parallel download, default '4'"              , OPT_NUM  , 0, 0},
-	{'o', "--timeout"     , "set timeout in seconds for not reply mirror, default '10's" , OPT_NUM  , 0, 0},
+	{'o', "--timeout"     , "set timeout in seconds for not reply mirror, default '20's" , OPT_NUM  , 0, 0},
 	{'p', "--progress"    , "show progress, default false"                               , OPT_NOARG, 0, 0},
+	{'s', "--speed"       , "test speed for downloading one pkg"                         , OPT_NOARG, 0, 0},
 	{'h', "--help"        , "display this"                                               , OPT_END | OPT_NOARG, 0, 0}
 };
 
@@ -110,8 +113,9 @@ __private void print_cmp_mirrors(mirror_s* mirrors){
 		const double amp = mirrors[i].notexistspkg * 100.0 / mirrors[i].totalpkg;
 		const double aep = mirrors[i].extrapkg * 100.0 / mirrors[i].totalpkg;
 		const double acp = mirrors[i].checked * 100.0 / mirrors[i].totalpkg;
-		
-		printf(" %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │%5.1fmib/s│\n", ood, utd, ats, amp, aep, acp, 0.0);
+		const double spe = mirrors[i].speed;
+
+		printf(" %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │%5.1fmib/s│\n", ood, utd, ats, amp, aep, acp, spe);
 		//printf("Server = %s/$repo/os/$arch\n", mirrors[i].url);
 	}
 
@@ -167,7 +171,9 @@ die("");
 	
 	mirrors_update(mirrors, opt[O_p].set, opt[O_t].value->ui, opt[O_o].value->ui);	
 	mirrors_cmp_db(mirrors, opt[O_p].set);
-	
+
+	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set);	
+
 	print_cmp_mirrors(mirrors);	
 	
 	www_end();

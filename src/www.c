@@ -94,7 +94,7 @@ void* www_mdownload(const char* url, unsigned touts){
 	__free uint8_t* data = MANY(uint8_t, 1024);
 	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);
 	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &data);
-	curl_easy_setopt(ch, CURLOPT_TIMEOUT, touts);
+	if( touts ) curl_easy_setopt(ch, CURLOPT_TIMEOUT, touts);
 	if( www_curl_perform(ch) ) return NULL;
 	return mem_borrowed(data);
 }

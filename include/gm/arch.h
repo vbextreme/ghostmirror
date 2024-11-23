@@ -29,6 +29,7 @@ typedef struct mirror{
 	char*          url;
 	const char*    arch;
 	repo_s         repo[2];
+	double         speed;
 	unsigned       totalpkg;
 	unsigned       syncdatepkg;
 	unsigned       outofdatepkg;
@@ -40,11 +41,11 @@ typedef struct mirror{
 
 char* mirror_loading(const char* fname, const unsigned tos);
 mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* country, const char* arch, int uncommented);
-void mirrors_update(mirror_s* mirrors, const int showprogress, const unsigned ndownload, const unsigned tos);
+void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownload, const unsigned tos);
 void mirrors_cmp_db(mirror_s* mirrors, const int progress);
 void mirrors_update_sync(mirror_s* mirrors, const char mode, const unsigned maxdownload, const unsigned touts, const int progress);
 void country_list(const char* mirrorlist);
-
+void mirrors_speed(mirror_s* mirrors, const char* arch, int progress);
 
 
 

@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <notstd/core.h>
 #include <notstd/str.h>
+#include <notstd/delay.h>
 
 #include <gm/arch.h>
 #include <gm/archive.h>
@@ -280,32 +281,36 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 	}
 }
 
+__private void progress_begin(const char* desc, unsigned count){
+	fprintf(stderr, "[%5.1f%%] %s", 0 * 100.0 / count, desc);
+	fflush(stderr);
+}
 
-void mirrors_update(mirror_s* mirrors, const int showprogress, const unsigned ndownload, const unsigned tos){
+__private void progress_refresh(const char* desc, unsigned value, unsigned count){
+	char out[512];
+	unsigned n = sprintf(out, "\r[%5.1f%%] %s", value * 100.0 / count, desc);
+	write(2, out, n);
+}
+
+__private void progress_end(){
+	fputc('\n', stderr);
+	fflush(stderr);
+}
+
+void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownload, const unsigned tos){
 	dbg_info("");
 	const unsigned count = mem_header(mirrors)->len;
-	__atomic unsigned progress = 0;
+	__atomic unsigned pvalue = 0;
 	
-	if( showprogress ){
-		fprintf(stderr, "[%03u/%03u] mirror updates", progress, count);
-		fflush(stderr);
-	}
+	if( progress ) progress_begin("mirrors updates", count);
 
 	__paralleft(ndownload)
 	for( unsigned i = 0; i < count; ++i){
 		mirror_update(&mirrors[i], tos);
-		if( showprogress ){
-			++progress;
-			char out[512];
-			unsigned n = sprintf(out, "\r[%03u/%03u] mirror updates", progress, count);
-			write(2, out, n);
-		}
+		if( progress ) progress_refresh("mirrors updates", ++pvalue, count);
 	}
 
-	if( showprogress ){
-		fputc('\n', stderr);
-		fflush(stderr);
-	}
+	if( progress ) progress_end();
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){
@@ -443,24 +448,67 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	}
 	if( !local ) die("internal error, not find local db, report this message");
 
-	if( progress ){
-		fprintf(stderr, "[%.1f] mirror compare", 0 * 100.0 / count);
-		fflush(stderr);
-	}
+	if( progress ) progress_begin("mirrors db compare", count);
+	
 	for( unsigned i = 0; i < count; ++i ){
 		if( mirrors[i].status == MIRROR_UNKNOW ){
 			mirror_cmp_db(local, &mirrors[i]);
 		}
-		if( progress ){
-			char out[512];
-			unsigned n = sprintf(out, "\r[%.1f] mirror compare", i * 100.0 / count);
-			write(2, out, n);
-		}
+		if( progress ) progress_refresh("mirrors db compare", i, count);
 	}
-	if( progress ){
-		fputc('\n', stderr);
-		fflush(stderr);
-	}
+	
+	if( progress ) progress_end();
 	dbg_info("end compare mirror database");
 }
+
+__private void mirror_speed(mirror_s* mirror, const char* arch){
+	pkgdesc_s  find = { .name = "chromium" };
+	pkgdesc_s* pk = mem_bsearch(mirror->repo[1].db, &find, pkgname_cmp);
+	if( !pk ){
+		dbg_error("unable to benchmark mirror, not find chromium test package");
+		return;
+	}
+
+	__free char* url = str_printf("%s/extra/os/%s/%s", mirror->url, arch, pk->filename);
+	unsigned retry = DOWNLOAD_RETRY;
+	while( retry-->0 ){
+		delay_t start = time_sec();
+		__free void* buf = www_mdownload(url, 0);
+		delay_t stop  = time_sec();
+		if( !buf ){
+			delay_ms(DOWNLOAD_WAIT);
+			continue;
+		}
+		unsigned size = mem_header(buf)->len;
+		mirror->speed = (size / (1024.0*1024.0)) / (stop-start);
+		break;
+	}
+}
+
+void mirrors_speed(mirror_s* mirrors, const char* arch, int progress){
+	const unsigned count = mem_header(mirrors)->len;
+	if( progress ) progress_begin("mirrors speed", count);
+		
+	mforeach(mirrors, i){
+		if( mirrors[i].status == MIRROR_UNKNOW ){
+			mirror_speed(&mirrors[i], arch );
+		}
+		if( progress ) progress_refresh("mirrors speed", i, count);
+	}
+
+	if( progress ) progress_end();
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -1,4 +1,4 @@
-ghostmirror v0.1.0
+ghostmirror v0.2.0
 ====================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.2.0 use mirrorlist for get current remote mirror in use in this mode not required -Syu, calcolate speed mirror
 * v0.1.0 remove useless options, check if server have all files in db, little better output
 * v0.0.0 first alpha version, be careful
 
