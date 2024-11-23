@@ -49,7 +49,7 @@ Usage:
 -h --help for get app options<br>
 example, check all Italy mirrors<br>
 ```bash
-$./build/ghostmirror -cdip Italy
+$./build/ghostmirror -cp Italy
 ```
 
 
