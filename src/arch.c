@@ -198,6 +198,12 @@ __private int pkgname_cmp(const void* a, const void* b){
 	return strcmp(da->name, db->name);
 }
 
+__private int lsname_cmp(const void* a, const void* b){
+	const char** da = (const char**)a;
+	const char** db = (const char**)b;
+	return strcmp(*da, *db);
+}
+
 //I can only imagine how portable and safe this is
 __private char** https_ls_parse(const char* str){
 	char** ls = MANY(char*, 64);
@@ -209,8 +215,8 @@ __private char** https_ls_parse(const char* str){
 			str = end;
 			continue;
 		}
-		char* cps = str_dup(str, end-str);
-		ls = mem_push(ls, &cps);
+		ls = mem_upsize(ls, 1);
+		ls[mem_header(ls)->len++] = str_dup(str, end-str);
 		str = end;
 	}
 	return ls;
@@ -264,13 +270,14 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 		__free char* rls = get_mirror_ls(mirror, REPO[ir], tos);
 		if( rls ){
 			mirror->repo[ir].ls = https_ls_parse(rls);
-			mem_qsort(mirror->repo[ir].ls, (cmp_f)strcmp);
+			mem_qsort(mirror->repo[ir].ls, lsname_cmp);
 		}
 		else{
 			dbg_warning("mirror %s not provide ls", mirror->url);
 		}
 	}
 }
+
 
 void mirrors_update(mirror_s* mirrors, const int showprogress, const unsigned ndownload, const unsigned tos){
 	dbg_info("");
@@ -377,6 +384,13 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 	return mirrors;
 }
 
+__private int lsname_cmp2(const void* a, const void* b){
+	const char* da = (const char*)a;
+	const char** db = (const char**)b;
+	return strcmp(da, *db);
+}
+
+
 __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 	const unsigned repocount = sizeof_vector(REPO);
 	for( unsigned ir = 0; ir < repocount; ++ir ){
@@ -392,9 +406,8 @@ __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 					case  1: ++test->outofdatepkg; break;
 					case  0: ++test->uptodatepkg; break;
 				}
-				if( test->repo[ir].ls &&  mem_bsearch(test->repo[ir].ls, tpk->filename, (cmp_f)strcmp) ){
+				if( test->repo[ir].ls && mem_bsearch(test->repo[ir].ls, tpk->filename, lsname_cmp2) ){
 					++test->checked;
-					dbg_info("CHECKED %u", test->checked);
 				}
 			}
 		}

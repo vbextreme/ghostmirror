@@ -9,8 +9,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define DEFAULT_THREADS 16
-#define DEFAULT_TOUT    5
+#define DEFAULT_THREADS 4
+#define DEFAULT_TOUT    10
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
@@ -41,8 +41,8 @@ option_s OPT[] = {
 	{'m', "--mirrorfile"  , "use mirror file instead of downloading mirrorlist"          , OPT_STR  , 0, 0},
 	{'c', "--country"     , "select country from mirrorlist"                             , OPT_ARRAY | OPT_STR  , 0, 0},
 	{'u', "--uncommented" , "use only uncommented mirror"                                , OPT_NOARG, 0, 0},
-	{'t', "--threads"     , "set numbers of parallel download, default '16'"             , OPT_NUM  , 0, 0},
-	{'o', "--timeout"     , "set timeout in seconds for not reply mirror, default '5's"  , OPT_NUM  , 0, 0},
+	{'t', "--threads"     , "set numbers of parallel download, default '4'"              , OPT_NUM  , 0, 0},
+	{'o', "--timeout"     , "set timeout in seconds for not reply mirror, default '10's" , OPT_NUM  , 0, 0},
 	{'p', "--progress"    , "show progress, default false"                               , OPT_NOARG, 0, 0},
 	{'h', "--help"        , "display this"                                               , OPT_END | OPT_NOARG, 0, 0}
 };
@@ -69,7 +69,7 @@ __private void print_cmp_mirrors(mirror_s* mirrors){
 		const double aep = mirrors[i].extrapkg * 100.0 / mirrors[i].totalpkg;
 		const double acp = mirrors[i].checked * 100.0 / mirrors[i].totalpkg;
 		
-		printf("<<%6.2f%%<< ==%6.2f%%== >>%6.2f%%>> ??%6.2f%%?? !!%6.2f%%!! @%6.2f&&@ %s", ood, utd, ats, amp, aep, acp, mirrors[i].url);
+		printf("<<%6.2f%%<< ==%6.2f%%== >>%6.2f%%>> ??%6.2f%%?? !!%6.2f%%!! @%6.2f%%@ %s", ood, utd, ats, amp, aep, acp, mirrors[i].url);
 		puts("");
 		//printf("Server = %s/$repo/os/$arch\n", mirrors[i].url);
 	}
