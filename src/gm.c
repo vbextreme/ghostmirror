@@ -14,12 +14,12 @@
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
-//	not like info
 //	--speed find download speed, workcase first mirror
 //	--like  find all mirror like current mirror, workcase fallbackmirror
 //		if mark status != UNKNOW with !like mirrro? in compare_db?
 //	--list  create a list with Server=mirror
 //	--showcountry display all country
+//	get first mirror in mirrorlist is better then use /local mirror, in this mode not need pacamn -Syu
 //	try:
 //		--country <country> --speed --like [>=] --list <fout>
 //		for generate a list of mirror?

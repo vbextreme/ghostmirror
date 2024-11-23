@@ -13,7 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
-* v0.1.0 remove useless options, check if server have all files in db
+* v0.1.0 remove useless options, check if server have all files in db, little better output
 * v0.0.0 first alpha version, be careful
 
 Bug:
