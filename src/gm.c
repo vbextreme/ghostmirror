@@ -99,10 +99,12 @@ __private void print_cmp_mirrors(mirror_s* mirrors){
 
 
 	mforeach(mirrors, i){
-		if( mirrors[i].status == MIRROR_LOCAL ) continue;
 		printf("│%-*s│", maxlen, mirrors[i].url);
 		if( mirrors[i].status == MIRROR_ERR   ){
 			fputs("   error  │", stdout);
+		}
+		else if( mirrors[i].status == MIRROR_LOCAL ){
+			fputs("  current │", stdout);
 		}
 		else{
 			fputs("  success │", stdout);

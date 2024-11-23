@@ -443,6 +443,15 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	for( unsigned i = 0; i < count; ++i ){
 		if( mirrors[i].status == MIRROR_LOCAL ){
 			local = &mirrors[i];
+			local->uptodatepkg = local->totalpkg;
+			const unsigned repocount = sizeof_vector(REPO);
+			for( unsigned ir = 0; ir < repocount; ++ir ){
+				if( local->repo[ir].ls ){
+					mforeach(local->repo[ir].db, i){
+						if( mem_bsearch(local->repo[ir].ls, local->repo[ir].db[i].filename, lsname_cmp2) ) ++local->checked;
+					}
+				}
+			}
 			break;
 		}
 	}
@@ -490,7 +499,7 @@ void mirrors_speed(mirror_s* mirrors, const char* arch, int progress){
 	if( progress ) progress_begin("mirrors speed", count);
 		
 	mforeach(mirrors, i){
-		if( mirrors[i].status == MIRROR_UNKNOW ){
+		if( mirrors[i].status != MIRROR_ERR ){
 			mirror_speed(&mirrors[i], arch );
 		}
 		if( progress ) progress_refresh("mirrors speed", i, count);
