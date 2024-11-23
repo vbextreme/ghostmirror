@@ -47,20 +47,62 @@ option_s OPT[] = {
 	{'h', "--help"        , "display this"                                               , OPT_END | OPT_NOARG, 0, 0}
 };
 
+__private void print_repeat(unsigned count, char ch){
+	while( count --> 0 ) putchar(ch);
+}
+
+__private void print_repeats(unsigned count, const char* ch){
+	while( count --> 0 ) fputs(ch, stdout);
+}
+
 __private void print_cmp_mirrors(mirror_s* mirrors){
-	puts(" < ammount of outofdate, mirror db are version minor local db");
-	puts(" = ammount of uptodate, mirror db are equal version with local db");
-	puts(" > ammount to sync, mirror db are version major of local db");
-	puts(" ? ammount missing package, mirror db not have this pkg");
-	puts(" ! ammount extras package, mirror db have this pkg but local db not have");
-	puts(" @ ammount checked package, mirror successfull checked package");
-	puts("");
+	unsigned maxlen = 0;
+	mforeach(mirrors, i){
+		size_t len = strlen(mirrors[i].url);
+		if( len > maxlen ) maxlen = len;
+	}
+
+	fputs("┌", stdout);
+	print_repeats(maxlen, "─");
+	fputs("┬", stdout);
+	for( unsigned i = 0; i < 7; ++i ) fputs("──────────┬", stdout);
+	fputs("──────────┐", stdout);
+	putchar('\n');
+
+	fputs("│", stdout);
+	unsigned part = maxlen / 2 - strlen("mirror") / 2;
+	print_repeat(part, ' ');
+	fputs("mirror", stdout);
+	part +=6;
+	if( part < maxlen ) part = maxlen-part;
+	print_repeat(part, ' ');
+	fputs("│", stdout);
+	fputs("   state  │", stdout);
+	fputs("outofdate │", stdout);
+	fputs(" uptodate │", stdout);
+	fputs("morerecent│", stdout);
+	fputs("not exists│", stdout);
+	fputs("newversion│", stdout);
+	fputs("   sync   │", stdout);
+	fputs("  speed   │", stdout);
+	putchar('\n');
+
+	fputs("├", stdout);
+	print_repeats(maxlen, "─");
+	fputs("┼", stdout);
+	for( unsigned i = 0; i < 7; ++i ) fputs("──────────┼", stdout);
+	fputs("──────────┤", stdout);
+	putchar('\n');
+
 
 	mforeach(mirrors, i){
 		if( mirrors[i].status == MIRROR_LOCAL ) continue;
+		printf("│%-*s│", maxlen, mirrors[i].url);
 		if( mirrors[i].status == MIRROR_ERR   ){
-			//printf("<<eeeeeee<< ==eeeeeee== >>eeeeeee>> ??eeeeeee?? !!eeeeeee!! @eeeeeee@ %s\n", mirrors[i].url);	
-			continue;
+			fputs("   error  │", stdout);
+		}
+		else{
+			fputs("  success │", stdout);
 		}
 		const double ood = mirrors[i].outofdatepkg * 100.0 / mirrors[i].totalpkg;
 		const double utd = mirrors[i].uptodatepkg  * 100.0 / mirrors[i].totalpkg;
@@ -69,10 +111,17 @@ __private void print_cmp_mirrors(mirror_s* mirrors){
 		const double aep = mirrors[i].extrapkg * 100.0 / mirrors[i].totalpkg;
 		const double acp = mirrors[i].checked * 100.0 / mirrors[i].totalpkg;
 		
-		printf("<<%6.2f%%<< ==%6.2f%%== >>%6.2f%%>> ??%6.2f%%?? !!%6.2f%%!! @%6.2f%%@ %s", ood, utd, ats, amp, aep, acp, mirrors[i].url);
-		puts("");
+		printf(" %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │%5.1fmib/s│\n", ood, utd, ats, amp, aep, acp, 0.0);
 		//printf("Server = %s/$repo/os/$arch\n", mirrors[i].url);
 	}
+
+	fputs("└", stdout);
+	print_repeats(maxlen, "─");
+	fputs("┴", stdout);
+	for( unsigned i = 0; i < 7; ++i ) fputs("──────────┴", stdout);
+	fputs("──────────┘", stdout);
+	putchar('\n');
+
 }
 
 int main(int argc, char** argv){
@@ -85,6 +134,19 @@ int main(int argc, char** argv){
 	argv_default_str(OPT, O_m, NULL);
 
 	www_begin();
+/*
+ * DBG print
+mirror_s* mirrors = MANY(mirror_s, 16);
+mem_header(mirrors)->len = 3;
+mem_zero(mirrors);
+mirrors[0].url = "https://packages.oth-regensburg.de/archlinux";
+mirrors[0].totalpkg = 100;
+mirrors[1].url = "https://packages.oth-regensburg.it/archlinux";
+mirrors[2].url = "https://packages.oth-regensburg.it";
+
+print_cmp_mirrors(mirrors);	
+die("");
+*/
 
 	__free char* mirrorlist = mirror_loading(opt[O_m].value->str, opt[O_o].value->ui);
 	
