@@ -12,8 +12,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define DOWNLOAD_RETRY 3
-#define DOWNLOAD_WAIT  1000
+#define DOWNLOAD_RETRY    3
+#define DOWNLOAD_WAIT     1000
+#define PACMAN_MIRRORLIST "/etc/pacman.d/mirrorlist"
+#define PACMAN_LOCAL_DB   "/var/lib/pacman/sync"
 
 __private char* REPO[] = { "core", "extra" };
 
@@ -370,8 +372,11 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 
 	if( !mirrors ){
 		mirrors = MANY(mirror_s, 10);
+		__free char* localmirror = load_file(PACMAN_MIRRORLIST);
+		url = server_url((const char**)&localmirror, 1, 0);
+		if( !url ) url = PACMAN_LOCAL_DB;
 		const unsigned id = mem_header(mirrors)->len++;
-		mirror_ctor(&mirrors[id], "/var/lib/pacman/sync", arch);
+		mirror_ctor(&mirrors[id], url, arch);
 		mirrors[id].status = MIRROR_LOCAL;
 	}
 
@@ -384,12 +389,20 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 	return mirrors;
 }
 
+void country_list(const char* mirrorlist){
+	while( (mirrorlist=strstr(mirrorlist, "## ")) ){
+		mirrorlist += 3;
+		const char* nl = strchrnul(mirrorlist, '\n');
+		printf("%.*s\n", (int)(nl-mirrorlist), mirrorlist);
+		mirrorlist = nl;
+	}
+}
+
 __private int lsname_cmp2(const void* a, const void* b){
 	const char* da = (const char*)a;
 	const char** db = (const char**)b;
 	return strcmp(da, *db);
 }
-
 
 __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 	const unsigned repocount = sizeof_vector(REPO);

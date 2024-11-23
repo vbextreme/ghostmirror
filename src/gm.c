@@ -18,8 +18,6 @@
 //	--like  find all mirror like current mirror, workcase fallbackmirror
 //		if mark status != UNKNOW with !like mirrro? in compare_db?
 //	--list  create a list with Server=mirror
-//	--showcountry display all country
-//	get first mirror in mirrorlist is better then use /local mirror, in this mode not need pacamn -Syu
 //	try:
 //		--country <country> --speed --like [>=] --list <fout>
 //		for generate a list of mirror?
@@ -29,6 +27,7 @@ typedef enum{
 	O_a,
 	O_m,
 	O_c,
+	O_C,
 	O_u,
 	O_t,
 	O_o,
@@ -40,6 +39,7 @@ option_s OPT[] = {
 	{'a', "--arch"        , "select arch, default 'x86_64'"                              , OPT_STR  , 0, 0}, 
 	{'m', "--mirrorfile"  , "use mirror file instead of downloading mirrorlist"          , OPT_STR  , 0, 0},
 	{'c', "--country"     , "select country from mirrorlist"                             , OPT_ARRAY | OPT_STR  , 0, 0},
+	{'C', "--country-list", "show all possibile country"                                 , OPT_NOARG, 0, 0},
 	{'u', "--uncommented" , "use only uncommented mirror"                                , OPT_NOARG, 0, 0},
 	{'t', "--threads"     , "set numbers of parallel download, default '4'"              , OPT_NUM  , 0, 0},
 	{'o', "--timeout"     , "set timeout in seconds for not reply mirror, default '10's" , OPT_NUM  , 0, 0},
@@ -149,7 +149,12 @@ die("");
 */
 
 	__free char* mirrorlist = mirror_loading(opt[O_m].value->str, opt[O_o].value->ui);
-	
+
+	if( opt[O_C].set ){
+		country_list(mirrorlist);
+		exit(0);
+	}
+
 	mirror_s* mirrors = NULL;
 	if( opt[O_c].set ){
 		mforeach(opt[O_c].value, i){
