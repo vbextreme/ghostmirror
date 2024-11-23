@@ -53,7 +53,15 @@ example, check all Italy mirrors<br>
 ```bash
 $./build/ghostmirror -cp Italy
 ```
-
+example, check all Italy mirrors with speed test<br>
+```bash
+$./build/ghostmirror -cps Italy
+```
+ example, check all Italy and Germany mirrors with speed test<br>
+```bash
+$./build/ghostmirror -cps Italy,Germany
+```
+ 
 
 
 
