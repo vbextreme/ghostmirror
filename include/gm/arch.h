@@ -10,6 +10,8 @@
 #define VERSION_PART_PATCHES  1
 #define VERSION_PART_REVISION 0
 
+typedef enum { MIRROR_UNKNOW, MIRROR_LOCAL, MIRROR_ERR } mirrorStatus_e;
+
 typedef struct pkgdesc{
 	char   filename[NAME_MAX];
 	char   name[NAME_MAX];
@@ -17,20 +19,23 @@ typedef struct pkgdesc{
 	time_t lastsync;
 }pkgdesc_s;
 
-typedef enum { MIRROR_UNKNOW, MIRROR_LOCAL, MIRROR_ERR } mirrorStatus_e;
+typedef struct repo{
+	pkgdesc_s* db;
+	char**     ls;
+}repo_s;
 
 typedef struct mirror{
 	mirrorStatus_e status;
 	char*          url;
 	const char*    arch;
+	repo_s         repo[2];
 	unsigned       totalpkg;
 	unsigned       syncdatepkg;
 	unsigned       outofdatepkg;
 	unsigned       uptodatepkg;
 	unsigned       notexistspkg;
 	unsigned       extrapkg;
-	unsigned       checked;
-	pkgdesc_s**    db;
+	unsigned       checked;	
 }mirror_s;
 
 char* mirror_loading(const char* fname, const unsigned tos);

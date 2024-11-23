@@ -30,9 +30,6 @@ typedef enum{
 	O_m,
 	O_c,
 	O_u,
-	O_d,
-	O_s,
-	O_i,
 	O_t,
 	O_o,
 	O_p,
@@ -44,9 +41,6 @@ option_s OPT[] = {
 	{'m', "--mirrorfile"  , "use mirror file instead of downloading mirrorlist"          , OPT_STR  , 0, 0},
 	{'c', "--country"     , "select country from mirrorlist"                             , OPT_ARRAY | OPT_STR  , 0, 0},
 	{'u', "--uncommented" , "use only uncommented mirror"                                , OPT_NOARG, 0, 0},
-	{'d', "--comparedb"   , "compare database for find outofdate mirror"                 , OPT_NOARG, 0, 0},
-	{'s', "--sync"        , "check if '*' mirror is sync or '>' or '='"                  , OPT_STR  , 0, 0},
-	{'i', "--info"        , "print result"                                               , OPT_NOARG, 0, 0},
 	{'t', "--threads"     , "set numbers of parallel download, default '16'"             , OPT_NUM  , 0, 0},
 	{'o', "--timeout"     , "set timeout in seconds for not reply mirror, default '5's"  , OPT_NUM  , 0, 0},
 	{'p', "--progress"    , "show progress, default false"                               , OPT_NOARG, 0, 0},
@@ -92,17 +86,6 @@ int main(int argc, char** argv){
 
 	www_begin();
 
-if( opt[O_s].set ){
-	char* lsm = www_mdownload("https://packages.oth-regensburg.de/archlinux/core/os/x86_64", 15);
-	if( lsm ){
-		puts(lsm);
-	}
-	else{
-		puts("error");
-	}
-		
-}
-exit(1);
 	__free char* mirrorlist = mirror_loading(opt[O_m].value->str, opt[O_o].value->ui);
 	
 	mirror_s* mirrors = NULL;
@@ -115,17 +98,10 @@ exit(1);
 		mirrors = mirrors_country(mirrors, mirrorlist, NULL, opt[O_a].value->str, opt[O_u].set);
 	}
 	
-	mirrors_update(mirrors, opt[O_p].set, opt[O_t].value->ui, opt[O_o].value->ui);
+	mirrors_update(mirrors, opt[O_p].set, opt[O_t].value->ui, opt[O_o].value->ui);	
+	mirrors_cmp_db(mirrors, opt[O_p].set);
 	
-	if( opt[O_d].set ) mirrors_cmp_db(mirrors, opt[O_p].set);
-	
-	if( opt[O_s].set ){
-		puts("its a big todo, making many requests to mirrors doesn't seem to be a good idea, you get bad requests or 404");
-		puts("need wait a big idea. sorry");
-		//mirrors_update_sync(mirrors, *opt[O_s].value->str, opt[O_t].value->ui, opt[O_o].value->ui, opt[O_p].set);
-	}
-	
-	if( opt[O_i].set ) print_cmp_mirrors(mirrors);	
+	print_cmp_mirrors(mirrors);	
 	
 	www_end();
 	return 0;

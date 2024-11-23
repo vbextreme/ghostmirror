@@ -14,6 +14,15 @@
 
 __private char* REPO[] = { "core", "extra" };
 
+__private mirror_s* mirror_ctor(mirror_s* mirror, char* url, const char* arch){
+	memset(mirror, 0, sizeof(mirror_s));
+	mirror->url    = url;
+	mirror->arch   = arch;
+	mirror->status = MIRROR_UNKNOW;
+	dbg_info("'%s'", url);
+	return mirror;
+}
+
 __private void* load_file(const char* fname){
 	dbg_info("loading %s", fname);
 	int fd = open(fname, O_RDONLY);
@@ -180,27 +189,28 @@ __private pkgdesc_s* generate_db(void* tarbuf){
 	return db;
 }
 
-__private mirror_s* mirror_ctor(mirror_s* mirror, char* url, const char* arch){
-	const unsigned dbcount = sizeof_vector(REPO);
-	mirror->url    = url;
-	mirror->arch   = arch;
-	mirror->status = MIRROR_UNKNOW; 
-	mirror->db     = MANY(pkgdesc_s*, dbcount);
-	mirror->totalpkg     = 0;
-	mirror->outofdatepkg = 0;
-	mirror->uptodatepkg  = 0;
-	mirror->syncdatepkg  = 0;
-	mirror->notexistspkg = 0;
-	mirror->extrapkg     = 0;
-	mirror->checked      = 0;
-	dbg_info("'%s'", url);
-	return mirror;
-}
-
 __private int pkgname_cmp(const void* a, const void* b){
 	const pkgdesc_s* da = a;
 	const pkgdesc_s* db = b;
 	return strcmp(da->name, db->name);
+}
+
+//I can only imagine how portable and safe this is
+__private char** https_ls_parse(const char* str){
+	char** ls = MANY(char*, 64);
+	while( (str=strstr(str, "<a href=\"")) ){
+		str += 9;
+		const char* end = strstr(str, "\">");
+		if( !end ) return ls;
+		if( strncmp(end-4, ".zst", 4) ){
+			str = end;
+			continue;
+		}
+		char* cps = str_dup(str, end-str);
+		ls = mem_push(ls, &cps);
+		str = end;
+	}
+	return ls;
 }
 
 __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned tos){
@@ -214,12 +224,18 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 	}
 }
 
+__private char* get_mirror_ls(mirror_s* mirror, const char* repo, const unsigned tos){
+	if( mirror->url[0] == '/' ) return NULL;
+	__free char* url = str_printf("%s/%s/os/%s/", mirror->url, repo, mirror->arch);
+	return www_mdownload(url, tos);
+}
+
 __private void mirror_update(mirror_s* mirror, const unsigned tos){
-	const unsigned dbcount = sizeof_vector(REPO);
+	const unsigned repocount = sizeof_vector(REPO);
 	dbg_info("update %s", mirror->url);
-	for( unsigned idb = 0; idb < dbcount; ++idb ){
-		dbg_info("\t %s", REPO[idb]);
-		__free void* tarzstd = get_tar_zst(mirror, REPO[idb], tos);
+	for( unsigned ir = 0; ir < repocount; ++ir ){
+		dbg_info("\t %s", REPO[ir]);
+		__free void* tarzstd = get_tar_zst(mirror, REPO[ir], tos);
 		if( !tarzstd ){
 			dbg_error("unable to get remote mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
@@ -231,15 +247,25 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
 			return;
-		}	
-		mirror->db[idb] = generate_db(tarbuf);
-		if( !mirror->db[idb] ){
+		}
+
+		if( !(mirror->repo[ir].db = generate_db(tarbuf)) ){
 			dbg_error("untar archive from mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
 			return;
 		}
-		mem_qsort(mirror->db[idb], pkgname_cmp);
-		mirror->totalpkg += mem_header(mirror->db[idb])->len;
+
+		mem_qsort(mirror->repo[ir].db, pkgname_cmp);
+		mirror->totalpkg += mem_header(mirror->repo[ir].db)->len;
+
+		__free char* rls = get_mirror_ls(mirror, REPO[ir], tos);
+		if( rls ){
+			mirror->repo[ir].ls = https_ls_parse(rls);
+			mem_qsort(mirror->repo[ir].ls, (cmp_f)strcmp);
+		}
+		else{
+			dbg_warning("mirror %s not provide ls", mirror->url);
+		}
 	}
 }
 
@@ -349,19 +375,23 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 }
 
 __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
-	const unsigned ndb = sizeof_vector(REPO);
-	for( unsigned idb = 0; idb < ndb; ++idb ){
-		mforeach(local->db[idb], i){
-			pkgdesc_s* tpk = mem_bsearch(test->db[idb], &local->db[idb][i], pkgname_cmp);
+	const unsigned repocount = sizeof_vector(REPO);
+	for( unsigned ir = 0; ir < repocount; ++ir ){
+		mforeach(local->repo[ir].db, i){
+			pkgdesc_s* tpk = mem_bsearch(test->repo[ir].db, &local->repo[ir].db[i], pkgname_cmp);
 			if( !tpk ){
 				++test->notexistspkg;
 			}
 			else{
-				int ret = pkg_vercmp(local->db[idb][i].version, tpk->version);
+				int ret = pkg_vercmp(local->repo[ir].db[i].version, tpk->version);
 				switch( ret ){
 					case -1: ++test->syncdatepkg; break;
 					case  1: ++test->outofdatepkg; break;
 					case  0: ++test->uptodatepkg; break;
+				}
+				if( test->repo[ir].ls &&  mem_bsearch(test->repo[ir].ls, tpk->filename, (cmp_f)strcmp) ){
+					++test->checked;
+					dbg_info("CHECKED %u", test->checked);
 				}
 			}
 		}
@@ -404,109 +434,4 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	}
 	dbg_info("end compare mirror database");
 }
-
-__private time_t tounixtime(const char* parse){
-	struct tm tm = {0};
-	if( strptime( parse, "%a, %d %b %Y %H:%M:%S %Z", &tm) == NULL) {
-        return 0;
-    }
-	tm.tm_isdst = 0;
-	return timegm(&tm);
-}
-
-__private int pkgdesc_update_lastsync(pkgdesc_s* pkg, char* header){
-	char* parse = header;
-	while( *(parse=strchrnul(parse, 'D')) ){
-		if( strncmp(parse, "Date:", 5) ){
-			++parse;
-			continue;
-		}
-		parse += 5;
-		while( *parse && *parse == ' ' ) ++parse;
-		pkg->lastsync = tounixtime(parse);
-		if( !pkg->lastsync ) return -1;
-		return 0;
-	}
-	pkg->lastsync = 0;
-	return -1;
-}
-
-__atomic unsigned syncprogress;
-unsigned synctotal;
-
-__private void mirror_sync(mirror_s* mirror, const unsigned maxdownload, const unsigned touts, const unsigned progress){
-	const unsigned ndb = sizeof_vector(REPO);
-	__atomic unsigned checked = 0;
-
-	for( unsigned idb = 0; idb < ndb; ++idb ){
-		const unsigned npk = mem_header(mirror->db[idb])->len;
-		__paralleft(maxdownload)
-		for( unsigned i = 0; i < npk; ++i ){
-			__free char* url = str_printf("%s/%s/os/%s/%s", mirror->url, REPO[idb], mirror->arch, mirror->db[idb][i].filename);
-			dbg_info("pkg: %s", url);
-			__free char* header = www_header_get(url, touts);
-			if( !header ) continue;
-			if( pkgdesc_update_lastsync(&mirror->db[idb][i], header) ) continue;
-			++checked;
-			if( progress ){
-				++syncprogress;
-				char out[512];
-				unsigned n = sprintf(out, "\r[%.1f] mirror sync updates", syncprogress * 100.0 / synctotal);
-				write(2, out, n);
-			}
-		}
-	}
-
-	if( progress ){
-		fputc('\n', stderr);
-		fflush(stderr);
-	}
-	mirror->checked = checked;
-}
-
-__private void sync_progress(mirror_s* mirrors){
-	synctotal = 0;
-	syncprogress = 0;
-	const unsigned count = mem_header(mirrors)->len;
-	const unsigned cdb = sizeof_vector(REPO);
-
-	for( unsigned i = 0; i < count; ++i ){
-		if( mirrors[i].status == MIRROR_UNKNOW ){
-			for( unsigned idb = 0; idb < cdb; ++idb){
-				synctotal += mem_header(mirrors[i].db[idb])->len;
-			}
-		}
-	}
-}
-
-void mirrors_update_sync(mirror_s* mirrors, const char mode, const unsigned maxdownload, const unsigned touts, const int progress){
-	dbg_info("");
-
-	if( progress ){
-		sync_progress(mirrors);
-		fprintf(stderr, "[%.1f] mirror sync updates", syncprogress * 100.0 / synctotal);
-		fflush(stderr);
-	}
-
-	mirror_s* local = NULL;
-	const unsigned count = mem_header(mirrors)->len;
-	for( unsigned i = 0; i < count; ++i ){
-		if( mirrors[i].status == MIRROR_LOCAL ){
-			local = &mirrors[i];
-			break;
-		}
-	}
-	
-	for( unsigned i = 0; i < count; ++i ){
-		if( mirrors[i].status != MIRROR_UNKNOW ) continue;
-		if( mode == '=' && mirrors[i].uptodatepkg != local->uptodatepkg ) continue;
-		if( mode == '>' && mirrors[i].syncdatepkg == 0 ) continue;
-		mirror_sync(&mirrors[i], maxdownload, touts, progress);
-	}
-}
-
-
-
-
-
 
