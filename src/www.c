@@ -79,7 +79,7 @@ __private int www_curl_perform(CURL* ch){
 	long resCode;
 	curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &resCode);
     if( resCode != 200L && resCode != 0 ) {
-		dbg_error("getinfo return %ld", resCode);
+		dbg_error("getinfo return %ld: %s", resCode, www_errno_http(resCode));
 		wwwerrno = WWW_ERROR_HTTP + resCode;
 		return -1;
     }

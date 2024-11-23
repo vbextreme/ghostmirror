@@ -91,7 +91,18 @@ int main(int argc, char** argv){
 	argv_default_str(OPT, O_m, NULL);
 
 	www_begin();
-	
+
+if( opt[O_s].set ){
+	char* lsm = www_mdownload("https://packages.oth-regensburg.de/archlinux/core/os/x86_64", 15);
+	if( lsm ){
+		puts(lsm);
+	}
+	else{
+		puts("error");
+	}
+		
+}
+exit(1);
 	__free char* mirrorlist = mirror_loading(opt[O_m].value->str, opt[O_o].value->ui);
 	
 	mirror_s* mirrors = NULL;
