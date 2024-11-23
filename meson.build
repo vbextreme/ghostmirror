@@ -27,6 +27,7 @@ src += [ 'notstd/extras.c' ]
 src += [ 'notstd/futex.c' ]
 src += [ 'notstd/str.c' ]
 src += [ 'notstd/opt.c' ]
+src += [ 'notstd/delay.c' ]
 
 src += [ 'src/www.c' ]
 src += [ 'src/archive.c' ]

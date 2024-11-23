@@ -12,6 +12,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#define DOWNLOAD_RETRY 3
+#define DOWNLOAD_WAIT  1000
+
 __private char* REPO[] = { "core", "extra" };
 
 __private mirror_s* mirror_ctor(mirror_s* mirror, char* url, const char* arch){
@@ -220,14 +223,14 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 	}
 	else{
 		__free char* url = str_printf("%s/%s/os/%s/%s.db", mirror->url, repo, mirror->arch, repo);
-		return www_mdownload(url, tos);
+		return www_mdownload_retry(url, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT);
 	}
 }
 
 __private char* get_mirror_ls(mirror_s* mirror, const char* repo, const unsigned tos){
 	if( mirror->url[0] == '/' ) return NULL;
 	__free char* url = str_printf("%s/%s/os/%s/", mirror->url, repo, mirror->arch);
-	return www_mdownload(url, tos);
+	return www_mdownload_retry(url, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT);
 }
 
 __private void mirror_update(mirror_s* mirror, const unsigned tos){
@@ -297,7 +300,7 @@ void mirrors_update(mirror_s* mirrors, const int showprogress, const unsigned nd
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){
-	char* buf = fname ? load_file(fname) :  www_mdownload("https://archlinux.org/mirrorlist/all/", tos);
+	char* buf = fname ? load_file(fname) :  www_mdownload_retry("https://archlinux.org/mirrorlist/all/", tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT);
 	if( !buf ) die("unable to load mirrorlist");
 	buf = mem_upsize(buf,1);
 	buf[mem_header(buf)->len] = 0;

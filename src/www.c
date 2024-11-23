@@ -1,4 +1,6 @@
 #include <notstd/core.h>
+#include <notstd/delay.h>
+
 #include <curl/curl.h>
 #include <string.h>
 
@@ -95,6 +97,14 @@ void* www_mdownload(const char* url, unsigned touts){
 	curl_easy_setopt(ch, CURLOPT_TIMEOUT, touts);
 	if( www_curl_perform(ch) ) return NULL;
 	return mem_borrowed(data);
+}
+
+void* www_mdownload_retry(const char* url, unsigned touts, unsigned retry, unsigned retryms){
+	void* ret = NULL;
+	while( retry-->0 && !(ret=www_mdownload(url, touts)) ){
+		if( retry ) delay_ms(retryms);
+	}
+	return ret;
 }
 
 char* www_header_get(const char* url, unsigned touts){
