@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.0.0')
+project('ghostmirror', 'c', version: '0.1.0')
 
 cc = meson.get_compiler('c')
 

@@ -1,4 +1,4 @@
-ghostmirror v0.0.0
+ghostmirror v0.1.0
 ====================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.1.0 remove useless options, check if server have all files in db
 * v0.0.0 first alpha version, be careful
 
 Bug:
@@ -26,9 +27,9 @@ libcurl, zlib
 Build:
 ======
 ```bash
-$ meson setup build<br>
-$ cd build<br>
-$ ninja<br>
+$ meson setup build
+$ cd build
+$ ninja
 ```
 
 Install:
@@ -40,7 +41,7 @@ $ ./ghostmirror ......
 ```
 but if you are crazy you can
 ```bash
-$ sudo ninja install<br>
+$ sudo ninja install
 ```
 
 Usage:
