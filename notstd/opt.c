@@ -211,7 +211,6 @@ __private void short_option(optctx_s* ctx){
 		++ctx->paoff;
 	}
 	++ctx->current;
-	++ctx->paarg;
 	ctx->paoff = 0;
 }
 
