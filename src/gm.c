@@ -131,6 +131,8 @@ __private void print_cmp_mirrors(mirror_s* mirrors){
 }
 
 int main(int argc, char** argv){
+	notstd_begin();
+
 	__argv option_s* opt = argv_parse(OPT, argc, argv);
 	if( opt[O_h].set ) argv_usage(opt, argv[0]);
 

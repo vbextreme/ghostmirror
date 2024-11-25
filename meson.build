@@ -1,13 +1,21 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.2.1')
-
+project('ghostmirror', 'c', version: '0.2.2')
 cc = meson.get_compiler('c')
+localPath = meson.current_source_dir()
 
 type = 'executable'
 
-localPath = meson.current_source_dir()
+version = {
+  'mmr': meson.project_version().split('.'),
+  'str': meson.project_version(),
+  'dsc': 'more stable, removed useless code, auto versioning.'
+}
+if run_command('grep', meson.project_name() + ' v' + version['str'], './README.md', check: false).returncode() > 0
+  run_command('sed', '-i', '-r', '-e', 's/^' + meson.project_name() + '[ \\t]*v(.*)/' + meson.project_name() + ' v' + version['str'] + '/', './README.md', check: true)
+  run_command('sed', '-i', '-r', '-e', '0,/^\* v.*/{s/\*(.*)/\* v' + version['str'] + ' ' + version['dsc'] + '\\n\*\\1/}' , './README.md', check: true).stdout().strip()
+endif
 
 ###########
 # include #
@@ -109,6 +117,12 @@ if get_option('autovectorization') > 0
   add_global_arguments('-DVECTORIZE=1', language:'c')
 endif
 
+##########
+# Define #
+##########
+
+add_global_arguments('-DAPP_VERSION_STR="' + version['str'] + '"', language: 'c')
+
 ##########################
 # libraries dependencies #
 ##########################
@@ -127,7 +141,6 @@ libDeps += [ dependency('zlib', required: true) ]
 #########
 # debug #
 #########
-
 
 opt_debug = get_option('ebug')
 if opt_debug > 0

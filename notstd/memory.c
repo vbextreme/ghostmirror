@@ -17,8 +17,6 @@
 #define HMEM_TO_ADDR(HM)   ((void*)(ADDR(HM)+sizeof(hmem_s)))
 #define ADDR_TO_HMEM(A)    ((hmem_s*)(ADDR(A)-sizeof(hmem_s)))
 
-__private uintptr_t HEAP_BEGIN;
-__private uintptr_t HEAP_END;
 unsigned PAGE_SIZE;
 
 #ifdef OS_LINUX
@@ -93,15 +91,7 @@ __private void lock_write(hmem_s* hm){
 // memory manager
 
 void mem_begin(void){
-	void* tmp = malloc(0);
-	HEAP_BEGIN = (uintptr_t)tmp;
-	HEAP_END   = (uintptr_t)tmp;
 	PAGE_SIZE  = os_page_size();
-	free(tmp);
-}
-
-__private int isheap(void* addr){
-	return ADDR(addr) >= HEAP_BEGIN && ADDR(addr) <= HEAP_END ? 1 : 0;
 }
 
 __private inline hmem_s* givehm(void* addr){
@@ -122,7 +112,6 @@ __malloc void* mem_alloc(unsigned sof, size_t count, mcleanup_f dtor){
 	size = ROUND_UP(size, sizeof(uintptr_t));
 	hmem_s* hm  = malloc(size);
 	iassert( hm );
-	if( ADDR(hm) + size > HEAP_END ) HEAP_END = ADDR(hm)+size;
 	hm->refs    = 1;
 	hm->flags   = HMEM_FLAG_CHECK;
 	hm->size    = size;
@@ -144,7 +133,6 @@ void* mem_realloc(void* mem, size_t count){
 
 	hm = realloc(hm, size);
 	if( !hm ) die("on realloc: %m");
-	if( ADDR(hm)+size > HEAP_END ) HEAP_END = ADDR(hm)+size;
 	hm->size = size;
 
 	void* ret = HMEM_TO_ADDR(hm);
@@ -322,7 +310,6 @@ void* mem_borrowed(void* mem){
 }
 
 void mem_free(void* addr){
-	if( !isheap(addr) ) return;
 	dbg_info("free addr: %p", addr);
 	if( !addr ) return;
 	hmem_s* hm = ADDR_TO_HMEM(addr);
@@ -357,7 +344,6 @@ void mem_unlock_raii(void* addr){
 }
 
 int mem_check(void* addr){
-	if( !isheap(addr) ) return 0;
 	hmem_s* hm = ADDR_TO_HMEM(addr);
 	return HMEM_CHECK(hm);
 }
@@ -367,6 +353,3 @@ void mem_zero(void* addr){
 	memset(addr, 0, size);
 }
 
-int mem_isheap(void* addr){
-	return isheap(addr);
-}

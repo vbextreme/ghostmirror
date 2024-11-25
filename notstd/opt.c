@@ -276,8 +276,8 @@ void argv_usage(option_s* opt, const char* argv0){
 			break;
 		}
 	}
-
-	puts("\noptions:");
+	puts("\nv" APP_VERSION_STR);
+	puts("options:");
 	for( unsigned i = 0; i < count; ++i ){
 		if( !opt[i].sh && !*opt[i].lo ) continue;
 		if( opt[i].sh ) printf("-%c ", opt[i].sh);

@@ -1,5 +1,5 @@
-ghostmirror v0.2.1
-====================
+ghostmirror v0.2.2
+==================
 Introduction:
 =============
 We've all experienced moments when there seemed to be no packages to update, only to realize days later that the issue was an out-of-sync mirror.<br>
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.2.2 more stable, removed useless code, auto versioning.
 * v0.2.1 check current mirror used and show
 * v0.2.0 use mirrorlist for get current remote mirror in use in this mode not required -Syu, calcolate speed mirror
 * v0.1.0 remove useless options, check if server have all files in db, little better output
