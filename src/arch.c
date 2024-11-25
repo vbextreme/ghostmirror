@@ -18,6 +18,21 @@
 #define PACMAN_MIRRORLIST "/etc/pacman.d/mirrorlist"
 #define PACMAN_LOCAL_DB   "/var/lib/pacman/sync"
 
+typedef enum {
+	SORT_OUTOFDATE,
+	SORT_UPTODATE,
+	SORT_SYNC,
+	SORT_SPEED,
+	SORT_COUNT
+}sort_e;
+
+__private const char* SORTNAME[SORT_COUNT] = {
+	"outofdate",
+	"uptodate",
+	"sync",
+	"speed"
+};
+
 __private char* REPO[] = { "core", "extra" };
 
 __private mirror_s* mirror_ctor(mirror_s* mirror, char* url, const char* arch){
@@ -468,6 +483,52 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	
 	if( progress ) progress_end();
 	dbg_info("end compare mirror database");
+}
+
+__private sort_e sortmode[SORT_COUNT];
+__private unsigned sortcount;
+
+__private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const sort_e sort){
+	switch(sort){
+		case SORT_OUTOFDATE: return a->outofdatepkg - b->outofdatepkg;
+		case SORT_UPTODATE : return b->uptodatepkg - a->uptodatepkg;
+		case SORT_SYNC     : return b->syncdatepkg - a->syncdatepkg;
+		case SORT_SPEED    :
+			if( a->speed > b->speed ) return -1;
+			if( a->speed < b->speed ) return 1;
+			return 0;
+		break;
+		default: break;
+	}
+
+	 die("internal error, wrong type of sort. report this message");
+}
+
+__private int sort_cmp(const void* a, const void* b){
+	unsigned count = sortcount;
+	for( unsigned i = 0; i < count; ++i ){
+		int ret = sort_real_cmp(a, b, sortmode[i]);
+		if( ret ) return ret;
+	}
+	return 0;
+}
+
+__private unsigned sort_name_to_id(const char* name){
+	for( unsigned i = 0; i < SORT_COUNT; ++i ){
+		if( !strcmp(SORTNAME[i], name) ){
+			return i;
+		}
+	}
+	die("unknow sort mode: %s", name);
+}
+
+void add_sort_mode(const char* mode){
+	sortmode[sortcount++] = sort_name_to_id(mode);
+}
+
+void mirrors_sort(mirror_s* mirrors){
+	if( !sortcount ) die("need to set any or more valid sort modes");
+	mem_qsort(mirrors, sort_cmp);
 }
 
 __private void mirror_speed(mirror_s* mirror, const char* arch){

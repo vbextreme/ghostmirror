@@ -13,16 +13,17 @@
 #define DEFAULT_TOUT    20
 #define DEFAULT_ARCH    "x86_64"
 
-//commit:
-
 //TODO
-//	--like  find all mirror like current mirror, workcase fallbackmirror
-//		if mark status != UNKNOW with !like mirrro? in compare_db?
-//	--list  create a list with Server=mirror
-//	try:
-//		--country <country> --speed --like [>=] --list <fout>
-//		for generate a list of mirror?
-//
+//  0.3.1 auto git commit + tag
+//	0.4.0 --list  create a list with Server=mirror
+//	0.5.0 add support to ftp
+//  0.6.0 --speed slow/normal/fast
+//  0.6.1 documentation
+//  0.6.2 scanbuild
+//  0.6.3 valgrind
+//  0.6.4 makepkg
+//  0.7.0 ?possible way to add tollerance to sorting data?
+//  1.0.0 first release?
 
 typedef enum{
 	O_a,
@@ -34,20 +35,22 @@ typedef enum{
 	O_o,
 	O_p,
 	O_s,
+	O_S,
 	O_h
 }OPT_E;
 
 option_s OPT[] = {
-	{'a', "--arch"        , "select arch, default 'x86_64'"                              , OPT_STR  , 0, 0}, 
-	{'m', "--mirrorfile"  , "use mirror file instead of downloading mirrorlist"          , OPT_STR  , 0, 0},
-	{'c', "--country"     , "select country from mirrorlist"                             , OPT_ARRAY | OPT_STR  , 0, 0},
-	{'C', "--country-list", "show all possibile country"                                 , OPT_NOARG, 0, 0},
-	{'u', "--uncommented" , "use only uncommented mirror"                                , OPT_NOARG, 0, 0},
-	{'t', "--threads"     , "set numbers of parallel download, default '4'"              , OPT_NUM  , 0, 0},
-	{'o', "--timeout"     , "set timeout in seconds for not reply mirror, default '20's" , OPT_NUM  , 0, 0},
-	{'p', "--progress"    , "show progress, default false"                               , OPT_NOARG, 0, 0},
-	{'s', "--speed"       , "test speed for downloading one pkg"                         , OPT_NOARG, 0, 0},
-	{'h', "--help"        , "display this"                                               , OPT_END | OPT_NOARG, 0, 0}
+	{'a', "--arch"        , "select arch, default 'x86_64'"                                      , OPT_STR  , 0, 0}, 
+	{'m', "--mirrorfile"  , "use mirror file instead of downloading mirrorlist"                  , OPT_STR  , 0, 0},
+	{'c', "--country"     , "select country from mirrorlist"                                     , OPT_ARRAY | OPT_STR  , 0, 0},
+	{'C', "--country-list", "show all possibile country"                                         , OPT_NOARG, 0, 0},
+	{'u', "--uncommented" , "use only uncommented mirror"                                        , OPT_NOARG, 0, 0},
+	{'t', "--threads"     , "set numbers of parallel download, default '4'"                      , OPT_NUM  , 0, 0},
+	{'o', "--timeout"     , "set timeout in seconds for not reply mirror, default '20's"         , OPT_NUM  , 0, 0},
+	{'p', "--progress"    , "show progress, default false"                                       , OPT_NOARG, 0, 0},
+	{'s', "--speed"       , "test speed for downloading one pkg"                                 , OPT_NOARG, 0, 0},
+	{'S', "--sort"        , "sort result for any or more value: outofdate, uptodate, sync, speed", OPT_ARRAY | OPT_STR, 0, 0},
+	{'h', "--help"        , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
 
 __private void print_repeat(unsigned count, char ch){
@@ -140,6 +143,7 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_t, DEFAULT_THREADS);
 	argv_default_num(OPT, O_o, DEFAULT_TOUT);
 	argv_default_str(OPT, O_m, NULL);
+	argv_default_str(OPT, O_S, NULL);
 
 	www_begin();
 /*
@@ -148,10 +152,23 @@ mirror_s* mirrors = MANY(mirror_s, 16);
 mem_header(mirrors)->len = 3;
 mem_zero(mirrors);
 mirrors[0].url = "https://packages.oth-regensburg.de/archlinux";
-mirrors[0].totalpkg = 100;
+mirrors[0].outofdatepkg = 0;
+mirrors[0].uptodatepkg = 10;
+mirrors[0].syncdatepkg = 0;
+mirrors[0].totalpkg    = 6;
+mirrors[0].speed = 3.0;
 mirrors[1].url = "https://packages.oth-regensburg.it/archlinux";
+mirrors[1].outofdatepkg = 3;
+mirrors[1].uptodatepkg = 5;
+mirrors[1].syncdatepkg = 2;
+mirrors[1].totalpkg    = 10;
+mirrors[1].speed = 7.0;
 mirrors[2].url = "https://packages.oth-regensburg.it";
-
+mirrors[2].outofdatepkg = 0;
+mirrors[2].uptodatepkg = 7;
+mirrors[2].syncdatepkg = 3;
+mirrors[2].speed = 7.0;
+mirrors[2].totalpkg = 10;
 print_cmp_mirrors(mirrors);	
 die("");
 */
@@ -177,6 +194,13 @@ die("");
 	mirrors_cmp_db(mirrors, opt[O_p].set);
 
 	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set);	
+
+	if( opt[O_S].set ){
+		for( unsigned i = 0; i < opt[O_S].set; ++i ){
+			add_sort_mode(opt[O_S].value[i].str);
+		}
+		mirrors_sort(mirrors);
+	}
 
 	print_cmp_mirrors(mirrors);	
 	

@@ -1,4 +1,4 @@
-ghostmirror v0.2.2
+ghostmirror v0.3.0
 ==================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.3.0 sorting result
 * v0.2.2 more stable, removed useless code, auto versioning.
 * v0.2.1 check current mirror used and show
 * v0.2.0 use mirrorlist for get current remote mirror in use in this mode not required -Syu, calcolate speed mirror

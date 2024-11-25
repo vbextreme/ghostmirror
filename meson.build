@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.2.2')
+project('ghostmirror', 'c', version: '0.3.0')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'more stable, removed useless code, auto versioning.'
+  'dsc': 'sorting result'
 }
 if run_command('grep', meson.project_name() + ' v' + version['str'], './README.md', check: false).returncode() > 0
   run_command('sed', '-i', '-r', '-e', 's/^' + meson.project_name() + '[ \\t]*v(.*)/' + meson.project_name() + ' v' + version['str'] + '/', './README.md', check: true)
