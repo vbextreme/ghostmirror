@@ -1,3 +1,4 @@
+option('eveloper', type: 'boolean', value: false, description: 'set developer mode')
 option('ebug', type: 'integer', value: 0, description: 'set debug level, 0 disable 4 full')
 option('shortpath', type: 'integer', value: 1, description: 'set debug path to short, enable 1, disable 0')
 option('shortfn', type: 'integer', value: 1, description: 'set debug function allineated to 24, enable 1, disable 0')
