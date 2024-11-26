@@ -14,15 +14,16 @@
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
-//  0.3.1 auto git commit + tag
-//	0.4.0 --list  create a list with Server=mirror
-//	0.5.0 add support to ftp
-//  0.6.0 --speed slow/normal/fast
-//  0.6.1 documentation
-//  0.6.2 scanbuild
-//  0.6.3 valgrind
-//  0.6.4 makepkg
-//  0.7.0 ?possible way to add tollerance to sorting data?
+//	0.5.0 info stored in list, average value, display stored value
+//  0.5.1 full sort: outofdate, uptodate, morerecent, notexists, newversion, sync, speed, retry
+//  0.5.2 better progress?
+//	0.6.0 add support to ftp
+//  0.7.0 --speed slow/normal/fast
+//  0.7.1 documentation
+//  0.7.2 scanbuild
+//  0.7.3 valgrind
+//  0.7.4 makepkg
+//  0.8.0 ?possible way to add tollerance to sorting data?
 //  1.0.0 first release?
 
 typedef enum{
@@ -36,6 +37,7 @@ typedef enum{
 	O_p,
 	O_s,
 	O_S,
+	O_l,
 	O_h
 }OPT_E;
 
@@ -50,6 +52,7 @@ option_s OPT[] = {
 	{'p', "--progress"    , "show progress, default false"                                       , OPT_NOARG, 0, 0},
 	{'s', "--speed"       , "test speed for downloading one pkg"                                 , OPT_NOARG, 0, 0},
 	{'S', "--sort"        , "sort result for any or more value: outofdate, uptodate, sync, speed", OPT_ARRAY | OPT_STR, 0, 0},
+	{'l', "--list"        , "create a file with list of mirrors, stdout as arg for output here"  , OPT_STR, 0, 0},
 	{'h', "--help"        , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
 
@@ -68,13 +71,18 @@ __private void print_cmp_mirrors(mirror_s* mirrors){
 		if( len > maxlen ) maxlen = len;
 	}
 
+	//country
 	fputs("┌", stdout);
+	fputs("──────────┬", stdout);
+	//url
 	print_repeats(maxlen, "─");
 	fputs("┬", stdout);
-	for( unsigned i = 0; i < 7; ++i ) fputs("──────────┬", stdout);
+	//value
+	for( unsigned i = 0; i < 8; ++i ) fputs("──────────┬", stdout);
 	fputs("──────────┐", stdout);
 	putchar('\n');
-
+	
+	fputs("│ country  ", stdout);
 	fputs("│", stdout);
 	unsigned part = maxlen / 2 - strlen("mirror") / 2;
 	print_repeat(part, ' ');
@@ -91,18 +99,22 @@ __private void print_cmp_mirrors(mirror_s* mirrors){
 	fputs("newversion│", stdout);
 	fputs("   sync   │", stdout);
 	fputs("  speed   │", stdout);
+	fputs("  retry   │", stdout);
+
 	putchar('\n');
 
 	fputs("├", stdout);
+	print_repeats(10, "─");
+	fputs("┼", stdout);
 	print_repeats(maxlen, "─");
 	fputs("┼", stdout);
-	for( unsigned i = 0; i < 7; ++i ) fputs("──────────┼", stdout);
+	for( unsigned i = 0; i < 8; ++i ) fputs("──────────┼", stdout);
 	fputs("──────────┤", stdout);
 	putchar('\n');
 
-
 	mforeach(mirrors, i){
-		printf("│%-*s│", maxlen, mirrors[i].url);
+		printf("│%-10.10s│", mirrors[i].country);
+		printf("%-*s│", maxlen, mirrors[i].url);
 		if( mirrors[i].status == MIRROR_ERR   ){
 			fputs("   error  │", stdout);
 		}
@@ -120,17 +132,30 @@ __private void print_cmp_mirrors(mirror_s* mirrors){
 		const double acp = mirrors[i].checked * 100.0 / mirrors[i].totalpkg;
 		const double spe = mirrors[i].speed;
 
-		printf(" %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │%5.1fmib/s│\n", ood, utd, ats, amp, aep, acp, spe);
-		//printf("Server = %s/$repo/os/$arch\n", mirrors[i].url);
+		printf(" %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │%5.1fmib/s│    %2d    │\n", ood, utd, ats, amp, aep, acp, spe, mirrors[i].retry);
 	}
 
 	fputs("└", stdout);
+	print_repeats(10, "─");
+	fputs("┴", stdout);
 	print_repeats(maxlen, "─");
 	fputs("┴", stdout);
-	for( unsigned i = 0; i < 7; ++i ) fputs("──────────┴", stdout);
+	for( unsigned i = 0; i < 8; ++i ) fputs("──────────┴", stdout);
 	fputs("──────────┘", stdout);
 	putchar('\n');
 
+}
+
+__private void print_list(mirror_s* mirrors, const char* where){
+	FILE* out = strcmp(where, "stdout") ? fopen(where, "w") : stdout;
+	if( !out ) die("on open file: '%s' with error: %s", where, strerror(errno));
+	
+	mforeach(mirrors, i){
+		fprintf(out, "Server=%s/$repo/os/$arch\n", mirrors[i].url);
+	}
+
+
+	if( strcmp(where, "stdout") ) fclose(out);
 }
 
 int main(int argc, char** argv){
@@ -204,6 +229,8 @@ die("");
 
 	print_cmp_mirrors(mirrors);	
 	
+	if( opt[O_l].set ) print_list(mirrors, opt[O_l].value->str);
+
 	www_end();
 	return 0;
 }

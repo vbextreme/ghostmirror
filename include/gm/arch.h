@@ -26,6 +26,7 @@ typedef struct repo{
 
 typedef struct mirror{
 	mirrorStatus_e status;
+	const char*    country;
 	char*          url;
 	const char*    arch;
 	repo_s         repo[2];
@@ -37,6 +38,7 @@ typedef struct mirror{
 	unsigned       notexistspkg;
 	unsigned       extrapkg;
 	unsigned       checked;	
+	unsigned       retry;
 }mirror_s;
 
 char* mirror_loading(const char* fname, const unsigned tos);

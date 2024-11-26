@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.3.1')
+project('ghostmirror', 'c', version: '0.4.0')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,17 +10,17 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'autogit, first tag'
+  'dsc': '--list create a list with Server=mirror, country+retry in info'
 }
 
 if get_option('eveloper')
   if run_command('grep', meson.project_name() + ' v' + version['str'], './README.md', check: false).returncode() > 0
     run_command('sed', '-i', '-r', '-e', 's/^' + meson.project_name() + '[ \\t]*v(.*)/' + meson.project_name() + ' v' + version['str'] + '/', './README.md', check: true)
     run_command('sed', '-i', '-r', '-e', '0,/^\* v.*/{s/\*(.*)/\* v' + version['str'] + ' ' + version['dsc'] + '\\n\*\\1/}' , './README.md', check: true).stdout().strip()
+    run_command('git', 'commit', '-a', '-m', version['dsc'], check: true)
+    run_command('git', 'tag', '-a', 'v' + version['str'], '-m', version['dsc'], check: true)
+    run_command('git', 'push', '--tags', check: true)
   endif
-  run_command('git', 'commit', '-a', '-m', version['dsc'], check: true)
-  run_command('git', 'tag', '-a', 'v' + version['str'], '-m', version['dsc'], check: true)
-  run_command('git', 'push', '--tags', check: true)
 endif
 
 ###########
