@@ -353,3 +353,13 @@ void mem_zero(void* addr){
 	memset(addr, 0, size);
 }
 
+void* mem_nullterm(void* addr){
+	hmem_s* hm = givehm(addr);
+	if( hm->len + 1 > hm->size - sizeof(hmem_s) ){
+		addr = mem_realloc(addr, hm->len+1);
+		hm = givehm(addr);
+	}
+	((char*)addr)[hm->len] = 0;
+	return addr;
+}
+

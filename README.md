@@ -1,4 +1,4 @@
-ghostmirror v0.4.0
+ghostmirror v0.4.1
 ==================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.4.1 mem_nullterm better assign * v0.4.0 --list create a list with Server=mirror, country+retry in info to end of buffer, info stored in list, meson developer message
 * v0.4.0 --list create a list with Server=mirror, country+retry in info
 * v0.3.1 autogit, first tag
 * v0.3.0 sorting result

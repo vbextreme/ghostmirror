@@ -103,6 +103,7 @@ void* mem_index(void* mem, long index);
 
 void* mem_borrowed(void* mem);
 
+
 void mem_free(void* addr);
 
 //not use this, this is used for __free
@@ -139,7 +140,7 @@ int mem_check(void* addr);
 //memset(0)
 void mem_zero(void* addr);
 
-int mem_isheap(void* addr);
+void* mem_nullterm(void* addr);
 
 __unsafe_begin;
 __unsafe_unused_fn;

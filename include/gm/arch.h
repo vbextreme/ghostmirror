@@ -26,7 +26,7 @@ typedef struct repo{
 
 typedef struct mirror{
 	mirrorStatus_e status;
-	const char*    country;
+	char*          country;
 	char*          url;
 	const char*    arch;
 	repo_s         repo[2];

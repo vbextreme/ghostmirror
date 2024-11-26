@@ -14,9 +14,10 @@
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
-//	0.5.0 info stored in list, average value, display stored value
-//  0.5.1 full sort: outofdate, uptodate, morerecent, notexists, newversion, sync, speed, retry
-//  0.5.2 better progress?
+//  4.0.2 ? sync=0 when morerecent>0 is corrent? can try to chek in other mode?
+//  0.5.0 full sort: outofdate, uptodate, morerecent, notexists, newversion, sync, speed, retry
+//  0.5.1 better progress?
+//  0.5.2 colorized output
 //	0.6.0 add support to ftp
 //  0.7.0 --speed slow/normal/fast
 //  0.7.1 documentation
@@ -130,9 +131,8 @@ __private void print_cmp_mirrors(mirror_s* mirrors){
 		const double amp = mirrors[i].notexistspkg * 100.0 / mirrors[i].totalpkg;
 		const double aep = mirrors[i].extrapkg * 100.0 / mirrors[i].totalpkg;
 		const double acp = mirrors[i].checked * 100.0 / mirrors[i].totalpkg;
-		const double spe = mirrors[i].speed;
 
-		printf(" %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │%5.1fmib/s│    %2d    │\n", ood, utd, ats, amp, aep, acp, spe, mirrors[i].retry);
+		printf(" %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │%5.1fmib/s│    %2d    │\n", ood, utd, ats, amp, aep, acp, mirrors[i].speed, mirrors[i].retry);
 	}
 
 	fputs("└", stdout);
@@ -151,9 +151,15 @@ __private void print_list(mirror_s* mirrors, const char* where){
 	if( !out ) die("on open file: '%s' with error: %s", where, strerror(errno));
 	
 	mforeach(mirrors, i){
+		const double ood = mirrors[i].outofdatepkg * 100.0 / mirrors[i].totalpkg;
+		const double utd = mirrors[i].uptodatepkg  * 100.0 / mirrors[i].totalpkg;
+		const double ats = mirrors[i].syncdatepkg * 100.0 / mirrors[i].totalpkg;
+		const double amp = mirrors[i].notexistspkg * 100.0 / mirrors[i].totalpkg;
+		const double aep = mirrors[i].extrapkg * 100.0 / mirrors[i].totalpkg;
+		const double acp = mirrors[i].checked * 100.0 / mirrors[i].totalpkg;
+		fprintf(out, "#* '%s' %.2f%% %.2f%% %.2f%% %.2f%% %.2f%% %.2f%% %.1f %d\n", mirrors[i].country, ood, utd, ats, amp, aep, acp, mirrors[i].speed, mirrors[i].retry);
 		fprintf(out, "Server=%s/$repo/os/$arch\n", mirrors[i].url);
 	}
-
 
 	if( strcmp(where, "stdout") ) fclose(out);
 }

@@ -35,7 +35,7 @@ __private const char* SORTNAME[SORT_COUNT] = {
 
 __private char* REPO[] = { "core", "extra" };
 
-__private mirror_s* mirror_ctor(mirror_s* mirror, char* url, const char* arch, const char* country){
+__private mirror_s* mirror_ctor(mirror_s* mirror, char* url, const char* arch, char* country){
 	memset(mirror, 0, sizeof(mirror_s));
 	mirror->url     = url;
 	mirror->arch    = arch;
@@ -45,10 +45,13 @@ __private mirror_s* mirror_ctor(mirror_s* mirror, char* url, const char* arch, c
 	return mirror;
 }
 
-__private void* load_file(const char* fname){
+__private char* load_file(const char* fname, int exists){
 	dbg_info("loading %s", fname);
 	int fd = open(fname, O_RDONLY);
-	if( fd < 0 ) die("unable to open file: %s, error: %s", fname, strerror(errno));
+	if( fd < 0 ){
+		if( exists ) die("unable to open file: %s, error: %s", fname, strerror(errno));
+		return NULL;
+	}
 	char* buf = MANY(char, 4096);
 	ssize_t nr;
 	while( (nr=read(fd, &buf[mem_header(buf)->len], mem_available(buf))) > 0 ){
@@ -244,7 +247,7 @@ __private char** https_ls_parse(const char* str){
 __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned tos){
 	if( mirror->url[0] == '/' ){
 		__free char* url = str_printf("%s/%s.db", mirror->url, repo);
-		return load_file(url);
+		return load_file(url, 1);
 	}
 	else{
 		__free char* url = str_printf("%s/%s/os/%s/%s.db", mirror->url, repo, mirror->arch, repo);
@@ -330,10 +333,9 @@ void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownl
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){
-	char* buf = fname ? load_file(fname) :  www_mdownload_retry("https://archlinux.org/mirrorlist/all/", tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT);
+	char* buf = fname ? load_file(fname, 1) :  www_mdownload_retry("https://archlinux.org/mirrorlist/all/", tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT);
 	if( !buf ) die("unable to load mirrorlist");
-	buf = mem_upsize(buf,1);
-	buf[mem_header(buf)->len] = 0;
+	buf = mem_nullterm(buf);
 	return buf;
 }
 
@@ -350,12 +352,6 @@ __private const char* find_country(const char* str, const char* country){
 	die("country %s not exists", country);
 }
 
-__private const char* skip_n(const char* str){
-	str = strchrnul(str, '\n');
-	if( *str ) ++str;
-	return str;
-}
-
 __private char* server_url(const char** pline, int uncommented, int restrictcountry){
 	const char* line = *pline;
 
@@ -366,22 +362,22 @@ __private char* server_url(const char** pline, int uncommented, int restrictcoun
 
 		if( restrictcountry && !strncmp(line, "## ", 3) ) break;
 		
-		if( uncommented && *line == '#' ){ line = skip_n(line); continue; }
+		if( uncommented && *line == '#' ){ line = str_next_line(line); continue; }
 		if( *line == '#' ) ++line;
 
 		while( *line && *line == ' ' ) ++line;
-		if( strncmp(line, "Server", 6) ){ line = skip_n(line); continue; }
+		if( strncmp(line, "Server", 6) ){ line = str_next_line(line); continue; }
 		line += 6;
 		while( *line && *line == ' ' ) ++line;
-		if( *line != '=' ){ line = skip_n(line); continue; }
+		if( *line != '=' ){ line = str_next_line(line); continue; }
 		++line;
 		while( *line && *line == ' ' ) ++line;
 		const char* url = line;
 		const char* endurl = strpbrk(url, "$\n");
-		if( !endurl ){ line = skip_n(line); continue; }
+		if( !endurl ){ line = str_next_line(line); continue; }
 		if( *endurl == '\n' ){ ++line; continue; }
 		--endurl;
-		*pline = skip_n(endurl);
+		*pline = str_next_line(endurl);
 		return str_dup(url, endurl - url);
 	}
 	return NULL;
@@ -415,7 +411,9 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 
 	if( !mirrors ){
 		mirrors = MANY(mirror_s, 10);
-		__free char* localmirror = load_file(PACMAN_MIRRORLIST);
+		__free char* localmirror = load_file(PACMAN_MIRRORLIST, 1);
+		localmirror = mem_nullterm(localmirror);
+
 		url = server_url((const char**)&localmirror, 1, 0);
 		if( !url ) url = PACMAN_LOCAL_DB;
 		const unsigned id = mem_header(mirrors)->len++;
@@ -426,7 +424,7 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 	while( (url=server_url(&fromcountry, uncommented, country ? 1 : 0)) ){
 		mirrors = mem_upsize(mirrors, 1);
 		const unsigned id = mem_header(mirrors)->len++;
-		mirror_ctor(&mirrors[id], url, arch, country);
+		mirror_ctor(&mirrors[id], url, arch, (char*)country);
 	}
 
 	return mirrors;
@@ -592,16 +590,4 @@ void mirrors_speed(mirror_s* mirrors, const char* arch, int progress){
 
 	if( progress ) progress_end();
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
