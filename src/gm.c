@@ -14,7 +14,7 @@
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
-//  4.0.2 ? sync=0 when morerecent>0 is corrent? can try to chek in other mode?
+//  4.0.3 sync=0 when morerecent>0 is corrent? can try to chek in other mode?
 //  0.5.0 full sort: outofdate, uptodate, morerecent, notexists, newversion, sync, speed, retry
 //  0.5.1 better progress?
 //  0.5.2 colorized output

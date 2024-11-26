@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.4.1')
+project('ghostmirror', 'c', version: '0.4.2')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'mem_nullterm better assign \\0 to end of buffer, info stored in list, meson developer message'
+  'dsc': 'only for developer, auto follow tags'
 }
 
 if get_option('eveloper')
@@ -21,7 +21,7 @@ if get_option('eveloper')
     message('update git')
     run_command('git', 'commit', '-a', '-m', version['dsc'], check: true)
     run_command('git', 'tag', '-a', 'v' + version['str'], '-m', version['dsc'], check: true)
-    run_command('git', 'push', '--tags', check: true)
+    run_command('git', 'push', '--follow-tags', check: true)
   endif
 endif
 
