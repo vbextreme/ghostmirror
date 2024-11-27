@@ -14,8 +14,8 @@
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
-//  4.0.3 sync=0 when morerecent>0 is corrent? can try to chek in other mode?
-//  0.5.0 full sort: outofdate, uptodate, morerecent, notexists, newversion, sync, speed, retry
+//  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
+//
 //  0.5.1 better progress?
 //  0.5.2 colorized output
 //	0.6.0 add support to ftp
@@ -52,7 +52,7 @@ option_s OPT[] = {
 	{'o', "--timeout"     , "set timeout in seconds for not reply mirror, default '20's"         , OPT_NUM  , 0, 0},
 	{'p', "--progress"    , "show progress, default false"                                       , OPT_NOARG, 0, 0},
 	{'s', "--speed"       , "test speed for downloading one pkg"                                 , OPT_NOARG, 0, 0},
-	{'S', "--sort"        , "sort result for any or more value: outofdate, uptodate, sync, speed", OPT_ARRAY | OPT_STR, 0, 0},
+	{'S', "--sort"        , "sort result for any of fields, mutiple fields supported"             , OPT_ARRAY | OPT_STR, 0, 0},
 	{'l', "--list"        , "create a file with list of mirrors, stdout as arg for output here"  , OPT_STR, 0, 0},
 	{'h', "--help"        , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };

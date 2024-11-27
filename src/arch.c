@@ -21,16 +21,23 @@
 typedef enum {
 	SORT_OUTOFDATE,
 	SORT_UPTODATE,
+	SORT_MORERECENT,
+	SORT_NOEXISTS,
+	SORT_NEWVERSION,
 	SORT_SYNC,
 	SORT_SPEED,
+	SORT_RETRY,
 	SORT_COUNT
 }sort_e;
 
 __private const char* SORTNAME[SORT_COUNT] = {
 	"outofdate",
 	"uptodate",
+	"morerecent",
+	"newversion",
 	"sync",
-	"speed"
+	"speed",
+	"retry"
 };
 
 __private char* REPO[] = { "core", "extra" };
@@ -511,10 +518,14 @@ __private unsigned sortcount;
 
 __private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const sort_e sort){
 	switch(sort){
-		case SORT_OUTOFDATE: return a->outofdatepkg - b->outofdatepkg;
-		case SORT_UPTODATE : return b->uptodatepkg - a->uptodatepkg;
-		case SORT_SYNC     : return b->syncdatepkg - a->syncdatepkg;
-		case SORT_SPEED    :
+		case SORT_OUTOFDATE : return a->outofdatepkg - b->outofdatepkg;
+		case SORT_UPTODATE  : return b->uptodatepkg - a->uptodatepkg;
+		case SORT_MORERECENT: return b->syncdatepkg - a->syncdatepkg;
+		case SORT_NOEXISTS  : return a->notexistspkg - b->notexistspkg;
+		case SORT_NEWVERSION: return b->extrapkg - a->extrapkg;
+		case SORT_SYNC      : return b->checked - a->checked;
+		case SORT_RETRY     : return b->retry - a->retry;
+		case SORT_SPEED     :
 			if( a->speed > b->speed ) return -1;
 			if( a->speed < b->speed ) return 1;
 			return 0;

@@ -1,4 +1,4 @@
-ghostmirror v0.4.2
+ghostmirror v0.5.0
 ==================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.5.0 add all fields sorting
 * v0.4.2 only for developer, auto follow tags
 * v0.4.1 mem nullterm, info stored in list, meson developer message
 * v0.4.0 --list create a list with Server=mirror, country+retry in info
