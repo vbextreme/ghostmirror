@@ -318,8 +318,8 @@ __private void progress_refresh(const char* desc, unsigned value, unsigned count
 	write(2, out, n);
 }
 
-__private void progress_end(){
-	fputc('\n', stderr);
+__private void progress_end(const char* desc){
+	fprintf(stderr, "\r[100.0%%] %s\n", desc);
 	fflush(stderr);
 }
 
@@ -336,7 +336,7 @@ void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownl
 		if( progress ) progress_refresh("mirrors updates", ++pvalue, count);
 	}
 
-	if( progress ) progress_end();
+	if( progress ) progress_end("mirrors updates");
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){
@@ -412,7 +412,7 @@ __private char* server_find_country(const char* url, const char* mirrorlist){
 	return back_start_country_mark(loc, mirrorlist);
 }
 
-mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* country, const char* arch, int uncommented){
+mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented){
 	char* url;
 	const char* fromcountry = country ? find_country(mirrorlist, country) : mirrorlist;
 
@@ -424,14 +424,15 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 		url = server_url((const char**)&localmirror, 1, 0);
 		if( !url ) url = PACMAN_LOCAL_DB;
 		const unsigned id = mem_header(mirrors)->len++;
-		mirror_ctor(&mirrors[id], url, arch, server_find_country(url, mirrorlist));
+		mirror_ctor(&mirrors[id], url, arch, server_find_country(url, safemirrorlist));
 		mirrors[id].status  = MIRROR_LOCAL;
 	}
 
 	while( (url=server_url(&fromcountry, uncommented, country ? 1 : 0)) ){
 		mirrors = mem_upsize(mirrors, 1);
 		const unsigned id = mem_header(mirrors)->len++;
-		mirror_ctor(&mirrors[id], url, arch, (char*)country);
+		char* fcountry = country ? (char*)country : server_find_country(url, safemirrorlist);
+		mirror_ctor(&mirrors[id], url, arch, fcountry);
 	}
 
 	return mirrors;
@@ -509,7 +510,7 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 		if( progress ) progress_refresh("mirrors db compare", i, count);
 	}
 	
-	if( progress ) progress_end();
+	if( progress ) progress_end("mirrors db compare");
 	dbg_info("end compare mirror database");
 }
 
@@ -599,6 +600,6 @@ void mirrors_speed(mirror_s* mirrors, const char* arch, int progress){
 		if( progress ) progress_refresh("mirrors speed", i, count);
 	}
 
-	if( progress ) progress_end();
+	if( progress ) progress_end("mirrors speed");
 }
 

@@ -16,7 +16,6 @@
 //TODO
 //  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
 //
-//  0.5.1 better progress?
 //  0.5.2 colorized output
 //	0.6.0 add support to ftp
 //  0.7.0 --speed slow/normal/fast
@@ -204,7 +203,8 @@ print_cmp_mirrors(mirrors);
 die("");
 */
 
-	__free char* mirrorlist = mirror_loading(opt[O_m].value->str, opt[O_o].value->ui);
+	__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_o].value->ui);
+	__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_o].value->ui) : str_dup(mirrorlist, 0);
 
 	if( opt[O_C].set ){
 		country_list(mirrorlist);
@@ -214,11 +214,11 @@ die("");
 	mirror_s* mirrors = NULL;
 	if( opt[O_c].set ){
 		mforeach(opt[O_c].value, i){
-			mirrors = mirrors_country(mirrors, mirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set);
+			mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set);
 		}
 	}
 	else{
-		mirrors = mirrors_country(mirrors, mirrorlist, NULL, opt[O_a].value->str, opt[O_u].set);
+		mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set);
 	}
 	
 	mirrors_update(mirrors, opt[O_p].set, opt[O_t].value->ui, opt[O_o].value->ui);	
