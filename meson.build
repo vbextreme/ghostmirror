@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.5.3.2')
+project('ghostmirror', 'c', version: '0.5.4')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'aur'
+  'dsc': 'upload on aur'
 }
 
 if get_option('eveloper')
@@ -26,8 +26,8 @@ if get_option('eveloper')
     run_command('sed', '-i', '-r', '-e', 's/^pkgver=\'([^\']+)\'/pkgver=\'' + version['str'] + '\'/', './distro/PKGBUILD', check: true)
     run_command('cp', './distro/PKGBUILD', './distro/ghostmirror/PKGBUILD', check: true)
     run_command('bash', '-c', 'makepkg -D ./distro --printsrcinfo > ./distro/ghostmirror/.SRCINFO', check: true)
-    #run_command('git', '-C', './distro/ghostmirror', 'commit', '-a', '-m', version['dsc'], check: true)
-    #run_command('git', '-C', './distro/ghostmirror', 'push', check: true)
+    run_command('git', '-C', './distro/ghostmirror', 'commit', '-a', '-m', version['dsc'], check: true)
+    run_command('git', '-C', './distro/ghostmirror', 'push', check: true)
   endif
 endif
 
