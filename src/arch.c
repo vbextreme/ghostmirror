@@ -20,7 +20,6 @@ __private const char* SORTNAME[FIELD_COUNT] = {
 	"outofdate",
 	"uptodate",
 	"morerecent",
-	"newversion",
 	"sync",
 	"retry",
 	"speed"
@@ -510,7 +509,7 @@ __private field_e sortmode[FIELD_COUNT];
 __private unsigned sortcount;
 
 __private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const field_e sort){
-	static int ascdsc[FIELD_COUNT] = { 1, 0, 0, 1, 0, 0, 0 };
+	static int ascdsc[FIELD_COUNT] = { 1, 0, 0, 0, 1, 0, 0 };
 	iassert(sort < FIELD_TOTAL);
 	if( sort == FIELD_VIRTUAL_SPEED ){
 		if( a->speed > b->speed ) return -1;
