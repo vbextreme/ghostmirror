@@ -1,4 +1,4 @@
-ghostmirror v0.5.3
+ghostmirror v0.5.3.1
 ==================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.5.3.1 aur
 * v0.5.3 colorized output, switch to array fields, compact table code, remove some magic
 * v0.5.2 colorized output, switch to array fields, compact table code, remove some magic
 * v0.5.1 better progress, if not country set mirrors country is search on remote mirrorlist
