@@ -95,7 +95,6 @@ void mem_begin(void){
 }
 
 __private inline hmem_s* givehm(void* addr){
-	iassert(isheap(addr));
 	hmem_s* hm = ADDR_TO_HMEM(addr);
 	iassert(HMEM_CHECK(hm));
 	return hm;
