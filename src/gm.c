@@ -8,6 +8,7 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <math.h>
 
 #define DEFAULT_THREADS 4
 #define DEFAULT_TOUT    20
@@ -16,7 +17,7 @@
 //TODO
 //  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
 //
-//  0.5.2 colorized output
+//  0.5.3 aur
 //	0.6.0 add support to ftp
 //  0.7.0 --speed slow/normal/fast
 //  0.7.1 documentation
@@ -25,6 +26,25 @@
 //  0.7.4 makepkg
 //  0.8.0 ?possible way to add tollerance to sorting data?
 //  1.0.0 first release?
+
+static unsigned COLORS[][6] = { 
+	{   1, 196, 226, 190,  48,  46 }, // red to green
+	{  46,  48, 190, 226, 196,   1 }, // green to red
+	{   1, 196, 226, 190,  48,  46 }, // red to green
+	{  23,  24,  25,  26,  27,  46 }, // for colorize value have only good result
+	{  46, 226,   1,   1,   1,   1 }, // retry color, green yellow red...
+	{   1, 196, 226, 190,  48,  46 }  // red to green
+};
+static double CMAP[][6] = {
+	{ 97.5, 98.0, 98.5, 99.0, 99.5, 100.0 },
+	{  0.3,  0.6,  1.0,  1.2,  1.5,   2.0 },
+	{ 93.0, 93.5, 94.0, 94.5, 95.0, 100.0 },
+	{  0.5,  1.0,  2.0,  3.0,  4.0,   5.0 },
+	{  1.0,  2.0,  3.0,  4.0,  5.0,   6.0 }, 
+	{  1.0,  1.5,  2.0,  3.0,  6.5,  10.0 }
+};
+static unsigned CERR = 1;
+static unsigned CSTATUS[] = { 230, 118, 1 };
 
 typedef enum{
 	O_a,
@@ -35,6 +55,7 @@ typedef enum{
 	O_t,
 	O_o,
 	O_p,
+	O_P,
 	O_s,
 	O_S,
 	O_l,
@@ -42,107 +63,194 @@ typedef enum{
 }OPT_E;
 
 option_s OPT[] = {
-	{'a', "--arch"        , "select arch, default 'x86_64'"                                      , OPT_STR  , 0, 0}, 
-	{'m', "--mirrorfile"  , "use mirror file instead of downloading mirrorlist"                  , OPT_STR  , 0, 0},
-	{'c', "--country"     , "select country from mirrorlist"                                     , OPT_ARRAY | OPT_STR  , 0, 0},
-	{'C', "--country-list", "show all possibile country"                                         , OPT_NOARG, 0, 0},
-	{'u', "--uncommented" , "use only uncommented mirror"                                        , OPT_NOARG, 0, 0},
-	{'t', "--threads"     , "set numbers of parallel download, default '4'"                      , OPT_NUM  , 0, 0},
-	{'o', "--timeout"     , "set timeout in seconds for not reply mirror, default '20's"         , OPT_NUM  , 0, 0},
-	{'p', "--progress"    , "show progress, default false"                                       , OPT_NOARG, 0, 0},
-	{'s', "--speed"       , "test speed for downloading one pkg"                                 , OPT_NOARG, 0, 0},
-	{'S', "--sort"        , "sort result for any of fields, mutiple fields supported"             , OPT_ARRAY | OPT_STR, 0, 0},
-	{'l', "--list"        , "create a file with list of mirrors, stdout as arg for output here"  , OPT_STR, 0, 0},
-	{'h', "--help"        , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
+	{'a', "--arch"           , "select arch, default 'x86_64'"                                      , OPT_STR  , 0, 0}, 
+	{'m', "--mirrorfile"     , "use mirror file instead of downloading mirrorlist"                  , OPT_STR  , 0, 0},
+	{'c', "--country"        , "select country from mirrorlist"                                     , OPT_ARRAY | OPT_STR  , 0, 0},
+	{'C', "--country-list"   , "show all possibile country"                                         , OPT_NOARG, 0, 0},
+	{'u', "--uncommented"    , "use only uncommented mirror"                                        , OPT_NOARG, 0, 0},
+	{'t', "--threads"        , "set numbers of parallel download, default '4'"                      , OPT_NUM  , 0, 0},
+	{'o', "--timeout"        , "set timeout in seconds for not reply mirror, default '20's"         , OPT_NUM  , 0, 0},
+	{'p', "--progress"       , "show progress, default false"                                       , OPT_NOARG, 0, 0},
+	{'P', "--progress-colors", "same -p but with colors"                                            , OPT_NOARG, 0, 0},
+	{'s', "--speed"          , "test speed for downloading one pkg"                                 , OPT_NOARG, 0, 0},
+	{'S', "--sort"           , "sort result for any of fields, mutiple fields supported"            , OPT_ARRAY | OPT_STR, 0, 0},
+	{'l', "--list"           , "create a file with list of mirrors, stdout as arg for output here"  , OPT_STR, 0, 0},
+	{'h', "--help"           , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
 
-__private void print_repeat(unsigned count, char ch){
-	while( count --> 0 ) putchar(ch);
+__private void colorfg_set(unsigned color){
+	if( !color ){
+		fputs("\033[0m", stdout);
+	}
+	else{
+		printf("\033[38;5;%um", color);
+	}
 }
 
 __private void print_repeats(unsigned count, const char* ch){
+	if( !count ) return;
 	while( count --> 0 ) fputs(ch, stdout);
 }
 
-__private void print_cmp_mirrors(mirror_s* mirrors){
-	unsigned maxlen = 0;
-	mforeach(mirrors, i){
-		size_t len = strlen(mirrors[i].url);
-		if( len > maxlen ) maxlen = len;
-	}
+__private void print_repeat(unsigned count, const char ch){
+	if( !count ) return;
+	while( count --> 0 ) fputc(ch, stdout);
+}
 
-	//country
+__private void print_table_header(char** colname, unsigned* colsize, unsigned count, int color){
 	fputs("┌", stdout);
-	fputs("──────────┬", stdout);
-	//url
-	print_repeats(maxlen, "─");
-	fputs("┬", stdout);
-	//value
-	for( unsigned i = 0; i < 8; ++i ) fputs("──────────┬", stdout);
-	fputs("──────────┐", stdout);
-	putchar('\n');
+	for( unsigned i = 0; i < count - 1; ++i ){
+		print_repeats(colsize[i], "─");
+		fputs("┬", stdout);	
+	}
+	print_repeats(colsize[count-1], "─");
+	fputs("┐\n", stdout);
 	
-	fputs("│ country  ", stdout);
 	fputs("│", stdout);
-	unsigned part = maxlen / 2 - strlen("mirror") / 2;
-	print_repeat(part, ' ');
-	fputs("mirror", stdout);
-	part +=6;
-	if( part < maxlen ) part = maxlen-part;
-	print_repeat(part, ' ');
-	fputs("│", stdout);
-	fputs("   state  │", stdout);
-	fputs("outofdate │", stdout);
-	fputs(" uptodate │", stdout);
-	fputs("morerecent│", stdout);
-	fputs("not exists│", stdout);
-	fputs("newversion│", stdout);
-	fputs("   sync   │", stdout);
-	fputs("  speed   │", stdout);
-	fputs("  retry   │", stdout);
-
-	putchar('\n');
-
-	fputs("├", stdout);
-	print_repeats(10, "─");
-	fputs("┼", stdout);
-	print_repeats(maxlen, "─");
-	fputs("┼", stdout);
-	for( unsigned i = 0; i < 8; ++i ) fputs("──────────┼", stdout);
-	fputs("──────────┤", stdout);
-	putchar('\n');
-
-	mforeach(mirrors, i){
-		printf("│%-10.10s│", mirrors[i].country);
-		printf("%-*s│", maxlen, mirrors[i].url);
-		if( mirrors[i].status == MIRROR_ERR   ){
-			fputs("   error  │", stdout);
-		}
-		else if( mirrors[i].status == MIRROR_LOCAL ){
-			fputs("  current │", stdout);
-		}
-		else{
-			fputs("  success │", stdout);
-		}
-		const double ood = mirrors[i].outofdatepkg * 100.0 / mirrors[i].totalpkg;
-		const double utd = mirrors[i].uptodatepkg  * 100.0 / mirrors[i].totalpkg;
-		const double ats = mirrors[i].syncdatepkg * 100.0 / mirrors[i].totalpkg;
-		const double amp = mirrors[i].notexistspkg * 100.0 / mirrors[i].totalpkg;
-		const double aep = mirrors[i].extrapkg * 100.0 / mirrors[i].totalpkg;
-		const double acp = mirrors[i].checked * 100.0 / mirrors[i].totalpkg;
-
-		printf(" %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │ %6.2f%%  │%5.1fmib/s│    %2d    │\n", ood, utd, ats, amp, aep, acp, mirrors[i].speed, mirrors[i].retry);
+	for( unsigned i = 0; i < count; ++i ){
+		const unsigned len = strlen(colname[i]);
+		const unsigned left  = colsize[i] > len ? (colsize[i] - len) / 2: 0;
+		const unsigned right = colsize[i] > left+len ? colsize[i] - (left+len): 0;
+		print_repeat(left, ' ');
+		if( color >= 0 ) colorfg_set(208);
+		printf("%s", colname[i]);
+		if( color >= 0 ) colorfg_set(0);
+		print_repeat(right, ' ');
+		fputs("│", stdout);
 	}
 
-	fputs("└", stdout);
-	print_repeats(10, "─");
-	fputs("┴", stdout);
-	print_repeats(maxlen, "─");
-	fputs("┴", stdout);
-	for( unsigned i = 0; i < 8; ++i ) fputs("──────────┴", stdout);
-	fputs("──────────┘", stdout);
-	putchar('\n');
+	fputs("\n├", stdout);
+	for( unsigned i = 0; i < count - 1; ++i ){
+		print_repeats(colsize[i], "─");
+		fputs("┼", stdout);	
+	}
+	print_repeats(colsize[count-1], "─");
+	fputs("┤\n", stdout);
+}
 
+__private void print_table_end(unsigned* colsize, unsigned count){
+	fputs("└", stdout);
+	for( unsigned i = 0; i < count - 1; ++i ){
+		print_repeats(colsize[i], "─");
+		fputs("┴", stdout);
+	}
+	print_repeats(colsize[count-1], "─");
+	fputs("┘\n", stdout);
+}
+
+__private unsigned double_color_map(double v, unsigned palette){
+	if( isnan(v) || isinf(v) ) return CERR;
+	for( unsigned i = 0; i < sizeof_vector(CMAP[0]); ++i ){
+		if( v < CMAP[palette][i]  ) return COLORS[palette][i];
+	}
+	return COLORS[palette][sizeof_vector(COLORS[0])-1];
+}
+
+__private void print_double_field(double val, unsigned size, int colormode){
+	const unsigned left  = (size - 7) / 2;
+	const unsigned right = size - (left+7);
+
+	print_repeat(left, ' ');
+	if( colormode < 0 ){
+		printf("%6.2f%%", val);
+	}
+	else{
+		colormode = double_color_map(val, colormode);
+		colorfg_set(colormode);
+		printf("%6.2f%%",val);
+		colorfg_set(0);
+	}
+	print_repeat(right, ' ');
+	fputs("│", stdout);
+}
+
+__private void print_unsigned_field(unsigned val, unsigned size, int colormode){
+	const unsigned left  = (size - 2) / 2;
+	const unsigned right = size - (left+2);
+
+	print_repeat(left, ' ');
+	if( colormode < 0 ){
+		printf("%2u", val);
+	}
+	else{
+		colormode = double_color_map(val, colormode);
+		colorfg_set(colormode);
+		printf("%2u",val);
+		colorfg_set(0);
+	}
+	print_repeat(right, ' ');
+	fputs("│", stdout);
+}
+
+__private void print_status(mirrorStatus_e status, unsigned size, int color){
+	static const char* mstate[] = {"success", "local", "error"};
+	if( color >= 0 ) colorfg_set(CSTATUS[status]);
+	printf("%-*s", size, mstate[status]);
+	if( color >= 0 ) colorfg_set(0);
+	fputs("│", stdout);
+}
+
+__private void print_str(const char* str, mirrorStatus_e status, unsigned size, int color){
+	if( !str || *str == 0 ) str = "unknow";
+	if( color >= 0 ) colorfg_set(CSTATUS[status]);
+	printf("%-*s", size, str);
+	if( color >= 0 ) colorfg_set(0);
+	fputs("│", stdout);
+}
+
+__private void print_speed(double val, unsigned size, int colormode){
+	const unsigned left  = (size - 10) / 2;
+	const unsigned right = size - (left+10);
+
+	print_repeat(left, ' ');
+	if( colormode < 0 ){
+		printf("%5.1fMiB/s", val);
+	}
+	else{
+		colormode = double_color_map(val, colormode);
+		colorfg_set(colormode);
+		printf("%5.1fMiB/s",val);
+		colorfg_set(0);
+	}
+	print_repeat(right, ' ');
+	fputs("│", stdout);
+}
+
+__private void print_cmp_mirrors(mirror_s* mirrors, int colors){
+	unsigned mlUrl     = 6;
+	unsigned mlCountry = 7;
+	mforeach(mirrors, i){
+		if( mirrors[i].url ){
+			const size_t len = strlen(mirrors[i].url);
+			if( len > mlUrl ) mlUrl = len;
+		}
+		if( mirrors[i].country ){
+			const size_t len = strlen(mirrors[i].country);
+			if( len > mlCountry ) mlCountry = len;
+		}
+	}
+
+	colors = colors ? 0 : -1000;
+	char* tblname[]    = { "country", "mirror",  "state", "outofdate", "uptodate", "morerecent", "not exists", "newversion",   "sync",  "retry", "speed" };
+	unsigned tblsize[] = { mlCountry,    mlUrl,        9,           9,          9,           10,           10,           10,        9,        7,      12 };
+	unsigned tblcolor[]= {  colors+0, colors+0, colors+0,    colors+1,   colors+0,     colors+3,     colors+3,     colors+3, colors+2, colors+4, colors+5};
+	print_table_header(tblname, tblsize, sizeof_vector(tblsize), colors);
+	
+	mforeach(mirrors, i){
+		fputs("│", stdout);
+		print_str(mirrors[i].country, mirrors[i].status, tblsize[0], tblcolor[0]);
+		print_str(mirrors[i].url, mirrors[i].status, tblsize[1], tblcolor[1]);
+		print_status(mirrors[i].status, tblsize[2], tblcolor[2]);
+		for( unsigned j = 0; j < FIELD_RETRY; ++j ){
+			const double val = mirrors[i].rfield[j] * 100.0 / mirrors[i].rfield[FIELD_TOTAL];
+			print_double_field(val, tblsize[j+3], tblcolor[j+3]);
+		}
+		print_unsigned_field(mirrors[i].rfield[FIELD_RETRY], tblsize[9], tblcolor[9]);
+		print_speed(mirrors[i].speed, tblsize[10], tblcolor[10]);
+		fputc('\n', stdout);
+	}
+
+	print_table_end(tblsize, sizeof_vector(tblsize));
 }
 
 __private void print_list(mirror_s* mirrors, const char* where){
@@ -150,16 +258,13 @@ __private void print_list(mirror_s* mirrors, const char* where){
 	if( !out ) die("on open file: '%s' with error: %s", where, strerror(errno));
 	
 	mforeach(mirrors, i){
-		const double ood = mirrors[i].outofdatepkg * 100.0 / mirrors[i].totalpkg;
-		const double utd = mirrors[i].uptodatepkg  * 100.0 / mirrors[i].totalpkg;
-		const double ats = mirrors[i].syncdatepkg * 100.0 / mirrors[i].totalpkg;
-		const double amp = mirrors[i].notexistspkg * 100.0 / mirrors[i].totalpkg;
-		const double aep = mirrors[i].extrapkg * 100.0 / mirrors[i].totalpkg;
-		const double acp = mirrors[i].checked * 100.0 / mirrors[i].totalpkg;
-		fprintf(out, "#* '%s' %.2f%% %.2f%% %.2f%% %.2f%% %.2f%% %.2f%% %.1f %d\n", mirrors[i].country, ood, utd, ats, amp, aep, acp, mirrors[i].speed, mirrors[i].retry);
+		fprintf(out, "#* '%s'", mirrors[i].country);
+		for( unsigned j = 0; j < FIELD_VIRTUAL_SPEED; ++j ){
+			fprintf(out, " %u", mirrors[i].rfield[j]);
+		}
+		fprintf(out, " %f\n", mirrors[i].speed);
 		fprintf(out, "Server=%s/$repo/os/$arch\n", mirrors[i].url);
 	}
-
 	if( strcmp(where, "stdout") ) fclose(out);
 }
 
@@ -177,34 +282,72 @@ int main(int argc, char** argv){
 
 	www_begin();
 /*
- * DBG print
-mirror_s* mirrors = MANY(mirror_s, 16);
-mem_header(mirrors)->len = 3;
-mem_zero(mirrors);
-mirrors[0].url = "https://packages.oth-regensburg.de/archlinux";
-mirrors[0].outofdatepkg = 0;
-mirrors[0].uptodatepkg = 10;
-mirrors[0].syncdatepkg = 0;
-mirrors[0].totalpkg    = 6;
-mirrors[0].speed = 3.0;
-mirrors[1].url = "https://packages.oth-regensburg.it/archlinux";
-mirrors[1].outofdatepkg = 3;
-mirrors[1].uptodatepkg = 5;
-mirrors[1].syncdatepkg = 2;
-mirrors[1].totalpkg    = 10;
-mirrors[1].speed = 7.0;
-mirrors[2].url = "https://packages.oth-regensburg.it";
-mirrors[2].outofdatepkg = 0;
-mirrors[2].uptodatepkg = 7;
-mirrors[2].syncdatepkg = 3;
-mirrors[2].speed = 7.0;
-mirrors[2].totalpkg = 10;
-print_cmp_mirrors(mirrors);	
+for( double val = 100.0; val > 95.0; val -= 0.5){
+	unsigned c = double_color_map(val, 0);
+	colorfg_set(c);
+	printf("%f", val);
+	colorfg_set(0);
+	puts("");
+}
+for( double val = 0.0; val < 3; val += 0.1){
+	unsigned c = double_color_map(val, 1);
+	colorfg_set(c);
+	printf("%f", val);
+	colorfg_set(0);
+	puts("");
+}
+for( double val = 100; val > 90; val -= 0.5){
+	unsigned c = double_color_map(val, 2);
+	colorfg_set(c);
+	printf("%f", val);
+	colorfg_set(0);
+	puts("");
+}
 die("");
 */
-
+/*
+mirror_s* mirrors = MANY(mirror_s, 16);
+mem_header(mirrors)->len = 6;
+mem_zero(mirrors);
+mirrors[0].url = "https://uptodate";
+mirrors[0].rfield[FIELD_UPTODATE]   = 100;
+mirrors[0].rfield[FIELD_TOTAL]      = 100;
+mirrors[0].speed = 0.5;
+mirrors[0].status = MIRROR_LOCAL;
+mirrors[1].url = "https://morerecent";
+mirrors[1].rfield[FIELD_UPTODATE]   = 98;
+mirrors[1].rfield[FIELD_MORERECENT] = 2;
+mirrors[1].rfield[FIELD_TOTAL]      = 100;
+mirrors[1].speed = 1.2;
+mirrors[2].url = "https://outofdate";
+mirrors[2].rfield[FIELD_OUTOFDATE]  = 20;
+mirrors[2].rfield[FIELD_UPTODATE]   = 80;
+mirrors[2].rfield[FIELD_TOTAL]      = 100;
+mirrors[2].speed = 1.7;
+mirrors[3].url = "https://noexists";
+mirrors[3].rfield[FIELD_NOEXISTS]   = 20;
+mirrors[3].rfield[FIELD_UPTODATE]   = 80;
+mirrors[3].rfield[FIELD_TOTAL]      = 100;
+mirrors[3].speed = 2.5;
+mirrors[4].url = "https://newversion";
+mirrors[4].rfield[FIELD_NEWVERSION] = 20;
+mirrors[4].rfield[FIELD_UPTODATE]   = 80;
+mirrors[4].rfield[FIELD_TOTAL]      = 100;
+mirrors[4].speed = 5.0;
+mirrors[5].url = "https://sync";
+mirrors[5].rfield[FIELD_SYNC]       = 94;
+mirrors[5].rfield[FIELD_UPTODATE]   = 100;
+mirrors[5].rfield[FIELD_TOTAL]      = 100;
+mirrors[5].rfield[FIELD_RETRY]      = 3;
+mirrors[5].speed = 7.0;
+mirrors[5].status = MIRROR_ERR;
+print_cmp_mirrors(mirrors,1);	
+die("");
+*/
 	__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_o].value->ui);
 	__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_o].value->ui) : str_dup(mirrorlist, 0);
+	
+	if( opt[O_P].set ) opt[O_p].set = 1;
 
 	if( opt[O_C].set ){
 		country_list(mirrorlist);
@@ -233,7 +376,7 @@ die("");
 		mirrors_sort(mirrors);
 	}
 
-	print_cmp_mirrors(mirrors);	
+	print_cmp_mirrors(mirrors, opt[O_P].set);
 	
 	if( opt[O_l].set ) print_list(mirrors, opt[O_l].value->str);
 

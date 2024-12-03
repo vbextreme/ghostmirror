@@ -7,6 +7,7 @@
 #define __wcc __cleanup(www_curl_cleanup)
 
 #define WWW_ERROR_HTTP 10000
+#define WWW_BUFFER_SIZE 1024
 
 __thread int wwwerrno;
 
@@ -91,7 +92,7 @@ __private int www_curl_perform(CURL* ch){
 void* www_mdownload(const char* url, unsigned touts){
 	dbg_info("'%s'", url);
 	__wcc CURL* ch = www_curl_new(url);
-	__free uint8_t* data = MANY(uint8_t, 1024);
+	__free uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
 	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);
 	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &data);
 	if( touts ) curl_easy_setopt(ch, CURLOPT_TIMEOUT, touts);
@@ -109,7 +110,7 @@ void* www_mdownload_retry(const char* url, unsigned touts, unsigned retry, unsig
 
 char* www_header_get(const char* url, unsigned touts){
 	__wcc CURL* ch = www_curl_new(url);
-	__free uint8_t* data = MANY(uint8_t, 1024);
+	__free uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
 	curl_easy_setopt(ch, CURLOPT_HEADER, 1L);
     curl_easy_setopt(ch, CURLOPT_NOBODY, 1L);
 	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);

@@ -13,31 +13,17 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define DOWNLOAD_RETRY    3
-#define DOWNLOAD_WAIT     1000
 #define PACMAN_MIRRORLIST "/etc/pacman.d/mirrorlist"
 #define PACMAN_LOCAL_DB   "/var/lib/pacman/sync"
 
-typedef enum {
-	SORT_OUTOFDATE,
-	SORT_UPTODATE,
-	SORT_MORERECENT,
-	SORT_NOEXISTS,
-	SORT_NEWVERSION,
-	SORT_SYNC,
-	SORT_SPEED,
-	SORT_RETRY,
-	SORT_COUNT
-}sort_e;
-
-__private const char* SORTNAME[SORT_COUNT] = {
+__private const char* SORTNAME[FIELD_COUNT] = {
 	"outofdate",
 	"uptodate",
 	"morerecent",
 	"newversion",
 	"sync",
-	"speed",
-	"retry"
+	"retry",
+	"speed"
 };
 
 __private char* REPO[] = { "core", "extra" };
@@ -294,7 +280,7 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 		}
 
 		mem_qsort(mirror->repo[ir].db, pkgname_cmp);
-		mirror->totalpkg += mem_header(mirror->repo[ir].db)->len;
+		mirror->rfield[FIELD_TOTAL] += mem_header(mirror->repo[ir].db)->len;
 
 		__free char* rls = get_mirror_ls(mirror, REPO[ir], tos);
 		if( rls ){
@@ -459,24 +445,27 @@ __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 		mforeach(local->repo[ir].db, i){
 			pkgdesc_s* tpk = mem_bsearch(test->repo[ir].db, &local->repo[ir].db[i], pkgname_cmp);
 			if( !tpk ){
-				++test->notexistspkg;
+				++test->rfield[FIELD_NOEXISTS];
 			}
 			else{
 				int ret = pkg_vercmp(local->repo[ir].db[i].version, tpk->version);
 				switch( ret ){
-					case -1: ++test->syncdatepkg; break;
-					case  1: ++test->outofdatepkg; break;
-					case  0: ++test->uptodatepkg; break;
+					case -1: ++test->rfield[FIELD_MORERECENT]; break;
+					case  1: ++test->rfield[FIELD_OUTOFDATE]; break;
+					case  0: ++test->rfield[FIELD_UPTODATE]; break;
 				}
 				if( test->repo[ir].ls && mem_bsearch(test->repo[ir].ls, tpk->filename, lsname_cmp2) ){
-					++test->checked;
+					++test->rfield[FIELD_SYNC];
 				}
 			}
 		}
 	}
 	
-	unsigned managed = test->syncdatepkg + test->outofdatepkg + test->uptodatepkg + test->notexistspkg;
-	if( managed < test->totalpkg ) test->extrapkg = test->totalpkg - managed;
+	unsigned managed = 0;
+	for( unsigned i = 0; i < FIELD_NEWVERSION; ++i ){
+		managed += test->rfield[i];
+	}
+	if( managed < test->rfield[FIELD_TOTAL] ) test->rfield[FIELD_NEWVERSION] = test->rfield[FIELD_TOTAL] - managed;
 }
 
 void mirrors_cmp_db(mirror_s* mirrors, const int progress){
@@ -487,12 +476,12 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	for( unsigned i = 0; i < count; ++i ){
 		if( mirrors[i].status == MIRROR_LOCAL ){
 			local = &mirrors[i];
-			local->uptodatepkg = local->totalpkg;
+			local->rfield[FIELD_UPTODATE] = local->rfield[FIELD_TOTAL];
 			const unsigned repocount = sizeof_vector(REPO);
 			for( unsigned ir = 0; ir < repocount; ++ir ){
 				if( local->repo[ir].ls ){
 					mforeach(local->repo[ir].db, i){
-						if( mem_bsearch(local->repo[ir].ls, local->repo[ir].db[i].filename, lsname_cmp2) ) ++local->checked;
+						if( mem_bsearch(local->repo[ir].ls, local->repo[ir].db[i].filename, lsname_cmp2) ) ++local->rfield[FIELD_SYNC];
 					}
 				}
 			}
@@ -514,27 +503,21 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	dbg_info("end compare mirror database");
 }
 
-__private sort_e sortmode[SORT_COUNT];
+__private field_e sortmode[FIELD_COUNT];
 __private unsigned sortcount;
 
-__private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const sort_e sort){
-	switch(sort){
-		case SORT_OUTOFDATE : return a->outofdatepkg - b->outofdatepkg;
-		case SORT_UPTODATE  : return b->uptodatepkg - a->uptodatepkg;
-		case SORT_MORERECENT: return b->syncdatepkg - a->syncdatepkg;
-		case SORT_NOEXISTS  : return a->notexistspkg - b->notexistspkg;
-		case SORT_NEWVERSION: return b->extrapkg - a->extrapkg;
-		case SORT_SYNC      : return b->checked - a->checked;
-		case SORT_RETRY     : return b->retry - a->retry;
-		case SORT_SPEED     :
-			if( a->speed > b->speed ) return -1;
-			if( a->speed < b->speed ) return 1;
-			return 0;
-		break;
-		default: break;
+__private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const field_e sort){
+	static int ascdsc[FIELD_COUNT] = { 1, 0, 0, 1, 0, 0, 0 };
+	iassert(sort < FIELD_TOTAL);
+	if( sort == FIELD_VIRTUAL_SPEED ){
+		if( a->speed > b->speed ) return -1;
+		if( a->speed < b->speed ) return 1;
+		return 0;
 	}
-
-	 die("internal error, wrong type of sort. report this message");
+	if( ascdsc[sort] ){
+		return a->rfield[sort] - b->rfield[sort];
+	}
+	return b->rfield[sort] - a->rfield[sort];
 }
 
 __private int sort_cmp(const void* a, const void* b){
@@ -547,7 +530,7 @@ __private int sort_cmp(const void* a, const void* b){
 }
 
 __private unsigned sort_name_to_id(const char* name){
-	for( unsigned i = 0; i < SORT_COUNT; ++i ){
+	for( unsigned i = 0; i < FIELD_TOTAL; ++i ){
 		if( !strcmp(SORTNAME[i], name) ){
 			return i;
 		}
@@ -579,7 +562,7 @@ __private void mirror_speed(mirror_s* mirror, const char* arch){
 		__free void* buf = www_mdownload(url, 0);
 		delay_t stop  = time_sec();
 		if( !buf ){
-			++mirror->retry;
+			++mirror->rfield[FIELD_RETRY];
 			delay_ms(DOWNLOAD_WAIT);
 			continue;
 		}

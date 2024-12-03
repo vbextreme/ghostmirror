@@ -5,12 +5,23 @@
 #include <stdint.h>
 #include <time.h>
 
-#define VERSION_PART_MAJOR    3
-#define VERSION_PART_MINOR    2
-#define VERSION_PART_PATCHES  1
-#define VERSION_PART_REVISION 0
+#define DOWNLOAD_RETRY    3
+#define DOWNLOAD_WAIT     1000
 
 typedef enum { MIRROR_UNKNOW, MIRROR_LOCAL, MIRROR_ERR } mirrorStatus_e;
+
+typedef enum {
+	FIELD_OUTOFDATE,
+	FIELD_UPTODATE,
+	FIELD_MORERECENT,
+	FIELD_NOEXISTS,
+	FIELD_NEWVERSION,
+	FIELD_SYNC,
+	FIELD_RETRY,
+	FIELD_TOTAL,
+	FIELD_VIRTUAL_SPEED,
+	FIELD_COUNT
+}field_e;
 
 typedef struct pkgdesc{
 	char   filename[NAME_MAX];
@@ -31,14 +42,7 @@ typedef struct mirror{
 	const char*    arch;
 	repo_s         repo[2];
 	double         speed;
-	unsigned       totalpkg;
-	unsigned       syncdatepkg;
-	unsigned       outofdatepkg;
-	unsigned       uptodatepkg;
-	unsigned       notexistspkg;
-	unsigned       extrapkg;
-	unsigned       checked;	
-	unsigned       retry;
+	unsigned       rfield[FIELD_COUNT];
 }mirror_s;
 
 char* mirror_loading(const char* fname, const unsigned tos);

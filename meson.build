@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.5.1')
+project('ghostmirror', 'c', version: '0.5.2')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'better progress, if not country set mirrors country is search on remote mirrorlist'
+  'dsc': 'colorized output, switch to array fields, compact table code, remove some magic'
 }
 
 if get_option('eveloper')
