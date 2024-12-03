@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.5.2')
+project('ghostmirror', 'c', version: '0.5.3')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -22,6 +22,12 @@ if get_option('eveloper')
     run_command('git', 'commit', '-a', '-m', version['dsc'], check: true)
     run_command('git', 'tag', '-a', 'v' + version['str'], '-m', version['dsc'], check: true)
     run_command('git', 'push', '--follow-tags', check: true)
+    message('update PKGBUILD')
+    run_command('sed', '-i', '-r', '-e', 's/^pkgver=\'([^\']+)\'/pkgver=\'' + version['str'] + '\'/', './distro/PKGBUILD', check: true)
+    run_command('cp', './distro/PKGBUILD', './distro/ghostmirror/PKGBUILD', check: true)
+    run_command('bash', '-c', 'makepkg -D ./distro --printsrcinfo > ./distro/ghostmirror/.SRCINFO', check: true)
+    #run_command('git', '-C', './distro/ghostmirror', 'commit', '-a', '-m', version['dsc'], check: true)
+    #run_command('git', '-C', './distro/ghostmirror', 'push', check: true)
   endif
 endif
 
