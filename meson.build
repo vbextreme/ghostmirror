@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.5.5')
+project('ghostmirror', 'c', version: '0.5.6')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix assertion isheap not exists'
+  'dsc': 'assertion boolean value'
 }
 
 if get_option('eveloper')
@@ -181,7 +181,7 @@ if get_option('shortfn') > 0
   add_global_arguments('-DDBG_SHORTFN=1', language: 'c')
 endif
 
-if get_option('assert') > 0
+if get_option('assert')
   message('assertion enabled')
   add_global_arguments('-DASSERT_ENABLE=1', language: 'c')
 endif
