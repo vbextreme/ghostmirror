@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.5.6')
+project('ghostmirror', 'c', version: '0.5.7')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'assertion boolean value'
+  'dsc': 'merge newversion and notexists in morerecent, highlighted local'
 }
 
 if get_option('eveloper')

@@ -27,7 +27,7 @@
 //  0.8.0 ?possible way to add tollerance to sorting data?
 //  1.0.0 first release?
 
-static unsigned COLORS[][6] = { 
+__private unsigned COLORS[][6] = { 
 	{   1, 196, 226, 190,  48,  46 }, // red to green
 	{  46,  48, 190, 226, 196,   1 }, // green to red
 	{   1, 196, 226, 190,  48,  46 }, // red to green
@@ -35,7 +35,7 @@ static unsigned COLORS[][6] = {
 	{  46, 226,   1,   1,   1,   1 }, // retry color, green yellow red...
 	{   1, 196, 226, 190,  48,  46 }  // red to green
 };
-static double CMAP[][6] = {
+__private double CMAP[][6] = {
 	{ 97.5, 98.0, 98.5, 99.0, 99.5, 100.0 },
 	{  0.3,  0.6,  1.0,  1.2,  1.5,   2.0 },
 	{ 93.0, 93.5, 94.0, 94.5, 95.0, 100.0 },
@@ -43,8 +43,9 @@ static double CMAP[][6] = {
 	{  1.0,  2.0,  3.0,  4.0,  5.0,   6.0 }, 
 	{  1.0,  1.5,  2.0,  3.0,  6.5,  10.0 }
 };
-static unsigned CERR = 1;
-static unsigned CSTATUS[] = { 230, 118, 1 };
+__private unsigned CERR = 1;
+__private unsigned CSTATUS[] = { 230, 118, 1 };
+__private unsigned CBG = 238;
 
 typedef enum{
 	O_a,
@@ -87,6 +88,19 @@ __private void colorfg_set(unsigned color){
 	}
 }
 
+__private void colorbg_set(unsigned color){
+	if( !color ){
+		fputs("\033[0m", stdout);
+	}
+	else{
+		printf("\033[48;5;%um", color);
+	}
+}
+
+__private void bold_set(void){
+	fputs("\033[1m", stdout);
+}
+
 __private void print_repeats(unsigned count, const char* ch){
 	if( !count ) return;
 	while( count --> 0 ) fputs(ch, stdout);
@@ -112,7 +126,10 @@ __private void print_table_header(char** colname, unsigned* colsize, unsigned co
 		const unsigned left  = colsize[i] > len ? (colsize[i] - len) / 2: 0;
 		const unsigned right = colsize[i] > left+len ? colsize[i] - (left+len): 0;
 		print_repeat(left, ' ');
-		if( color >= 0 ) colorfg_set(208);
+		if( color >= 0 ){
+			colorfg_set(208);
+			bold_set();
+		}
 		printf("%s", colname[i]);
 		if( color >= 0 ) colorfg_set(0);
 		print_repeat(right, ' ');
@@ -146,45 +163,54 @@ __private unsigned double_color_map(double v, unsigned palette){
 	return COLORS[palette][sizeof_vector(COLORS[0])-1];
 }
 
-__private void print_double_field(double val, unsigned size, int colormode){
+__private void print_double_field(double val, mirrorStatus_e status, unsigned size, int colormode){
 	const unsigned left  = (size - 7) / 2;
 	const unsigned right = size - (left+7);
 
-	print_repeat(left, ' ');
-	if( colormode < 0 ){
-		printf("%6.2f%%", val);
-	}
-	else{
+	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
 		colorfg_set(colormode);
-		printf("%6.2f%%",val);
-		colorfg_set(0);
+		if( status == MIRROR_LOCAL ){
+			colorbg_set(CBG);
+			bold_set();
+		}
 	}
+
+	print_repeat(left, ' ');
+	printf("%6.2f%%",val);
 	print_repeat(right, ' ');
+	if( colormode >= 0 ) colorfg_set(0);
 	fputs("│", stdout);
 }
 
-__private void print_unsigned_field(unsigned val, unsigned size, int colormode){
+__private void print_unsigned_field(unsigned val, mirrorStatus_e status, unsigned size, int colormode){
 	const unsigned left  = (size - 2) / 2;
 	const unsigned right = size - (left+2);
 
-	print_repeat(left, ' ');
-	if( colormode < 0 ){
-		printf("%2u", val);
-	}
-	else{
+	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
 		colorfg_set(colormode);
-		printf("%2u",val);
-		colorfg_set(0);
+		if( status == MIRROR_LOCAL ){
+			colorbg_set(CBG);
+			bold_set();
+		}
 	}
+	print_repeat(left, ' ');
+	printf("%2u",val);
 	print_repeat(right, ' ');
+	if( colormode >= 0 ) colorfg_set(0);
 	fputs("│", stdout);
 }
 
 __private void print_status(mirrorStatus_e status, unsigned size, int color){
 	static const char* mstate[] = {"success", "local", "error"};
-	if( color >= 0 ) colorfg_set(CSTATUS[status]);
+	if( color >= 0 ){
+		colorfg_set(CSTATUS[status]);
+		if( status == MIRROR_LOCAL ){
+			colorbg_set(CBG);
+			bold_set();
+		}
+	}
 	printf("%-*s", size, mstate[status]);
 	if( color >= 0 ) colorfg_set(0);
 	fputs("│", stdout);
@@ -192,27 +218,34 @@ __private void print_status(mirrorStatus_e status, unsigned size, int color){
 
 __private void print_str(const char* str, mirrorStatus_e status, unsigned size, int color){
 	if( !str || *str == 0 ) str = "unknow";
-	if( color >= 0 ) colorfg_set(CSTATUS[status]);
+	if( color >= 0 ){
+		colorfg_set(CSTATUS[status]);
+		if( status == MIRROR_LOCAL ){
+			colorbg_set(CBG);
+			bold_set();
+		}
+	}
 	printf("%-*s", size, str);
 	if( color >= 0 ) colorfg_set(0);
 	fputs("│", stdout);
 }
 
-__private void print_speed(double val, unsigned size, int colormode){
+__private void print_speed(double val, mirrorStatus_e status, unsigned size, int colormode){
 	const unsigned left  = (size - 10) / 2;
 	const unsigned right = size - (left+10);
 
-	print_repeat(left, ' ');
-	if( colormode < 0 ){
-		printf("%5.1fMiB/s", val);
-	}
-	else{
+	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
 		colorfg_set(colormode);
-		printf("%5.1fMiB/s",val);
-		colorfg_set(0);
+		if( status == MIRROR_LOCAL ){
+			colorbg_set(CBG);
+			bold_set();
+		}
 	}
+	print_repeat(left, ' ');
+	printf("%5.1fMiB/s",val);
 	print_repeat(right, ' ');
+	if( colormode >= 0 ) colorfg_set(0);
 	fputs("│", stdout);
 }
 
@@ -231,9 +264,9 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 	}
 
 	colors = colors ? 0 : -1000;
-	char* tblname[]    = { "country", "mirror",  "state", "outofdate", "uptodate", "morerecent", "not exists", "newversion",   "sync",  "retry", "speed" };
-	unsigned tblsize[] = { mlCountry,    mlUrl,        9,           9,          9,           10,           10,           10,        9,        7,      12 };
-	unsigned tblcolor[]= {  colors+0, colors+0, colors+0,    colors+1,   colors+0,     colors+3,     colors+3,     colors+3, colors+2, colors+4, colors+5};
+	char* tblname[]    = { "country", "mirror",  "state", "outofdate", "uptodate", "morerecent",   "sync",  "retry", "speed" };
+	unsigned tblsize[] = { mlCountry,    mlUrl,        9,           9,          9,           10,        9,        7,      12 };
+	unsigned tblcolor[]= {  colors+0, colors+0, colors+0,    colors+1,   colors+0,     colors+3, colors+2, colors+4, colors+5};
 	print_table_header(tblname, tblsize, sizeof_vector(tblsize), colors);
 	
 	mforeach(mirrors, i){
@@ -243,10 +276,10 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 		print_status(mirrors[i].status, tblsize[2], tblcolor[2]);
 		for( unsigned j = 0; j < FIELD_RETRY; ++j ){
 			const double val = mirrors[i].rfield[j] * 100.0 / mirrors[i].rfield[FIELD_TOTAL];
-			print_double_field(val, tblsize[j+3], tblcolor[j+3]);
+			print_double_field(val, mirrors[i].status, tblsize[j+3], tblcolor[j+3]);
 		}
-		print_unsigned_field(mirrors[i].rfield[FIELD_RETRY], tblsize[9], tblcolor[9]);
-		print_speed(mirrors[i].speed, tblsize[10], tblcolor[10]);
+		print_unsigned_field(mirrors[i].rfield[FIELD_RETRY], mirrors[i].status, tblsize[7], tblcolor[7]);
+		print_speed(mirrors[i].speed, mirrors[i].status, tblsize[8], tblcolor[8]);
 		fputc('\n', stdout);
 	}
 
@@ -307,7 +340,7 @@ die("");
 */
 /*
 mirror_s* mirrors = MANY(mirror_s, 16);
-mem_header(mirrors)->len = 6;
+mem_header(mirrors)->len = 4;
 mem_zero(mirrors);
 mirrors[0].url = "https://uptodate";
 mirrors[0].rfield[FIELD_UPTODATE]   = 100;
@@ -324,23 +357,13 @@ mirrors[2].rfield[FIELD_OUTOFDATE]  = 20;
 mirrors[2].rfield[FIELD_UPTODATE]   = 80;
 mirrors[2].rfield[FIELD_TOTAL]      = 100;
 mirrors[2].speed = 1.7;
-mirrors[3].url = "https://noexists";
-mirrors[3].rfield[FIELD_NOEXISTS]   = 20;
-mirrors[3].rfield[FIELD_UPTODATE]   = 80;
+mirrors[3].url = "https://sync";
+mirrors[3].rfield[FIELD_SYNC]       = 94;
+mirrors[3].rfield[FIELD_UPTODATE]   = 100;
 mirrors[3].rfield[FIELD_TOTAL]      = 100;
-mirrors[3].speed = 2.5;
-mirrors[4].url = "https://newversion";
-mirrors[4].rfield[FIELD_NEWVERSION] = 20;
-mirrors[4].rfield[FIELD_UPTODATE]   = 80;
-mirrors[4].rfield[FIELD_TOTAL]      = 100;
-mirrors[4].speed = 5.0;
-mirrors[5].url = "https://sync";
-mirrors[5].rfield[FIELD_SYNC]       = 94;
-mirrors[5].rfield[FIELD_UPTODATE]   = 100;
-mirrors[5].rfield[FIELD_TOTAL]      = 100;
-mirrors[5].rfield[FIELD_RETRY]      = 3;
-mirrors[5].speed = 7.0;
-mirrors[5].status = MIRROR_ERR;
+mirrors[3].rfield[FIELD_RETRY]      = 3;
+mirrors[3].speed = 7.0;
+mirrors[3].status = MIRROR_ERR;
 print_cmp_mirrors(mirrors,1);	
 die("");
 */

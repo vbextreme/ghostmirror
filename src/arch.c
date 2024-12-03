@@ -444,10 +444,7 @@ __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 	for( unsigned ir = 0; ir < repocount; ++ir ){
 		mforeach(local->repo[ir].db, i){
 			pkgdesc_s* tpk = mem_bsearch(test->repo[ir].db, &local->repo[ir].db[i], pkgname_cmp);
-			if( !tpk ){
-				++test->rfield[FIELD_NOEXISTS];
-			}
-			else{
+			if( tpk ){
 				int ret = pkg_vercmp(local->repo[ir].db[i].version, tpk->version);
 				switch( ret ){
 					case -1: ++test->rfield[FIELD_MORERECENT]; break;
@@ -458,14 +455,20 @@ __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 					++test->rfield[FIELD_SYNC];
 				}
 			}
+			/*
+			 * i have remoded noexists because i not know if not exists because is new version or old version 
+			 * ++test->rfield[FIELD_NOEXISTS];
+			*/
+
 		}
 	}
-	
+
+	/* now new version count noexists */
 	unsigned managed = 0;
-	for( unsigned i = 0; i < FIELD_NEWVERSION; ++i ){
+	for( unsigned i = 0; i < FIELD_SYNC; ++i ){
 		managed += test->rfield[i];
 	}
-	if( managed < test->rfield[FIELD_TOTAL] ) test->rfield[FIELD_NEWVERSION] = test->rfield[FIELD_TOTAL] - managed;
+	if( managed < test->rfield[FIELD_TOTAL] ) test->rfield[FIELD_MORERECENT] += test->rfield[FIELD_TOTAL] - managed;
 }
 
 void mirrors_cmp_db(mirror_s* mirrors, const int progress){

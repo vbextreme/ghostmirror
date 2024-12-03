@@ -1,4 +1,4 @@
-ghostmirror v0.5.6
+ghostmirror v0.5.7
 ==================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.5.7 merge newversion and notexists in morerecent, highlighted local
 * v0.5.6 assertion boolean value
 * v0.5.5 fix assertion isheap not exists
 * v0.5.4 some testing
