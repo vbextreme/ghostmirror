@@ -17,9 +17,6 @@
 //TODO
 //  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
 //
-//  0.7.0 --speed slow/normal/fast
-//  0.7.1 --list-max max output in list
-//  0.7.2 better store list
 //  0.7.3 average stored list
 //  0.8.0 systemd auto mirroring
 //  0.9.0 documentation
@@ -60,6 +57,7 @@ typedef enum{
 	O_s,
 	O_S,
 	O_l,
+	O_L,
 	O_T,
 	O_h
 }OPT_E;
@@ -77,7 +75,8 @@ option_s OPT[] = {
 	{'s', "--speed"          , "test speed for downloading one pkg, light, normal, heavy"           , OPT_STR  , 0, 0},
 	{'S', "--sort"           , "sort result for any of fields, mutiple fields supported"            , OPT_ARRAY | OPT_STR, 0, 0},
 	{'l', "--list"           , "create a file with list of mirrors, stdout as arg for output here"  , OPT_STR, 0, 0},
-	{'T', "--type"           , "select mirrors type, http,https,ftp,ftps,all"                       , OPT_ARRAY | OPT_STR, 0, 0},
+	{'L', "--max-list"       , "set max numbers of output mirrors"                                  , OPT_NUM, 0, 0},
+	{'T', "--type"           , "select mirrors type, http,https,all"                                , OPT_ARRAY | OPT_STR, 0, 0},
 	{'h', "--help"           , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
 
@@ -288,11 +287,12 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 	print_table_end(tblsize, sizeof_vector(tblsize));
 }
 
-__private void print_list(mirror_s* mirrors, const char* where){
+__private void print_list(mirror_s* mirrors, const char* where, unsigned max){
 	FILE* out = strcmp(where, "stdout") ? fopen(where, "w") : stdout;
 	if( !out ) die("on open file: '%s' with error: %s", where, strerror(errno));
 	
-	mforeach(mirrors, i){
+	const unsigned count = mem_header(mirrors)->len;
+	for(unsigned i = 0; i < count && i < max; ++i ){
 		fprintf(out, "#* '%s'", mirrors[i].country);
 		for( unsigned j = 0; j < FIELD_VIRTUAL_SPEED; ++j ){
 			fprintf(out, " %u", mirrors[i].rfield[j]);
@@ -332,6 +332,7 @@ int main(int argc, char** argv){
 	argv_default_str(OPT, O_m, NULL);
 	argv_default_str(OPT, O_S, NULL);
 	argv_default_str(OPT, O_T, "all");
+	argv_default_num(OPT, O_L, ULONG_MAX);
 
 	www_begin();
 /*
@@ -431,7 +432,7 @@ die("");
 
 	print_cmp_mirrors(mirrors, opt[O_P].set);
 	
-	if( opt[O_l].set ) print_list(mirrors, opt[O_l].value->str);
+	if( opt[O_l].set ) print_list(mirrors, opt[O_l].value->str, opt[O_L].value->ui);
 
 	www_end();
 	return 0;

@@ -404,6 +404,13 @@ __private char* server_find_country(const char* url, const char* mirrorlist){
 	return back_start_country_mark(loc, mirrorlist);
 }
 
+__private int server_unique(mirror_s* mirrors, const char* url){
+	mforeach(mirrors, i){
+		if( !strcmp(mirrors[i].url, url) ) return 0;
+	}
+	return 1;
+}
+
 mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type){
 	char* url;
 	const char* fromcountry = country ? find_country(mirrorlist, country) : mirrorlist;
@@ -421,10 +428,15 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 	}
 
 	while( (url=server_url(&fromcountry, uncommented, country ? 1 : 0, type)) ){
-		mirrors = mem_upsize(mirrors, 1);
-		const unsigned id = mem_header(mirrors)->len++;
-		char* fcountry = country ? (char*)country : server_find_country(url, safemirrorlist);
-		mirror_ctor(&mirrors[id], url, arch, fcountry);
+		if( server_unique(mirrors, url) ){
+			mirrors = mem_upsize(mirrors, 1);
+			const unsigned id = mem_header(mirrors)->len++;
+			char* fcountry = country ? (char*)country : server_find_country(url, safemirrorlist);
+			mirror_ctor(&mirrors[id], url, arch, fcountry);
+		}
+		else{
+			mem_free(url);
+		}
 	}
 
 	return mirrors;

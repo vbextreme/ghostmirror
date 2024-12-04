@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.7.0')
+project('ghostmirror', 'c', version: '0.7.1')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'add speed type, light, normal, heavy. fix speed benchmark delay_t->double'
+  'dsc': 'fix wrong -T description, set max numbers of output mirrors, unique mirrors.'
 }
 
 if get_option('eveloper')

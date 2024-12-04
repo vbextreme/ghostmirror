@@ -1,4 +1,4 @@
-ghostmirror v0.7.0
+ghostmirror v0.7.1
 ==================
 Introduction:
 =============
@@ -13,7 +13,8 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
-* v0.7.0 add speed type, light, normal, heavy. fix speed benchmark delay_t->double
+* v0.7.1 fix wrong -T description, set max numbers of output mirrors, unique mirrors.
+* v0.7.0 add speed type, light, normal, heavy. fix speed benchmark delay to double
 * v0.6.0 add select mirror type, http or https or all
 * v0.5.8 fix sort to manage new field, not tested
 * v0.5.7 merge newversion and notexists in morerecent, highlighted local
