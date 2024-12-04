@@ -13,6 +13,11 @@ typedef enum { MIRROR_UNKNOW, MIRROR_LOCAL, MIRROR_ERR } mirrorStatus_e;
 #define MIRROR_TYPE_HTTP  0x1
 #define MIRROR_TYPE_HTTPS 0x2
 
+#define SPEED_LIGHT  "git"
+#define SPEED_NORMAL "chromium"
+#define SPEED_HEAVY  "linux-firmware"
+#define SPEED_MAX    3
+
 typedef enum {
 	FIELD_OUTOFDATE,
 	FIELD_UPTODATE,
@@ -54,8 +59,7 @@ void add_sort_mode(const char* mode);
 void mirrors_sort(mirror_s* mirrors);
 void mirrors_update_sync(mirror_s* mirrors, const char mode, const unsigned maxdownload, const unsigned touts, const int progress);
 void country_list(const char* mirrorlist);
-void mirrors_speed(mirror_s* mirrors, const char* arch, int progress);
-
+void mirrors_speed(mirror_s* mirrors, const char* arch, int progress, unsigned type);
 
 
 

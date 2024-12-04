@@ -556,38 +556,49 @@ void mirrors_sort(mirror_s* mirrors){
 	mem_qsort(mirrors, sort_cmp);
 }
 
-__private void mirror_speed(mirror_s* mirror, const char* arch){
-	pkgdesc_s  find = { .name = "chromium" };
-	pkgdesc_s* pk = mem_bsearch(mirror->repo[1].db, &find, pkgname_cmp);
-	if( !pk ){
-		dbg_error("unable to benchmark mirror, not find chromium test package");
-		return;
-	}
+__private void mirror_speed(mirror_s* mirror, const char* arch, unsigned type){
+	static char* testname[]= { 
+		SPEED_LIGHT,
+		SPEED_NORMAL,
+		SPEED_HEAVY
+	};
+	
+	for( unsigned i = 0; i < type+1; ++i ){
+		pkgdesc_s  find;
+		strcpy(find.name, testname[i]);
 
-	__free char* url = str_printf("%s/extra/os/%s/%s", mirror->url, arch, pk->filename);
-	unsigned retry = DOWNLOAD_RETRY;
-	while( retry-->0 ){
-		delay_t start = time_sec();
-		__free void* buf = www_mdownload(url, 0);
-		delay_t stop  = time_sec();
-		if( !buf ){
-			++mirror->rfield[FIELD_RETRY];
-			delay_ms(DOWNLOAD_WAIT);
-			continue;
+		pkgdesc_s* pk = mem_bsearch(mirror->repo[1].db, &find, pkgname_cmp);
+		if( !pk ){
+			die("unable to benchmark mirror, not find %s package", testname[i]);
+			return;
 		}
-		unsigned size = mem_header(buf)->len;
-		mirror->speed = (size / (1024.0*1024.0)) / (stop-start);
-		break;
+
+		__free char* url = str_printf("%s/extra/os/%s/%s", mirror->url, arch, pk->filename);
+		unsigned retry = DOWNLOAD_RETRY;
+		while( retry-->0 ){
+			double start = time_sec();
+			__free void* buf = www_mdownload(url, 0);
+			double stop  = time_sec();
+			if( !buf ){
+				++mirror->rfield[FIELD_RETRY];
+				if( retry ) delay_ms(DOWNLOAD_WAIT);
+				continue;
+			}
+			unsigned size = mem_header(buf)->len;
+			mirror->speed += (size / (1024.0*1024.0)) / (stop-start);
+			break;
+		}
 	}
+	mirror->speed /= type+1.0;
 }
 
-void mirrors_speed(mirror_s* mirrors, const char* arch, int progress){
+void mirrors_speed(mirror_s* mirrors, const char* arch, int progress, unsigned type){
 	const unsigned count = mem_header(mirrors)->len;
 	if( progress ) progress_begin("mirrors speed", count);
 		
 	mforeach(mirrors, i){
 		if( mirrors[i].status != MIRROR_ERR ){
-			mirror_speed(&mirrors[i], arch );
+			mirror_speed(&mirrors[i], arch, type );
 		}
 		if( progress ) progress_refresh("mirrors speed", i, count);
 	}

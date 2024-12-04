@@ -18,11 +18,13 @@
 //  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
 //
 //  0.7.0 --speed slow/normal/fast
-//  0.7.1 documentation
-//  0.7.2 scanbuild
-//  0.7.3 valgrind
-//  0.7.4 makepkg
-//  0.8.0 ?possible way to add tollerance to sorting data?
+//  0.7.1 --list-max max output in list
+//  0.7.2 better store list
+//  0.7.3 average stored list
+//  0.8.0 systemd auto mirroring
+//  0.9.0 documentation
+//  0.9.1 scanbuild
+//  0.9.2 valgrind
 //  1.0.0 first release?
 
 __private unsigned COLORS[][6] = { 
@@ -72,7 +74,7 @@ option_s OPT[] = {
 	{'o', "--timeout"        , "set timeout in seconds for not reply mirror, default '20's"         , OPT_NUM  , 0, 0},
 	{'p', "--progress"       , "show progress, default false"                                       , OPT_NOARG, 0, 0},
 	{'P', "--progress-colors", "same -p but with colors"                                            , OPT_NOARG, 0, 0},
-	{'s', "--speed"          , "test speed for downloading one pkg"                                 , OPT_NOARG, 0, 0},
+	{'s', "--speed"          , "test speed for downloading one pkg, light, normal, heavy"           , OPT_STR  , 0, 0},
 	{'S', "--sort"           , "sort result for any of fields, mutiple fields supported"            , OPT_ARRAY | OPT_STR, 0, 0},
 	{'l', "--list"           , "create a file with list of mirrors, stdout as arg for output here"  , OPT_STR, 0, 0},
 	{'T', "--type"           , "select mirrors type, http,https,ftp,ftps,all"                       , OPT_ARRAY | OPT_STR, 0, 0},
@@ -310,6 +312,14 @@ __private unsigned cast_mirror_type(unsigned type, const char* name){
 	die("unknow type name: %s", name);
 }
 
+__private unsigned cast_speed_type(const char* name){
+	static const char* typename[] = { "light", "normal", "heavy" };
+	for( unsigned i = 0; i < sizeof_vector(typename); ++i ){
+		if( !strcmp(name, typename[i]) ) return i;
+	}
+	die("unknow type name: %s", name);
+}
+
 int main(int argc, char** argv){
 	notstd_begin();
 	
@@ -410,7 +420,7 @@ die("");
 	mirrors_update(mirrors, opt[O_p].set, opt[O_t].value->ui, opt[O_o].value->ui);	
 	mirrors_cmp_db(mirrors, opt[O_p].set);
 
-	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set);	
+	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set, cast_speed_type(opt[O_s].value->str));
 
 	if( opt[O_S].set ){
 		for( unsigned i = 0; i < opt[O_S].set; ++i ){
