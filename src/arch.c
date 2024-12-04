@@ -344,7 +344,13 @@ __private const char* find_country(const char* str, const char* country){
 	die("country %s not exists", country);
 }
 
-__private char* server_url(const char** pline, int uncommented, int restrictcountry){
+__private int check_type(const char* url, unsigned type){
+	if( (type & MIRROR_TYPE_HTTP ) && !strncmp(url, "http:" , 5) ) return MIRROR_TYPE_HTTP;
+	if( (type & MIRROR_TYPE_HTTPS) && !strncmp(url, "https:", 5) ) return MIRROR_TYPE_HTTPS;
+	return 0;
+}
+
+__private char* server_url(const char** pline, int uncommented, int restrictcountry, unsigned type){
 	const char* line = *pline;
 
 	while( *line ){
@@ -370,6 +376,7 @@ __private char* server_url(const char** pline, int uncommented, int restrictcoun
 		if( *endurl == '\n' ){ ++line; continue; }
 		--endurl;
 		*pline = str_next_line(endurl);
+		if( !check_type(url, type) ){ line = str_next_line(endurl); continue; }
 		return str_dup(url, endurl - url);
 	}
 	return NULL;
@@ -397,7 +404,7 @@ __private char* server_find_country(const char* url, const char* mirrorlist){
 	return back_start_country_mark(loc, mirrorlist);
 }
 
-mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented){
+mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type){
 	char* url;
 	const char* fromcountry = country ? find_country(mirrorlist, country) : mirrorlist;
 
@@ -406,14 +413,14 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 		__free char* localmirror = load_file(PACMAN_MIRRORLIST, 1);
 		localmirror = mem_nullterm(localmirror);
 
-		url = server_url((const char**)&localmirror, 1, 0);
+		url = server_url((const char**)&localmirror, 1, 0, type);
 		if( !url ) url = PACMAN_LOCAL_DB;
 		const unsigned id = mem_header(mirrors)->len++;
 		mirror_ctor(&mirrors[id], url, arch, server_find_country(url, safemirrorlist));
 		mirrors[id].status  = MIRROR_LOCAL;
 	}
 
-	while( (url=server_url(&fromcountry, uncommented, country ? 1 : 0)) ){
+	while( (url=server_url(&fromcountry, uncommented, country ? 1 : 0, type)) ){
 		mirrors = mem_upsize(mirrors, 1);
 		const unsigned id = mem_header(mirrors)->len++;
 		char* fcountry = country ? (char*)country : server_find_country(url, safemirrorlist);

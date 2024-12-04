@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.5.8')
+project('ghostmirror', 'c', version: '0.6.0')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix sort to manage new field, not tested'
+  'dsc': 'add select mirror type, http or https or all'
 }
 
 if get_option('eveloper')

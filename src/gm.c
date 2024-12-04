@@ -17,8 +17,6 @@
 //TODO
 //  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
 //
-//  0.5.3 aur
-//	0.6.0 add support to ftp
 //  0.7.0 --speed slow/normal/fast
 //  0.7.1 documentation
 //  0.7.2 scanbuild
@@ -60,6 +58,7 @@ typedef enum{
 	O_s,
 	O_S,
 	O_l,
+	O_T,
 	O_h
 }OPT_E;
 
@@ -76,6 +75,7 @@ option_s OPT[] = {
 	{'s', "--speed"          , "test speed for downloading one pkg"                                 , OPT_NOARG, 0, 0},
 	{'S', "--sort"           , "sort result for any of fields, mutiple fields supported"            , OPT_ARRAY | OPT_STR, 0, 0},
 	{'l', "--list"           , "create a file with list of mirrors, stdout as arg for output here"  , OPT_STR, 0, 0},
+	{'T', "--type"           , "select mirrors type, http,https,ftp,ftps,all"                       , OPT_ARRAY | OPT_STR, 0, 0},
 	{'h', "--help"           , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
 
@@ -301,6 +301,15 @@ __private void print_list(mirror_s* mirrors, const char* where){
 	if( strcmp(where, "stdout") ) fclose(out);
 }
 
+__private unsigned cast_mirror_type(unsigned type, const char* name){
+	static const char* typename[] = { "all", "http", "https"};
+	static const unsigned typeval[] = { 0xF, MIRROR_TYPE_HTTP, MIRROR_TYPE_HTTPS };
+	for( unsigned i = 0; i < sizeof_vector(typename); ++i ){
+		if( !strcmp(typename[i], name) ) return type | typeval[i];
+	}
+	die("unknow type name: %s", name);
+}
+
 int main(int argc, char** argv){
 	notstd_begin();
 	
@@ -312,6 +321,7 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_o, DEFAULT_TOUT);
 	argv_default_str(OPT, O_m, NULL);
 	argv_default_str(OPT, O_S, NULL);
+	argv_default_str(OPT, O_T, "all");
 
 	www_begin();
 /*
@@ -377,14 +387,24 @@ die("");
 		exit(0);
 	}
 
-	mirror_s* mirrors = NULL;
-	if( opt[O_c].set ){
-		mforeach(opt[O_c].value, i){
-			mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set);
+	unsigned mirrorType = 0;
+	if( opt[O_T].set ){
+		for( unsigned i = 0; i < opt[O_T].set; ++i ){
+			mirrorType = cast_mirror_type(mirrorType, opt[O_T].value[i].str);
 		}
 	}
 	else{
-		mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set);
+		mirrorType = cast_mirror_type(mirrorType, opt[O_T].value->str);
+	}
+
+	mirror_s* mirrors = NULL;
+	if( opt[O_c].set ){
+		mforeach(opt[O_c].value, i){
+			mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
+		}
+	}
+	else{
+		mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
 	}
 	
 	mirrors_update(mirrors, opt[O_p].set, opt[O_t].value->ui, opt[O_o].value->ui);	

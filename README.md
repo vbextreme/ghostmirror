@@ -1,4 +1,4 @@
-ghostmirror v0.5.8
+ghostmirror v0.6.0
 ==================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.6.0 add select mirror type, http or https or all
 * v0.5.8 fix sort to manage new field, not tested
 * v0.5.7 merge newversion and notexists in morerecent, highlighted local
 * v0.5.6 assertion boolean value
