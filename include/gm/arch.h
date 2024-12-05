@@ -16,18 +16,10 @@ typedef enum { MIRROR_UNKNOW, MIRROR_LOCAL, MIRROR_ERR } mirrorStatus_e;
 #define SPEED_LIGHT  "git"
 #define SPEED_NORMAL "chromium"
 #define SPEED_HEAVY  "linux-firmware"
-#define SPEED_MAX    3
 
-typedef enum {
-	FIELD_OUTOFDATE,
-	FIELD_UPTODATE,
-	FIELD_MORERECENT,
-	FIELD_SYNC,
-	FIELD_RETRY,
-	FIELD_TOTAL,
-	FIELD_VIRTUAL_SPEED,
-	FIELD_COUNT
-}field_e;
+#define WEIGHT_OUTOFDATE  49.0
+#define WEIGHT_MOREUPDATE 49.0
+#define WEIGHT_SPEED      2.0
 
 typedef struct pkgdesc{
 	char   filename[NAME_MAX];
@@ -48,7 +40,13 @@ typedef struct mirror{
 	const char*    arch;
 	repo_s         repo[2];
 	double         speed;
-	unsigned       rfield[FIELD_COUNT];
+	double         stability;
+	unsigned       outofdate;
+	unsigned       uptodate;
+	unsigned       morerecent;
+	unsigned       sync;
+	unsigned       retry;
+	unsigned       total;
 }mirror_s;
 
 char* mirror_loading(const char* fname, const unsigned tos);
@@ -60,9 +58,7 @@ void mirrors_sort(mirror_s* mirrors);
 void mirrors_update_sync(mirror_s* mirrors, const char mode, const unsigned maxdownload, const unsigned touts, const int progress);
 void country_list(const char* mirrorlist);
 void mirrors_speed(mirror_s* mirrors, const char* arch, int progress, unsigned type);
-
-
-
+void mirrors_stability(mirror_s* mirrors);
 
 
 

@@ -93,6 +93,7 @@ void* www_mdownload(const char* url, unsigned touts){
 	dbg_info("'%s'", url);
 	__wcc CURL* ch = www_curl_new(url);
 	__free uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
+	curl_easy_setopt(ch, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);
 	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &data);
 	if( touts ) curl_easy_setopt(ch, CURLOPT_TIMEOUT, touts);
@@ -102,8 +103,12 @@ void* www_mdownload(const char* url, unsigned touts){
 
 void* www_mdownload_retry(const char* url, unsigned touts, unsigned retry, unsigned retryms){
 	void* ret = NULL;
+	delay_t retrytime = retryms;
 	while( retry-->0 && !(ret=www_mdownload(url, touts)) ){
-		if( retry ) delay_ms(retryms);
+		if( retry ){
+			delay_ms(retrytime);
+			retrytime *= 2;
+		}
 	}
 	return ret;
 }

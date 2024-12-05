@@ -12,18 +12,27 @@
 #include <time.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <math.h>
 
 #define PACMAN_MIRRORLIST "/etc/pacman.d/mirrorlist"
 #define PACMAN_LOCAL_DB   "/var/lib/pacman/sync"
 
-__private const char* SORTNAME[FIELD_COUNT] = {
+#define SORT_MAX 32
+__private const char* SORTNAME[] = {
+	"country",
+	"mirror",
+	"state",
 	"outofdate",
 	"uptodate",
 	"morerecent",
 	"sync",
 	"retry",
-	"speed"
+	"speed",
+	"extimated"
 };
+__private unsigned SORTMODE[SORT_MAX];
+__private unsigned SORTCOUNT;
+
 
 __private char* REPO[] = { "core", "extra" };
 
@@ -279,7 +288,8 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 		}
 
 		mem_qsort(mirror->repo[ir].db, pkgname_cmp);
-		mirror->rfield[FIELD_TOTAL] += mem_header(mirror->repo[ir].db)->len;
+		mirror->total += mem_header(mirror->repo[ir].db)->len;
+		dbg_info("%u package", mirror->total);
 
 		__free char* rls = get_mirror_ls(mirror, REPO[ir], tos);
 		if( rls ){
@@ -460,33 +470,24 @@ __private int lsname_cmp2(const void* a, const void* b){
 __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 	const unsigned repocount = sizeof_vector(REPO);
 	for( unsigned ir = 0; ir < repocount; ++ir ){
-		mforeach(local->repo[ir].db, i){
+		unsigned const dbcount = mem_header(local->repo[ir].db)->len;
+		for( unsigned i = 0; i < dbcount; ++i){
 			pkgdesc_s* tpk = mem_bsearch(test->repo[ir].db, &local->repo[ir].db[i], pkgname_cmp);
 			if( tpk ){
 				int ret = pkg_vercmp(local->repo[ir].db[i].version, tpk->version);
 				switch( ret ){
-					case -1: ++test->rfield[FIELD_MORERECENT]; break;
-					case  1: ++test->rfield[FIELD_OUTOFDATE]; break;
-					case  0: ++test->rfield[FIELD_UPTODATE]; break;
+					case -1: ++test->morerecent; break;
+					case  1: ++test->outofdate; break;
+					case  0: ++test->uptodate; break;
 				}
 				if( test->repo[ir].ls && mem_bsearch(test->repo[ir].ls, tpk->filename, lsname_cmp2) ){
-					++test->rfield[FIELD_SYNC];
+					++test->sync;
 				}
 			}
-			/*
-			 * i have remoded noexists because i not know if not exists because is new version or old version 
-			 * ++test->rfield[FIELD_NOEXISTS];
-			*/
-
 		}
 	}
 
-	/* now new version count noexists */
-	unsigned managed = 0;
-	for( unsigned i = 0; i < FIELD_SYNC; ++i ){
-		managed += test->rfield[i];
-	}
-	if( managed < test->rfield[FIELD_TOTAL] ) test->rfield[FIELD_MORERECENT] += test->rfield[FIELD_TOTAL] - managed;
+	test->morerecent += test->total - (test->morerecent + test->uptodate + test->outofdate);
 }
 
 void mirrors_cmp_db(mirror_s* mirrors, const int progress){
@@ -497,12 +498,12 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	for( unsigned i = 0; i < count; ++i ){
 		if( mirrors[i].status == MIRROR_LOCAL ){
 			local = &mirrors[i];
-			local->rfield[FIELD_UPTODATE] = local->rfield[FIELD_TOTAL];
+			local->uptodate = local->total;
 			const unsigned repocount = sizeof_vector(REPO);
 			for( unsigned ir = 0; ir < repocount; ++ir ){
 				if( local->repo[ir].ls ){
 					mforeach(local->repo[ir].db, i){
-						if( mem_bsearch(local->repo[ir].ls, local->repo[ir].db[i].filename, lsname_cmp2) ) ++local->rfield[FIELD_SYNC];
+						if( mem_bsearch(local->repo[ir].ls, local->repo[ir].db[i].filename, lsname_cmp2) ) ++local->sync;
 					}
 				}
 			}
@@ -514,9 +515,7 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	if( progress ) progress_begin("mirrors db compare", count);
 	
 	for( unsigned i = 0; i < count; ++i ){
-		if( mirrors[i].status == MIRROR_UNKNOW ){
-			mirror_cmp_db(local, &mirrors[i]);
-		}
+		if( mirrors[i].status == MIRROR_UNKNOW ) mirror_cmp_db(local, &mirrors[i]);
 		if( progress ) progress_refresh("mirrors db compare", i, count);
 	}
 	
@@ -524,34 +523,32 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	dbg_info("end compare mirror database");
 }
 
-__private field_e sortmode[FIELD_COUNT];
-__private unsigned sortcount;
-
-__private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const field_e sort){
-	static int ascdsc[FIELD_COUNT] = { 1, 0, 0, 0, 1, 0, 0 };
-	iassert(sort < FIELD_TOTAL);
-	if( sort == FIELD_VIRTUAL_SPEED ){
-		if( a->speed > b->speed ) return -1;
-		if( a->speed < b->speed ) return 1;
-		return 0;
+__private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const unsigned sort){
+	switch( sort ){
+		case 0: return strcmp(a->country, b->country);
+		case 1: return strcmp(a->url, b->url);
+		case 2: return a->status - b->status;
+		case 3: return a->outofdate - b->outofdate;
+		case 4: return b->uptodate - a->uptodate;
+		case 5: return b->morerecent - a->morerecent;
+		case 6: return b->sync - a->sync;
+		case 7: return a->retry - b->retry;
+		case 8: return a->speed > b->speed ? -1 : a->speed < b->speed ? 1 : 0;
+		case 9: return a->stability > b->stability ? -1 : a->stability < b->stability ? 1 : 0;
+		default: die("internal error, sort set wrong field");
 	}
-	if( ascdsc[sort] ){
-		return a->rfield[sort] - b->rfield[sort];
-	}
-	return b->rfield[sort] - a->rfield[sort];
 }
 
 __private int sort_cmp(const void* a, const void* b){
-	unsigned count = sortcount;
-	for( unsigned i = 0; i < count; ++i ){
-		int ret = sort_real_cmp(a, b, sortmode[i]);
+	for( unsigned i = 0; i < SORTCOUNT; ++i ){
+		int ret = sort_real_cmp(a, b, SORTMODE[i]);
 		if( ret ) return ret;
 	}
 	return 0;
 }
 
 __private unsigned sort_name_to_id(const char* name){
-	for( unsigned i = 0; i < FIELD_TOTAL; ++i ){
+	for( unsigned i = 0; i < sizeof_vector(SORTNAME); ++i ){
 		if( !strcmp(SORTNAME[i], name) ){
 			return i;
 		}
@@ -560,11 +557,12 @@ __private unsigned sort_name_to_id(const char* name){
 }
 
 void add_sort_mode(const char* mode){
-	sortmode[sortcount++] = sort_name_to_id(mode);
+	if( SORTCOUNT >= SORT_MAX ) die("to much sort mode");
+	SORTMODE[SORTCOUNT++] = sort_name_to_id(mode);
 }
 
 void mirrors_sort(mirror_s* mirrors){
-	if( !sortcount ) die("need to set any or more valid sort modes");
+	if( !SORTCOUNT ) die("need to set any or more valid sort modes");
 	mem_qsort(mirrors, sort_cmp);
 }
 
@@ -587,13 +585,17 @@ __private void mirror_speed(mirror_s* mirror, const char* arch, unsigned type){
 
 		__free char* url = str_printf("%s/extra/os/%s/%s", mirror->url, arch, pk->filename);
 		unsigned retry = DOWNLOAD_RETRY;
+		delay_t  retrytime = DOWNLOAD_WAIT;
 		while( retry-->0 ){
 			double start = time_sec();
 			__free void* buf = www_mdownload(url, 0);
 			double stop  = time_sec();
 			if( !buf ){
-				++mirror->rfield[FIELD_RETRY];
-				if( retry ) delay_ms(DOWNLOAD_WAIT);
+				++mirror->retry;
+				if( retry ){
+					delay_ms(retrytime);
+					retrytime *= 2;
+				}
 				continue;
 			}
 			unsigned size = mem_header(buf)->len;
@@ -617,4 +619,59 @@ void mirrors_speed(mirror_s* mirrors, const char* arch, int progress, unsigned t
 
 	if( progress ) progress_end("mirrors speed");
 }
+
+__private double std_dev_speed(mirror_s* mirrors, const double avg){
+	double sum = 0;
+	const unsigned count = mem_header(mirrors)->len;
+	for( unsigned i = 0; i < count; ++i ){
+		sum += pow(mirrors[i].speed - avg, 2);
+	}
+	return sqrt(sum / count);
+}
+
+__private void avg_mirror(mirror_s* mirrors, double* avgSpeed, double* avgOutofdate, double* avgMorerecent){
+	*avgSpeed      = 0.0;
+	*avgOutofdate  = 0.0;
+	*avgMorerecent = 0.0;
+	const unsigned count = mem_header(mirrors)->len;
+	for( unsigned i = 0; i < count; ++i ){
+		*avgSpeed      += mirrors[i].speed;
+		*avgOutofdate  += mirrors[i].outofdate;
+		*avgMorerecent += mirrors[i].morerecent;
+	}
+	*avgSpeed      /= count;
+	*avgOutofdate  /= count;
+	*avgMorerecent /= count;
+}
+
+__private double mirror_weight(mirror_s* mirror, const double avgSpeed, const double sddSpeed, const double avgOutofdate, const double avgMorerecent){
+	//Gauss
+	const double wspeed =  WEIGHT_SPEED * exp(-pow(mirror->speed - avgSpeed, 2) / (2 * pow(sddSpeed, 2)));
+	//exp dev
+	const double pout   = (mirror->outofdate * 100.0 / mirror->total) / 100.0;
+	const double lamout = 1.0 / avgOutofdate;
+	const double disout = WEIGHT_OUTOFDATE * (mirror->outofdate == 0 ? 1 : exp(-lamout * pout));
+
+	const double pmor   = (mirror->morerecent * 100.0 / mirror->total) / 100.0;
+	const double lammor = 1.0 / avgMorerecent;
+	const double dismor = WEIGHT_MOREUPDATE * (mirror->morerecent == 0 ? 1 : exp(-lammor * pmor));
+	
+	const double total = wspeed + disout + dismor;	
+	dbg_info("speed:%5.2f [%2u|%4.1f]outofdate:%5.2f [%2u|%4.1f]morerecent:%5.2f total: %5.2f", wspeed, mirror->outofdate, pout, disout, mirror->morerecent, pmor, dismor, total);
+	return total;
+}
+
+void mirrors_stability(mirror_s* mirrors){
+	double avgSpeed;
+	double avgOutofdate;
+	double avgMorerecent;	
+	avg_mirror(mirrors,&avgSpeed, &avgOutofdate, &avgMorerecent);
+	const double sddSpeed = std_dev_speed(mirrors, avgSpeed);
+	const unsigned count = mem_header(mirrors)->len;
+	for( unsigned i = 0; i < count; ++i ){
+		dbg_info("%s", mirrors[i].url);
+		mirrors[i].stability = mirror_weight(&mirrors[i], avgSpeed, sddSpeed, avgOutofdate, avgMorerecent);
+	}
+}
+
 
