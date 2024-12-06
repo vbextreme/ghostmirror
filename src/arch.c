@@ -14,13 +14,11 @@
 #include <fcntl.h>
 #include <math.h>
 
-#define PACMAN_MIRRORLIST "/etc/pacman.d/mirrorlist"
-#define PACMAN_LOCAL_DB   "/var/lib/pacman/sync"
-
 #define SORT_MAX 32
 __private const char* SORTNAME[] = {
 	"country",
 	"mirror",
+	"proxy",
 	"state",
 	"outofdate",
 	"uptodate",
@@ -252,14 +250,16 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 	}
 	else{
 		__free char* url = str_printf("%s/%s/os/%s/%s.db", mirror->url, repo, mirror->arch, repo);
-		return www_mdownload_retry(url, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT);
+		void* ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, &mirror->proxy);
+		if( mirror->proxy && strcmp(url, mirror->proxy) ) mirror->isproxy = 1;
+		return ret;
 	}
 }
 
 __private char* get_mirror_ls(mirror_s* mirror, const char* repo, const unsigned tos){
 	if( mirror->url[0] == '/' ) return NULL;
 	__free char* url = str_printf("%s/%s/os/%s/", mirror->url, repo, mirror->arch);
-	return www_mdownload_retry(url, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT);
+	return www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL);
 }
 
 __private void mirror_update(mirror_s* mirror, const unsigned tos){
@@ -270,6 +270,7 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 		__free void* tarzstd = get_tar_zst(mirror, REPO[ir], tos);
 		if( !tarzstd ){
 			dbg_error("unable to get remote mirror: %s", mirror->url);
+			if( mirror->status == MIRROR_LOCAL ) die("unable to download local mirror database, try to reduce number of download or increase timeout");
 			mirror->status = MIRROR_ERR;
 			return;
 		}
@@ -277,12 +278,14 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 		__free void* tarbuf = gzip_decompress(tarzstd);
 		if( !tarbuf ){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
+			if( mirror->status == MIRROR_LOCAL ) die("unable to decompress local archive");	
 			mirror->status = MIRROR_ERR;
 			return;
 		}
 
 		if( !(mirror->repo[ir].db = generate_db(tarbuf)) ){
 			dbg_error("untar archive from mirror: %s", mirror->url);
+			if( mirror->status == MIRROR_LOCAL ) die("unable to generate local database from tar");	
 			mirror->status = MIRROR_ERR;
 			return;
 		}
@@ -335,7 +338,7 @@ void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownl
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){
-	char* buf = fname ? load_file(fname, 1) :  www_mdownload_retry("https://archlinux.org/mirrorlist/all/", tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT);
+	char* buf = fname ? load_file(fname, 1) :  www_download_retry(MIRROR_LIST_URL, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL);
 	if( !buf ) die("unable to load mirrorlist");
 	buf = mem_nullterm(buf);
 	return buf;
@@ -525,16 +528,17 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 
 __private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const unsigned sort){
 	switch( sort ){
-		case 0: return strcmp(a->country, b->country);
-		case 1: return strcmp(a->url, b->url);
-		case 2: return a->status - b->status;
-		case 3: return a->outofdate - b->outofdate;
-		case 4: return b->uptodate - a->uptodate;
-		case 5: return b->morerecent - a->morerecent;
-		case 6: return b->sync - a->sync;
-		case 7: return a->retry - b->retry;
-		case 8: return a->speed > b->speed ? -1 : a->speed < b->speed ? 1 : 0;
-		case 9: return a->stability > b->stability ? -1 : a->stability < b->stability ? 1 : 0;
+		case  0: return strcmp(a->country, b->country);
+		case  1: return strcmp(a->url, b->url);
+		case  2: return a->isproxy && !b->isproxy ? 1 : !a->isproxy && b->isproxy ? -1 : 0;
+		case  3: return a->status - b->status;
+		case  4: return a->outofdate - b->outofdate;
+		case  5: return b->uptodate - a->uptodate;
+		case  6: return b->morerecent - a->morerecent;
+		case  7: return b->sync - a->sync;
+		case  8: return a->retry - b->retry;
+		case  9: return a->speed > b->speed ? -1 : a->speed < b->speed ? 1 : 0;
+		case 10: return a->stability > b->stability ? -1 : a->stability < b->stability ? 1 : 0;
 		default: die("internal error, sort set wrong field");
 	}
 }
@@ -588,7 +592,7 @@ __private void mirror_speed(mirror_s* mirror, const char* arch, unsigned type){
 		delay_t  retrytime = DOWNLOAD_WAIT;
 		while( retry-->0 ){
 			double start = time_sec();
-			__free void* buf = www_mdownload(url, 0);
+			__free void* buf = www_download(url, 0, 0, NULL);
 			double stop  = time_sec();
 			if( !buf ){
 				++mirror->retry;
@@ -646,7 +650,7 @@ __private void avg_mirror(mirror_s* mirrors, double* avgSpeed, double* avgOutofd
 
 __private double mirror_weight(mirror_s* mirror, const double avgSpeed, const double sddSpeed, const double avgOutofdate, const double avgMorerecent){
 	//Gauss
-	const double wspeed =  WEIGHT_SPEED * exp(-pow(mirror->speed - avgSpeed, 2) / (2 * pow(sddSpeed, 2)));
+	const double wspeed = (unsigned long)(mirror->speed * 1000000.0) == 0 ? 0.0 : (WEIGHT_SPEED * exp(-pow(mirror->speed - avgSpeed, 2) / (2 * pow(sddSpeed, 2))));
 	//exp dev
 	const double pout   = (mirror->outofdate * 100.0 / mirror->total) / 100.0;
 	const double lamout = 1.0 / avgOutofdate;

@@ -1,5 +1,6 @@
 #include <notstd/core.h>
 #include <notstd/delay.h>
+#include <notstd/str.h>
 
 #include <curl/curl.h>
 #include <string.h>
@@ -71,13 +72,19 @@ __private CURL* www_curl_new(const char* url){
 	return ch;
 }
 
-__private int www_curl_perform(CURL* ch){
+__private int www_curl_perform(CURL* ch, char** realurl){
 	CURLcode res;
 	res = curl_easy_perform(ch);
 	if ( res != CURLE_OK && res != CURLE_FTP_COULDNT_RETR_FILE ){
 		dbg_error("perform return %d: %s", res, curl_easy_strerror(res));
 		wwwerrno = res;
 		return -1;
+	}
+	if( realurl ){
+		char* followurl = NULL;
+		curl_easy_getinfo(ch, CURLINFO_EFFECTIVE_URL, &followurl);
+		*realurl = str_dup(followurl, 0);
+		dbg_info("realurl: %s", *realurl);
 	}
 	long resCode;
 	curl_easy_getinfo(ch, CURLINFO_RESPONSE_CODE, &resCode);
@@ -89,42 +96,31 @@ __private int www_curl_perform(CURL* ch){
 	return 0;
 }
 
-void* www_mdownload(const char* url, unsigned touts){
+void* www_download(const char* url, unsigned onlyheader, unsigned touts, char** realurl){
 	dbg_info("'%s'", url);
 	__wcc CURL* ch = www_curl_new(url);
 	__free uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
 	curl_easy_setopt(ch, CURLOPT_FOLLOWLOCATION, 1L);
 	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);
 	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &data);
+	if( onlyheader ){
+		curl_easy_setopt(ch, CURLOPT_HEADER, 1L);
+		curl_easy_setopt(ch, CURLOPT_NOBODY, 1L);
+	}
 	if( touts ) curl_easy_setopt(ch, CURLOPT_TIMEOUT, touts);
-	if( www_curl_perform(ch) ) return NULL;
+	if( www_curl_perform(ch, realurl) ) return NULL;
 	return mem_borrowed(data);
 }
 
-void* www_mdownload_retry(const char* url, unsigned touts, unsigned retry, unsigned retryms){
+void* www_download_retry(const char* url, unsigned onlyheader, unsigned touts, unsigned retry, unsigned retryms, char** realurl){
 	void* ret = NULL;
 	delay_t retrytime = retryms;
-	while( retry-->0 && !(ret=www_mdownload(url, touts)) ){
+	while( retry-->0 && !(ret=www_download(url, onlyheader, touts, realurl)) ){
 		if( retry ){
 			delay_ms(retrytime);
 			retrytime *= 2;
 		}
 	}
 	return ret;
-}
-
-char* www_header_get(const char* url, unsigned touts){
-	__wcc CURL* ch = www_curl_new(url);
-	__free uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
-	curl_easy_setopt(ch, CURLOPT_HEADER, 1L);
-    curl_easy_setopt(ch, CURLOPT_NOBODY, 1L);
-	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);
-	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &data);
-	curl_easy_setopt(ch, CURLOPT_TIMEOUT, touts);
-	dbg_warning("%s", url);
-	if( www_curl_perform(ch) ) return NULL;
-	data = mem_upsize(data, 1);
-	data[mem_header(data)->len] = 0;
-	return mem_borrowed(data);
 }
 

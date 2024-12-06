@@ -8,10 +8,13 @@
 #define DOWNLOAD_RETRY    3
 #define DOWNLOAD_WAIT     1000
 
-typedef enum { MIRROR_UNKNOW, MIRROR_LOCAL, MIRROR_ERR } mirrorStatus_e;
-
+#define MIRROR_LIST_URL   "https://archlinux.org/mirrorlist/all/"
 #define MIRROR_TYPE_HTTP  0x1
 #define MIRROR_TYPE_HTTPS 0x2
+
+//TODO pacman mirrorlist is not a default path need to parse pacman config and get the include directory for each db
+#define PACMAN_MIRRORLIST "/etc/pacman.d/mirrorlist"
+#define PACMAN_LOCAL_DB   "/var/lib/pacman/sync"
 
 #define SPEED_LIGHT  "git"
 #define SPEED_NORMAL "chromium"
@@ -20,6 +23,8 @@ typedef enum { MIRROR_UNKNOW, MIRROR_LOCAL, MIRROR_ERR } mirrorStatus_e;
 #define WEIGHT_OUTOFDATE  49.0
 #define WEIGHT_MOREUPDATE 49.0
 #define WEIGHT_SPEED      2.0
+
+typedef enum { MIRROR_UNKNOW, MIRROR_LOCAL, MIRROR_ERR } mirrorStatus_e;
 
 typedef struct pkgdesc{
 	char   filename[NAME_MAX];
@@ -37,6 +42,8 @@ typedef struct mirror{
 	mirrorStatus_e status;
 	char*          country;
 	char*          url;
+	char*          proxy;
+	int            isproxy;
 	const char*    arch;
 	repo_s         repo[2];
 	double         speed;

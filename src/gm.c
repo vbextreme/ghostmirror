@@ -19,7 +19,10 @@
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  it's possible to get follow location for check if wrong location?
 //
-//  0.8.1 add num error when error is set in www
+//TODO error if not able to get local mirror
+//
+//	0.8.1 is proxy and add url to table
+//  0.8.2 add num error when error is set in www, better add error option and print table for possible issues with better error descript
 //  0.9.0 systemd auto mirroring
 //  0.9.1 documentation
 //  0.9.2 scanbuild
@@ -195,7 +198,6 @@ __private void print_double_field(double val, mirrorStatus_e status, unsigned si
 __private void print_unsigned_field(unsigned val, mirrorStatus_e status, unsigned size, int colormode){
 	const unsigned left  = (size - 2) / 2;
 	const unsigned right = size - (left+2);
-
 	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
 		colorfg_set(colormode);
@@ -242,7 +244,6 @@ __private void print_str(const char* str, mirrorStatus_e status, unsigned size, 
 __private void print_speed(double val, mirrorStatus_e status, unsigned size, int colormode){
 	const unsigned left  = (size - 10) / 2;
 	const unsigned right = size - (left+10);
-
 	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
 		colorfg_set(colormode);
@@ -268,7 +269,6 @@ __private unsigned stability_to_day(double val){
 __private void print_stability(double val, mirrorStatus_e status, unsigned size, int colormode){
 	const unsigned left  = (size - 4) / 2;
 	const unsigned right = size - (left+4);
-
 	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
 		colorfg_set(colormode);
@@ -281,6 +281,24 @@ __private void print_stability(double val, mirrorStatus_e status, unsigned size,
 	printf("%2dgg", stability_to_day(val));
 	print_repeat(right, ' ');
 	if( colormode >= 0 ) colorfg_set(0);
+	fputs("│", stdout);
+}
+
+__private void print_bool(int value, mirrorStatus_e status, unsigned size, int color){
+	unsigned len = value ? 4 : 5;
+	const unsigned left  = (size - len) / 2;
+	const unsigned right = size - (left+len);
+	if( color >= 0 ){
+		colorfg_set( value && color ? CERR : CSTATUS[0]);
+		if( status == MIRROR_LOCAL ){
+			colorbg_set(CBG);
+			bold_set();
+		}
+	}
+	print_repeat(left, ' ');
+	printf("%s", value ? "true": "false");
+	print_repeat(right, ' ');
+	if( color >= 0 ) colorfg_set(0);
 	fputs("│", stdout);
 }
 
@@ -299,23 +317,24 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 	}
 
 	colors = colors ? 0 : -1000;
-	char* tblname[]    = { "country", "mirror",  "state", "outofdate", "uptodate", "morerecent",   "sync",  "retry", "speed", "extimated" };
-	unsigned tblsize[] = { mlCountry,    mlUrl,        9,           9,          9,           10,        9,        7,      12,          9  };
-	unsigned tblcolor[]= {  colors+0, colors+0, colors+0,    colors+1,   colors+0,     colors+3, colors+2, colors+4, colors+5,   colors+6 };
+	char* tblname[]    = { "country", "mirror",  "proxy",  "state", "outofdate", "uptodate", "morerecent",   "sync",  "retry", "speed", "extimated" };
+	unsigned tblsize[] = { mlCountry,    mlUrl,        5,        9,           9,          9,           10,        9,        7,      12,          9  };
+	unsigned tblcolor[]= {  colors+0, colors+0, colors+1, colors+0,    colors+1,   colors+0,     colors+3, colors+2, colors+4, colors+5,   colors+6 };
 	print_table_header(tblname, tblsize, sizeof_vector(tblsize), colors);
 	
 	mforeach(mirrors, i){
 		fputs("│", stdout);
 		print_str(mirrors[i].country, mirrors[i].status, tblsize[0], tblcolor[0]);
 		print_str(mirrors[i].url, mirrors[i].status, tblsize[1], tblcolor[1]);
-		print_status(mirrors[i].status, tblsize[2], tblcolor[2]);
-		print_double_field(mirrors[i].outofdate  * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[3], tblcolor[3]);
-		print_double_field(mirrors[i].uptodate   * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[4], tblcolor[4]);
-		print_double_field(mirrors[i].morerecent * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[5], tblcolor[5]);
-		print_double_field(mirrors[i].sync       * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[6], tblcolor[6]);
-		print_unsigned_field(mirrors[i].retry, mirrors[i].status, tblsize[7], tblcolor[7]);
-		print_speed(mirrors[i].speed, mirrors[i].status, tblsize[8], tblcolor[8]);
-		print_stability(mirrors[i].stability, mirrors[i].status, tblsize[9], tblcolor[9]);
+		print_bool(mirrors[i].isproxy, mirrors[i].status, tblsize[2], tblcolor[2]);
+		print_status(mirrors[i].status, tblsize[3], tblcolor[3]);
+		print_double_field(mirrors[i].outofdate  * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[4], tblcolor[4]);
+		print_double_field(mirrors[i].uptodate   * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[5], tblcolor[5]);
+		print_double_field(mirrors[i].morerecent * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[6], tblcolor[6]);
+		print_double_field(mirrors[i].sync       * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[7], tblcolor[7]);
+		print_unsigned_field(mirrors[i].retry, mirrors[i].status, tblsize[8], tblcolor[8]);
+		print_speed(mirrors[i].speed, mirrors[i].status, tblsize[9], tblcolor[9]);
+		print_stability(mirrors[i].stability, mirrors[i].status, tblsize[10], tblcolor[10]);
 		fputc('\n', stdout);
 	}
 
@@ -329,11 +348,6 @@ __private void print_list(mirror_s* mirrors, const char* where, unsigned max){
 	const unsigned count = mem_header(mirrors)->len;
 	for(unsigned i = 0; i < count && i < max; ++i ){
 		fprintf(out, "#* '%s'", mirrors[i].country);
-		/*
-		for( unsigned j = 0; j < FIELD_VIRTUAL_SPEED; ++j ){
-			fprintf(out, " %u", mirrors[i].rfield[j]);
-		}
-		*/
 		fprintf(out, " %f\n", mirrors[i].speed);
 		fprintf(out, "Server=%s/$repo/os/$arch\n", mirrors[i].url);
 	}
@@ -372,61 +386,32 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_L, ULONG_MAX);
 
 	www_begin();
-/*
-for( double val = 100.0; val > 95.0; val -= 0.5){
-	unsigned c = double_color_map(val, 0);
-	colorfg_set(c);
-	printf("%f", val);
-	colorfg_set(0);
-	puts("");
-}
-for( double val = 0.0; val < 3; val += 0.1){
-	unsigned c = double_color_map(val, 1);
-	colorfg_set(c);
-	printf("%f", val);
-	colorfg_set(0);
-	puts("");
-}
-for( double val = 100; val > 90; val -= 0.5){
-	unsigned c = double_color_map(val, 2);
-	colorfg_set(c);
-	printf("%f", val);
-	colorfg_set(0);
-	puts("");
-}
-die("");
-*/
 
-/* stability:
- *  99.5->100% 10gg
- *  99.0->99.5 5gg
- *  98.0->99.0 2gg
- *  0   ->98   1gg
-*/
 /*
 mirror_s* mirrors = MANY(mirror_s, 16);
 mem_header(mirrors)->len = 4;
 mem_zero(mirrors);
 mirrors[0].url = "https://uptodate";
-mirrors[0].rfield[FIELD_UPTODATE]   = 100;
-mirrors[0].rfield[FIELD_TOTAL]      = 100;
+mirrors[0].uptodate   = 100;
+mirrors[0].total      = 100;
+mirrors[0].proxy      = "https://improxy";
 mirrors[0].speed = 3;
 mirrors[0].status = MIRROR_LOCAL;
 mirrors[1].url = "https://morerecent";
-mirrors[1].rfield[FIELD_UPTODATE]   = 98;
-mirrors[1].rfield[FIELD_MORERECENT] = 2;
-mirrors[1].rfield[FIELD_TOTAL]      = 100;
+mirrors[1].uptodate   = 98;
+mirrors[1].morerecent = 2;
+mirrors[1].total      = 100;
 mirrors[1].speed = 2.7;
 mirrors[2].url = "https://outofdate";
-mirrors[2].rfield[FIELD_OUTOFDATE]  = 2;
-mirrors[2].rfield[FIELD_UPTODATE]   = 98;
-mirrors[2].rfield[FIELD_TOTAL]      = 100;
+mirrors[2].outofdate  = 2;
+mirrors[2].uptodate   = 98;
+mirrors[2].total      = 100;
 mirrors[2].speed = 3.3;
 mirrors[3].url = "https://sync";
-mirrors[3].rfield[FIELD_SYNC]       = 94;
-mirrors[3].rfield[FIELD_UPTODATE]   = 100;
-mirrors[3].rfield[FIELD_TOTAL]      = 100;
-mirrors[3].rfield[FIELD_RETRY]      = 3;
+mirrors[3].sync       = 94;
+mirrors[3].uptodate   = 100;
+mirrors[3].total      = 100;
+mirrors[3].retry      = 3;
 mirrors[3].speed = 7.0;
 mirrors[3].status = MIRROR_ERR;
 

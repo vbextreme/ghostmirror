@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.8.0')
+project('ghostmirror', 'c', version: '0.8.1')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'concept of stability, full sort this fix die with speed, internal rfield back to struct field, www followlocation, dynamic time retry, default tout 20'
+  'dsc': 'merge wwmdownload now resolve follow location, add proxy in sort and table, fatal error if not downloaded local database'
 }
 
 if get_option('eveloper')
