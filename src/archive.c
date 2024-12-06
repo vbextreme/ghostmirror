@@ -110,18 +110,18 @@ __private htar_s* htar_get(tar_s* tar){
 			return NULL;
 		}
 		dbg_error("aspected end block");
-		errno = ENOENT;
+		errno = EBADF;
 		return NULL;
 	}
 
 	unsigned chk = strtoul(h->checksum, NULL, 8);
 	if( chk != tar_checksum(h) ){
 		dbg_error("wrong checksum");
-		errno = EBADF;
+		errno = EBADE;
 		return NULL;
 	}
 	if( strcmp(h->magic, TAR_MAGIC) ){
-		dbg_error("wrong checksum");
+		dbg_error("wrong magic");
 		errno = ENOEXEC;
 		return NULL;
 	}

@@ -196,15 +196,16 @@ int pkg_vercmp(const char *a, const char *b){
 __private pkgdesc_s* generate_db(void* tarbuf){
 	tar_s tar;
 	tar_mopen(&tar, tarbuf);
-	errno = 0;
 	tarent_s* ent;
 	pkgdesc_s* db = MANY(pkgdesc_s, 100);
+	errno = 0;
 	while( (ent=tar_next(&tar)) ){
 		if( ent->type == TAR_FILE ){
 			db = mem_upsize(db, 1);
 			pkgdesc_parse(&db[mem_header(db)->len++], ent->data, ent->size);
 			mem_free(ent);
 		}
+		errno = 0;
 	}
 	if( errno ){
 		mem_free(db);
@@ -294,10 +295,18 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 		if( !tarbuf ){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
+			mirror->error  = ERROR_GZIP;
 			return ret;
 		}
 
 		if( !(mirror->repo[ir].db = generate_db(tarbuf)) ){
+			switch( errno ){
+				case ENOENT : mirror->error = ERROR_TAR_NOBLOCK; break;
+				case EBADF  : mirror->error = ERROR_TAR_BLOCKEND; break;  
+				case EBADE  : mirror->error = ERROR_TAR_CHECKSUM; break;
+				case ENOEXEC: mirror->error = ERROR_TAR_MAGIC; break;
+				default: die("internal error, not catch error %d: %s, please report this issue", errno, strerror(errno)); break;
+			}
 			dbg_error("untar archive from mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
 			return ret;
@@ -320,8 +329,8 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 	return 0;
 }
 
-__private void progress_begin(const char* desc, unsigned count){
-	fprintf(stderr, "[%5.1f%%] %s", 0 * 100.0 / count, desc);
+__private void progress_begin(const char* desc){
+	fprintf(stderr, "[%5.1f%%] %s", 0.0, desc);
 	fflush(stderr);
 }
 
@@ -341,9 +350,9 @@ void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownl
 	const unsigned count = mem_header(mirrors)->len;
 	__atomic unsigned pvalue = 0;
 	
-	if( progress ) progress_begin("mirrors updates", count);
+	if( progress ) progress_begin("mirrors updates");
 
-	__atomic int kres;
+	__atomic int kres = 0;
 	__paralleft(ndownload)
 	for( unsigned i = 0; i < count; ++i){
 		if( !kres ){
@@ -534,7 +543,7 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	}
 	if( !local ) die("internal error, not find local db, report this message");
 
-	if( progress ) progress_begin("mirrors db compare", count);
+	if( progress ) progress_begin("mirrors db compare");
 	
 	for( unsigned i = 0; i < count; ++i ){
 		if( mirrors[i].status == MIRROR_UNKNOW ) mirror_cmp_db(local, &mirrors[i]);
@@ -650,7 +659,7 @@ __private void mirror_speed(mirror_s* mirror, const char* arch, unsigned type){
 
 void mirrors_speed(mirror_s* mirrors, const char* arch, int progress, unsigned type){
 	const unsigned count = mem_header(mirrors)->len;
-	if( progress ) progress_begin("mirrors speed", count);
+	if( progress ) progress_begin("mirrors speed");
 		
 	mforeach(mirrors, i){
 		if( mirrors[i].status != MIRROR_ERR ){

@@ -1,4 +1,4 @@
-ghostmirror v0.8.3
+ghostmirror v0.8.4
 ==================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.8.4 add internal error for more precise investigation and better output, fix sync interrupt threads not initialized, change another time time out
 * v0.8.3 investigation, add basic support for simple server test, not affidable need more and more test
 * v0.8.2 ping field and sort, better status sort, prepare for investigation
 * v0.8.1 merge wwmdownload now resolve follow location, add proxy in sort and table, fatal error if not downloaded local database

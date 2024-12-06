@@ -35,29 +35,37 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local){
 	printf("server: '%s'\n", mirror->url);
 	if( mirror->isproxy ){
 		printf("  redirect: '%s'\n", mirror->proxy);
+		switch( test_check_redirect_url(mirror->proxy, mirror->arch) ){
+			case -1: puts("  test url string: redirect url not contain repo name"); break;
+			case -2: puts("  test url string: redirect url is malformed"); break;
+			case  0: puts("  test url string: successfull"); break;
+		}
 	}
 	if( mirror->status == MIRROR_ERR ){
 		puts("  state: error");
+		switch( mirror->error ){
+			case 0                 : break;
+			case ERROR_GZIP        : puts("  error: unable to gzip file, probably corrupted file"); break;
+			case ERROR_TAR_MAGIC   : puts("  error: wrong magic tar value, probably corrupted file"); break;
+			case ERROR_TAR_NOBLOCK : puts("  error: tar aspected another block but not finding, probably connection interrupt download or corrupted file"); break;
+			case ERROR_TAR_BLOCKEND: puts("  error: tar aspected end block but not finding, probably connection interrupt download or corrupted file"); break;
+			case ERROR_TAR_CHECKSUM: puts("  error: fail tar checksum, probably corrupted file"); break;
+			default: die("internal error, unmanaged %u error, please report this", mirror->error); break;
+		}
+
 		unsigned errconnection = www_connection_error(mirror->wwwerror);
 		unsigned errhttp       = www_http_error(mirror->wwwerror);
 		if( errconnection ){
 			printf("  connection error %u: %s\n", errconnection, www_str_error(mirror->wwwerror)); 
 			if( mirror->isproxy ){
 				if( www_ping(mirror->proxy) < 0 )
-					puts("    ping proxy test: server is up but redirect server is down");
+					puts("  ping proxy test: server is up but redirect server is down");
 				else
-					puts("    ping proxy test: server and redirect server is up");
+					puts("  ping proxy test: server and redirect server is up");
 			}
 		}
 		else if( errhttp ){
 			printf("  http error %u: %s\n", errhttp, www_str_error(mirror->wwwerror)); 
-			if( mirror->isproxy ){
-				switch( test_check_redirect_url(mirror->proxy, mirror->arch) ){
-					case -1: puts("    test url: redirect url not contain repo name"); break;
-					case -2: puts("    test url: redirect url is malformed"); break;
-					case  0: puts("    test url: successfull"); break;
-				}
-			}
 		}
 		else if( mirror->ping < 0 ){
 			puts("  ping error: probably server is down"); 
@@ -75,13 +83,15 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local){
 		for( unsigned ir = 0; ir < repocount; ++ir ){
 			unsigned const dbcount = mem_header(local->repo[ir].db)->len;
 			unsigned linestart = printf("  outofdate.%-5s: ", REPO[ir]);
-			unsigned linelen = 0;
+			unsigned linelen = 1;
 			for( unsigned i = 0; i < dbcount; ++i){
 				pkgdesc_s* tpk = mem_bsearch(mirror->repo[ir].db, &local->repo[ir].db[i], pkgname_cmp);
 				if( tpk ){
 					int ret = pkg_vercmp(local->repo[ir].db[i].version, tpk->version);
 					if( ret == 1 ){
 						fputs(tpk->name, stdout);
+						putchar(',');
+						putchar(' ');
 						linelen += strlen(tpk->name);
 						if( linelen > 80 ){
 							linelen = 0;

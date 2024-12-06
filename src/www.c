@@ -136,6 +136,7 @@ void* www_download_retry(const char* url, unsigned onlyheader, unsigned touts, u
 	void* ret = NULL;
 	delay_t retrytime = retryms;
 	while( retry-->0 && !(ret=www_download(url, onlyheader, touts, realurl)) ){
+		dbg_warning("fail download %s tout: %u touts, retry: %u", url, touts, retry);
 		if( retry ){
 			delay_ms(retrytime);
 			retrytime *= 2;

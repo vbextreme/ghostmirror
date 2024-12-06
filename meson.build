@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.8.3')
+project('ghostmirror', 'c', version: '0.8.4')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'investigation, add basic support for simple server test, not affidable need more and more test'
+  'dsc': 'add internal error for more precise investigation and better output, fix sync interrupt threads not initialized, change another time time out'
 }
 
 if get_option('eveloper')

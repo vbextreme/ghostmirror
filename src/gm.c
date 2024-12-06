@@ -12,7 +12,7 @@
 #include <math.h>
 
 #define DEFAULT_THREADS 4
-#define DEFAULT_TOUT    20
+#define DEFAULT_TOUT    5
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
@@ -20,11 +20,12 @@
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
 //
-//  0.8.4 how many test can add to investigate?, why server change url but follow not find here? add error for malformed tar
-//  0.9.0 systemd auto mirroring
-//  0.9.1 documentation
-//  0.9.2 scanbuild
-//  0.9.3 valgrind
+//  0.8.x add  investigate=error,outofdate,all
+//  0.8.x how many test can add to investigate?, why server change url but follow not find here?
+//  0.x.0 systemd auto mirroring
+//  0.x.1 documentation
+//  0.x.2 scanbuild
+//  0.x.3 valgrind
 //  1.0.0 first release?
 
 __private unsigned COLORS[][6] = { 

@@ -12,6 +12,14 @@
 #define MIRROR_TYPE_HTTP  0x1
 #define MIRROR_TYPE_HTTPS 0x2
 
+#define ERROR_GZIP         0x01
+#define ERROR_TAR_MAGIC    0x02
+#define ERROR_TAR_CHECKSUM 0x03
+#define ERROR_TAR_BLOCKEND 0x04
+#define ERROR_TAR_NOBLOCK  0x05
+
+
+
 //TODO pacman mirrorlist is not a default path need to parse pacman config and get the include directory for each db
 #define PACMAN_MIRRORLIST "/etc/pacman.d/mirrorlist"
 #define PACMAN_LOCAL_DB   "/var/lib/pacman/sync"
@@ -44,6 +52,7 @@ typedef struct mirror{
 	char*          url;
 	char*          proxy;
 	unsigned       wwwerror;
+	unsigned       error;
 	int            isproxy;
 	const char*    arch;
 	repo_s         repo[2];
