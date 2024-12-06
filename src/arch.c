@@ -33,7 +33,7 @@ __private unsigned SORTMODE[SORT_MAX];
 __private unsigned SORTCOUNT;
 
 
-__private char* REPO[] = { "core", "extra" };
+char* REPO[2] = { "core", "extra" };
 
 __private mirror_s* mirror_ctor(mirror_s* mirror, char* url, const char* arch, char* country){
 	memset(mirror, 0, sizeof(mirror_s));
@@ -134,7 +134,7 @@ __private void pkgdesc_parse(pkgdesc_s* out, const char* data, size_t len){
 	}
 }
 
-__private int pkg_vercmp(const char *a, const char *b){
+int pkg_vercmp(const char *a, const char *b){
     const char *pa = a, *pb = b;
     int r = 0;
 
@@ -214,7 +214,7 @@ __private pkgdesc_s* generate_db(void* tarbuf){
 	return db;
 }
 
-__private int pkgname_cmp(const void* a, const void* b){
+int pkgname_cmp(const void* a, const void* b){
 	const pkgdesc_s* da = a;
 	const pkgdesc_s* db = b;
 	return strcmp(da->name, db->name);
@@ -251,7 +251,14 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 	}
 	else{
 		__free char* url = str_printf("%s/%s/os/%s/%s.db", mirror->url, repo, mirror->arch, repo);
-		void* ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, &mirror->proxy);
+		void* ret = NULL;
+		if( !mirror->wwwerror ){
+			ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, &mirror->proxy);
+		}
+		else{
+			ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL);
+		}
+		if( !ret ) mirror->wwwerror = www_errno();
 		if( mirror->proxy && strcmp(url, mirror->proxy) ) mirror->isproxy = 1;
 		return ret;
 	}
@@ -263,12 +270,15 @@ __private char* get_mirror_ls(mirror_s* mirror, const char* repo, const unsigned
 	return www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL);
 }
 
-__private void mirror_update(mirror_s* mirror, const unsigned tos){
+__private int mirror_update(mirror_s* mirror, const unsigned tos){
+	int ret = mirror->status == MIRROR_LOCAL ? -1 : 0;
 	const unsigned repocount = sizeof_vector(REPO);
 	dbg_info("update %s", mirror->url);
 	mirror->ping = www_ping(mirror->url);
 	if( mirror->ping < 0 ){
 		dbg_warning("%s fail ping", mirror->url);
+		mirror->status = MIRROR_ERR;
+		return ret;
 	}
 
 	for( unsigned ir = 0; ir < repocount; ++ir ){
@@ -277,20 +287,20 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 		if( !tarzstd ){
 			dbg_error("unable to get remote mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
-			return;
+			return ret;
 		}
 
 		__free void* tarbuf = gzip_decompress(tarzstd);
 		if( !tarbuf ){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
-			return;
+			return ret;
 		}
 
 		if( !(mirror->repo[ir].db = generate_db(tarbuf)) ){
 			dbg_error("untar archive from mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
-			return;
+			return ret;
 		}
 
 		mem_qsort(mirror->repo[ir].db, pkgname_cmp);
@@ -306,6 +316,8 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 			dbg_warning("mirror %s not provide ls", mirror->url);
 		}
 	}
+
+	return 0;
 }
 
 __private void progress_begin(const char* desc, unsigned count){
@@ -331,13 +343,17 @@ void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownl
 	
 	if( progress ) progress_begin("mirrors updates", count);
 
+	__atomic int kres;
 	__paralleft(ndownload)
 	for( unsigned i = 0; i < count; ++i){
-		mirror_update(&mirrors[i], tos);
+		if( !kres ){
+			__atomic int res = mirror_update(&mirrors[i], tos);
+			if( res ) kres = res;
+		}
 		if( progress ) progress_refresh("mirrors updates", ++pvalue, count);
 	}
-
 	if( progress ) progress_end("mirrors updates");
+	if( kres ) die("impossible to download local mirror, try to decrease numbers of threads or increase timeout");
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){

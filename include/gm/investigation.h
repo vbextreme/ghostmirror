@@ -3,6 +3,6 @@
 
 #include <gm/arch.h>
 
-
+void investigate_mirrors(mirror_s* mirrors);
 
 #endif

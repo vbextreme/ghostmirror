@@ -18,12 +18,9 @@
 //TODO
 //  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
-//  it's possible to get follow location for check if wrong location?
+//  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
 //
-//TODO error if not able to get local mirror
-//
-//	0.8.1 is proxy and add url to table
-//  0.8.2 add num error when error is set in www, better add error option and print table for possible issues with better error descript
+//  0.8.4 how many test can add to investigate?, why server change url but follow not find here? add error for malformed tar
 //  0.9.0 systemd auto mirroring
 //  0.9.1 documentation
 //  0.9.2 scanbuild
@@ -72,6 +69,7 @@ typedef enum{
 	O_l,
 	O_L,
 	O_T,
+	O_i,
 	O_h
 }OPT_E;
 
@@ -90,6 +88,7 @@ option_s OPT[] = {
 	{'l', "--list"           , "create a file with list of mirrors, stdout as arg for output here"  , OPT_STR, 0, 0},
 	{'L', "--max-list"       , "set max numbers of output mirrors"                                  , OPT_NUM, 0, 0},
 	{'T', "--type"           , "select mirrors type, http,https,all"                                , OPT_ARRAY | OPT_STR, 0, 0},
+	{'i', "--investigate"    , "search mirror errors to detect the problem"                         , OPT_NOARG, 0, 0},
 	{'h', "--help"           , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
 
@@ -500,6 +499,8 @@ die("");
 	
 	print_cmp_mirrors(mirrors, opt[O_P].set);
 	if( opt[O_l].set ) print_list(mirrors, opt[O_l].value->str, opt[O_L].value->ui);
+	
+	if( opt[O_i].set ) investigate_mirrors(mirrors);
 
 	www_end();
 	return 0;

@@ -11,7 +11,7 @@
 #define WWW_ERROR_HTTP 10000
 #define WWW_BUFFER_SIZE 1024
 
-__thread int wwwerrno;
+__thread unsigned wwwerrno;
 
 void www_begin(void){
 	curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -43,6 +43,25 @@ __private const char* www_errno_http(long resCode) {
 const char* www_errno_str(void){
 	if( wwwerrno > WWW_ERROR_HTTP ) return www_errno_http(wwwerrno - WWW_ERROR_HTTP);
 	return curl_easy_strerror(wwwerrno);
+}
+
+unsigned www_errno(void){
+   return wwwerrno;
+}
+
+unsigned www_connection_error(unsigned error){
+	if( error < WWW_ERROR_HTTP ) return error;
+	return 0;
+}
+
+unsigned www_http_error(unsigned error){
+	if( error < WWW_ERROR_HTTP ) return 0;
+	return error - WWW_ERROR_HTTP;
+}
+
+const char* www_str_error(unsigned error){
+	if( error > WWW_ERROR_HTTP ) return www_errno_http(error - WWW_ERROR_HTTP);
+	return curl_easy_strerror(error);
 }
 
 __private size_t www_curl_buffer_recv(void* ptr, size_t size, size_t nmemb, void* userctx){
@@ -139,7 +158,6 @@ long www_ping(const char* url){
 	}
 
 	__free char* cmd = str_printf("ping -c 1 %s 2>&1", url);
-	dbg_info("> %s", cmd);
 	FILE* f = popen(cmd, "r");
 	if( !f ){
 		dbg_error("on popen");

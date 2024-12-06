@@ -43,6 +43,7 @@ typedef struct mirror{
 	char*          country;
 	char*          url;
 	char*          proxy;
+	unsigned       wwwerror;
 	int            isproxy;
 	const char*    arch;
 	repo_s         repo[2];
@@ -68,6 +69,8 @@ void country_list(const char* mirrorlist);
 void mirrors_speed(mirror_s* mirrors, const char* arch, int progress, unsigned type);
 void mirrors_stability(mirror_s* mirrors);
 
+int pkg_vercmp(const char *a, const char *b);
+int pkgname_cmp(const void* a, const void* b);
 
 
 #endif
