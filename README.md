@@ -1,4 +1,4 @@
-ghostmirror v0.8.1
+ghostmirror v0.8.2
 ==================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.8.2 ping field and sort, better status sort, prepare for investigation
 * v0.8.1 merge wwmdownload now resolve follow location, add proxy in sort and table, fatal error if not downloaded local database
 * v0.8.0 concept of stability, full sort this fix die with speed, internal rfield back to struct field, www followlocation, dynamic time retry, default tout 20
 * v0.7.1 fix wrong -T description, set max numbers of output mirrors, unique mirrors.

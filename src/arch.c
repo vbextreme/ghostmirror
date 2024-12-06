@@ -26,6 +26,7 @@ __private const char* SORTNAME[] = {
 	"sync",
 	"retry",
 	"speed",
+	"ping",
 	"extimated"
 };
 __private unsigned SORTMODE[SORT_MAX];
@@ -265,12 +266,16 @@ __private char* get_mirror_ls(mirror_s* mirror, const char* repo, const unsigned
 __private void mirror_update(mirror_s* mirror, const unsigned tos){
 	const unsigned repocount = sizeof_vector(REPO);
 	dbg_info("update %s", mirror->url);
+	mirror->ping = www_ping(mirror->url);
+	if( mirror->ping < 0 ){
+		dbg_warning("%s fail ping", mirror->url);
+	}
+
 	for( unsigned ir = 0; ir < repocount; ++ir ){
 		dbg_info("\t %s", REPO[ir]);
 		__free void* tarzstd = get_tar_zst(mirror, REPO[ir], tos);
 		if( !tarzstd ){
 			dbg_error("unable to get remote mirror: %s", mirror->url);
-			if( mirror->status == MIRROR_LOCAL ) die("unable to download local mirror database, try to reduce number of download or increase timeout");
 			mirror->status = MIRROR_ERR;
 			return;
 		}
@@ -278,14 +283,12 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 		__free void* tarbuf = gzip_decompress(tarzstd);
 		if( !tarbuf ){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
-			if( mirror->status == MIRROR_LOCAL ) die("unable to decompress local archive");	
 			mirror->status = MIRROR_ERR;
 			return;
 		}
 
 		if( !(mirror->repo[ir].db = generate_db(tarbuf)) ){
 			dbg_error("untar archive from mirror: %s", mirror->url);
-			if( mirror->status == MIRROR_LOCAL ) die("unable to generate local database from tar");	
 			mirror->status = MIRROR_ERR;
 			return;
 		}
@@ -526,19 +529,38 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	dbg_info("end compare mirror database");
 }
 
+__private int ping_cmp(long a, long b){
+	if( a < 0 ){
+		if( b < 0 ) return 0;
+		return 1;
+	}
+	if( b < 0 ) return -1;
+	return a - b; 
+}
+
+__private int status_cmp(mirrorStatus_e a, mirrorStatus_e b){
+	if( a == MIRROR_ERR ){
+		if( b == MIRROR_ERR ) return 0;
+		return 1;
+	}
+	if( b == MIRROR_ERR ) return -1;
+	return 0;
+}
+
 __private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const unsigned sort){
 	switch( sort ){
 		case  0: return strcmp(a->country, b->country);
 		case  1: return strcmp(a->url, b->url);
 		case  2: return a->isproxy && !b->isproxy ? 1 : !a->isproxy && b->isproxy ? -1 : 0;
-		case  3: return a->status - b->status;
+		case  3: return status_cmp(a->status, b->status);
 		case  4: return a->outofdate - b->outofdate;
 		case  5: return b->uptodate - a->uptodate;
 		case  6: return b->morerecent - a->morerecent;
 		case  7: return b->sync - a->sync;
 		case  8: return a->retry - b->retry;
 		case  9: return a->speed > b->speed ? -1 : a->speed < b->speed ? 1 : 0;
-		case 10: return a->stability > b->stability ? -1 : a->stability < b->stability ? 1 : 0;
+		case 10: return ping_cmp(a->ping, b->ping);
+		case 11: return a->stability > b->stability ? -1 : a->stability < b->stability ? 1 : 0;
 		default: die("internal error, sort set wrong field");
 	}
 }

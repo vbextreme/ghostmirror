@@ -4,6 +4,7 @@
 
 #include <curl/curl.h>
 #include <string.h>
+#include <sys/wait.h>
 
 #define __wcc __cleanup(www_curl_cleanup)
 
@@ -123,4 +124,53 @@ void* www_download_retry(const char* url, unsigned onlyheader, unsigned touts, u
 	}
 	return ret;
 }
+
+long www_ping(const char* url){
+	//sorry for this but raw socket required a special privilege on Linux, probably I can add privilege in future
+	__free char* server = NULL;
+	unsigned proto = 0;
+	if( !strncmp(url, "http://", 7) ) proto = 7;
+	else if( !strncmp(url, "https://", 8) ) proto = 8;
+	if( proto ){
+		url += proto;
+		const char* end = strchrnul(url, '/');
+		server = str_dup(url, end-url);
+		url = server;
+	}
+
+	__free char* cmd = str_printf("ping -c 1 %s 2>&1", url);
+	dbg_info("> %s", cmd);
+	FILE* f = popen(cmd, "r");
+	if( !f ){
+		dbg_error("on popen");
+		return -1;
+	}
+	
+	long ping = -1;
+	char buf[4096];
+	while( fgets(buf, 4096, f) != NULL ){
+		if( ping == -1 ){
+			const char* time = strstr(buf, "time=");
+			if( !time ) continue;
+			time += 5;
+			errno = 0;
+			char* endp = NULL;
+			double ms = strtod(time, &endp);
+			if( errno || !endp || *endp != ' ' ){
+				dbg_error("wrong time in ping output %s", buf);
+				break;
+			}
+			ping = ms * 1000.0;	
+		}
+		else if( buf[0] == '1' ){
+			if( !strstr(buf, "1 received") ) ping = -2;
+		}
+	}
+	int es = pclose(f);
+	if( es == -1 ) return -1;
+	if( ping < 0 ) return -1;
+	if( !WIFEXITED(es) || WEXITSTATUS(es) != 0) return -1;
+    return ping;
+}
+
 

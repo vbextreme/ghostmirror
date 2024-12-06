@@ -5,6 +5,7 @@
 #include <gm/www.h>
 #include <gm/archive.h>
 #include <gm/arch.h>
+#include <gm/investigation.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -37,7 +38,7 @@ __private unsigned COLORS[][6] = {
 	{  46, 226,   1,   1,   1,   1 }, // retry color, green yellow red...
 	{   1, 196, 226, 190,  48,  46 }, // red to green
 	{   1, 226,  48,  46,  46,  46 }, // green to red								  
-
+	{  46,  48, 190, 226, 196,   1 }  // green to red
 };
 __private double CMAP[][6] = {
 	{ 97.5, 98.0, 98.5,  99.0,  99.5, 100.0 },
@@ -46,7 +47,8 @@ __private double CMAP[][6] = {
 	{  0.5,  1.0,  2.0,   3.0,   4.0,   5.0 },
 	{  1.0,  2.0,  3.0,   4.0,   5.0,   6.0 }, 
 	{  1.0,  1.5,  2.0,   3.0,   6.5,  10.0 },
-	{ 98.0, 99.0, 99.5, 100.0, 100.0, 100.0 }
+	{ 98.0, 99.0, 99.5, 100.0, 100.0, 100.0 },
+	{ 50.0,100.0,150.0, 200.0, 250.0, 500.0 }
 };
 __private unsigned CERR = 1;
 __private unsigned CSTATUS[] = { 230, 118, 1 };
@@ -259,6 +261,35 @@ __private void print_speed(double val, mirrorStatus_e status, unsigned size, int
 	fputs("│", stdout);
 }
 
+__private void print_ping(long val, mirrorStatus_e status, unsigned size, int colormode){
+	const unsigned len = val < 0 ? 5 : 8;
+	const unsigned left  = (size - len) / 2;
+	const unsigned right = size - (left+len);
+	if( colormode >= 0 ){
+		if( val < 0 ){
+			colorfg_set(CERR);
+		}
+		else{
+			colormode = double_color_map(val / 1000.0, colormode);
+			colorfg_set(colormode);
+		}
+		if( status == MIRROR_LOCAL ){
+			colorbg_set(CBG);
+			bold_set();
+		}
+	}
+	print_repeat(left, ' ');
+	if( val < 0 ){
+		fputs("error", stdout);
+	}
+	else{
+		printf("%6.1fms",val / 1000.0);
+	}
+	print_repeat(right, ' ');
+	if( colormode >= 0 ) colorfg_set(0);
+	fputs("│", stdout);
+}
+
 __private unsigned stability_to_day(double val){
 	for( unsigned i = 0; i < sizeof_vector(STABILITYMAP); ++i ){
 		if( val < STABILITYMAP[i] ) return DAYMAP[i];
@@ -317,9 +348,9 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 	}
 
 	colors = colors ? 0 : -1000;
-	char* tblname[]    = { "country", "mirror",  "proxy",  "state", "outofdate", "uptodate", "morerecent",   "sync",  "retry", "speed", "extimated" };
-	unsigned tblsize[] = { mlCountry,    mlUrl,        5,        9,           9,          9,           10,        9,        7,      12,          9  };
-	unsigned tblcolor[]= {  colors+0, colors+0, colors+1, colors+0,    colors+1,   colors+0,     colors+3, colors+2, colors+4, colors+5,   colors+6 };
+	char* tblname[]    = { "country", "mirror",  "proxy",  "state", "outofdate", "uptodate", "morerecent",   "sync",  "retry",  "speed",    "ping", "extimated" };
+	unsigned tblsize[] = { mlCountry,    mlUrl,        5,        9,           9,          9,           10,        9,        7,       12,         9,           9 };
+	unsigned tblcolor[]= {  colors+0, colors+0, colors+1, colors+0,    colors+1,   colors+0,     colors+3, colors+2, colors+4, colors+5,  colors+7,    colors+6 };
 	print_table_header(tblname, tblsize, sizeof_vector(tblsize), colors);
 	
 	mforeach(mirrors, i){
@@ -334,7 +365,8 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 		print_double_field(mirrors[i].sync       * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[7], tblcolor[7]);
 		print_unsigned_field(mirrors[i].retry, mirrors[i].status, tblsize[8], tblcolor[8]);
 		print_speed(mirrors[i].speed, mirrors[i].status, tblsize[9], tblcolor[9]);
-		print_stability(mirrors[i].stability, mirrors[i].status, tblsize[10], tblcolor[10]);
+		print_ping(mirrors[i].ping, mirrors[i].status, tblsize[10], tblcolor[10]);
+		print_stability(mirrors[i].stability, mirrors[i].status, tblsize[11], tblcolor[11]);
 		fputc('\n', stdout);
 	}
 
@@ -386,7 +418,6 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_L, ULONG_MAX);
 
 	www_begin();
-
 /*
 mirror_s* mirrors = MANY(mirror_s, 16);
 mem_header(mirrors)->len = 4;
@@ -397,30 +428,34 @@ mirrors[0].total      = 100;
 mirrors[0].proxy      = "https://improxy";
 mirrors[0].speed = 3;
 mirrors[0].status = MIRROR_LOCAL;
+mirrors[0].ping = 220000;
 mirrors[1].url = "https://morerecent";
 mirrors[1].uptodate   = 98;
 mirrors[1].morerecent = 2;
 mirrors[1].total      = 100;
 mirrors[1].speed = 2.7;
+mirrors[1].ping = 280000;
 mirrors[2].url = "https://outofdate";
 mirrors[2].outofdate  = 2;
 mirrors[2].uptodate   = 98;
 mirrors[2].total      = 100;
 mirrors[2].speed = 3.3;
+mirrors[2].ping = 120000;
 mirrors[3].url = "https://sync";
 mirrors[3].sync       = 94;
 mirrors[3].uptodate   = 100;
 mirrors[3].total      = 100;
 mirrors[3].retry      = 3;
 mirrors[3].speed = 7.0;
+mirrors[3].ping = 170000;
 mirrors[3].status = MIRROR_ERR;
 
 mirrors_stability(mirrors);
-add_sort_mode("extimated");
+add_sort_mode("ping");
 mirrors_sort(mirrors);
 print_cmp_mirrors(mirrors,1);	
 die("");
-*/	
+*/
 	__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_o].value->ui);
 	__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_o].value->ui) : str_dup(mirrorlist, 0);
 	

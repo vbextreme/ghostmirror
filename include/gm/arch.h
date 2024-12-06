@@ -47,6 +47,7 @@ typedef struct mirror{
 	const char*    arch;
 	repo_s         repo[2];
 	double         speed;
+	long           ping;
 	double         stability;
 	unsigned       outofdate;
 	unsigned       uptodate;

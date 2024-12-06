@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.8.1')
+project('ghostmirror', 'c', version: '0.8.2')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'merge wwmdownload now resolve follow location, add proxy in sort and table, fatal error if not downloaded local database'
+  'dsc': 'ping field and sort, better status sort, prepare for investigation'
 }
 
 if get_option('eveloper')
@@ -55,6 +55,7 @@ src += [ 'src/www.c' ]
 src += [ 'src/archive.c' ]
 src += [ 'src/gm.c' ]
 src += [ 'src/arch.c' ]
+src += [ 'src/investigation.c' ]
 
 ##############
 # data files #
