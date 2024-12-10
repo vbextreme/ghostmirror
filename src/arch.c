@@ -451,13 +451,14 @@ __private int server_unique(mirror_s* mirrors, const char* url){
 	return 1;
 }
 
-mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type){
+mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorpath, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type){
 	char* url;
 	const char* fromcountry = country ? find_country(mirrorlist, country) : mirrorlist;
 
 	if( !mirrors ){
 		mirrors = MANY(mirror_s, 10);
-		__free char* localmirror = load_file(PACMAN_MIRRORLIST, 1);
+		if( !mirrorpath ) mirrorpath = PACMAN_MIRRORLIST; 
+		__free char* localmirror = load_file(mirrorpath, 1);
 		localmirror = mem_nullterm(localmirror);
 
 		url = server_url((const char**)&localmirror, 1, 0, type);

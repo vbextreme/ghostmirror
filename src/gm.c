@@ -22,18 +22,14 @@
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
 //
-//	create good mirror config
-//  can check if enable-linger is enable?
-//
 //  0.x.x fix optarg error unknow option
 //  0.x.x add  investigate=error,outofdate,all
-//  0.x.x how many test can add to investigate?
-//  0.x.x local mirror is always get from pacman.d/mirrorlist, need change to m?
-//  0.x.0 systemd auto mirroring
 //  0.x.1 documentation
 //  0.x.2 scanbuild
 //  0.x.3 valgrind
 //  1.0.0 first release?
+//  ?.?.? systemd auto remove mirror error and get new mirror?
+//  ?.?.? how many test can add to investigate?
 //
 //  systemd: false
 //    step1: ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
@@ -562,11 +558,11 @@ die("");
 	mirror_s* mirrors = NULL;
 	if( opt[O_c].set ){
 		mforeach(opt[O_c].value, i){
-			mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
+			mirrors = mirrors_country(mirrors, opt[O_m].value->str, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
 		}
 	}
 	else{
-		mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
+		mirrors = mirrors_country(mirrors, opt[O_m].value->str,  mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
 	}
 	
 	mirrors_update(mirrors, opt[O_p].set, opt[O_d].value->ui, opt[O_O].value->ui);	
