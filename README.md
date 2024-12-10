@@ -1,4 +1,4 @@
-ghostmirror v0.9.3
+ghostmirror v0.9.4
 ==================
 Introduction:
 =============
@@ -31,17 +31,17 @@ Manual Build
 ============
 This section is for developer
 
-##Require:
+## Require:
 libcurl, zlib, systemd-libs
 
-##Build:
+## Build:
 ```bash
 $ meson setup build
 $ cd build
 $ ninja
 ```
 
-###Debug:
+### Debug:
 for enable very verbose output.
 ```bash
 $ meson configure -Debug=4
@@ -54,9 +54,9 @@ $ meson configure -Developer=true
 Usage:
 ======
 You can use the software in three ways: manually, automatically, or for investigation.
-##Manually
+## Manually
 In this mode, you will perform all the steps manually.
-###First step
+### First step
 in the first step you need to search a good quantity of mirrors.<br>
 -P for get progress and output colors, -o for get output table.<br>
 -c for select country, for example Italy,Germany,France<br>
@@ -66,29 +66,29 @@ in the first step you need to search a good quantity of mirrors.<br>
 ```bash
 $ ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
 ```
-###Second step
+### Second step
 Now, instead of taking the mirrors from the global list, we will better evaluate the mirrors found in the first step.<br>
 While the first step will be performed only once or rarely, this step will be the one you repeat periodically.<br>
 -P -o -l is same the previous step<br>
 -m tell software to use a local mirror list, and -u for use only uncommented mirror<br>
 -s for apply a real test for mirror speed<br>
--S change a sort mode, remove ping ad add extimated for get more stable mirror and speed for reorder speed
+-S change a sort mode, remove ping, add extimated for get more stable mirror and speed for reorder speed
 ```bash
 $ ghostmirror -PmuolsS  ./mirrorlist.new ./mirrorlist.new light state,outofdate,morerecent,extimated,speed
 ```
-###Last step
+### Last step
 now you save your old mirrorlist
 ```bash
 # cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
 ```
 now save new mirrorlist
 ```
-# cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist
+# cp ./mirrorlist.new /etc/pacman.d/mirrorlist
 ```
 
-##Automatically
+## Automatically
 In this mode, you will perform the second step automatically.
-###Prepare
+### Prepare
 you need manual make dir for a new location of mirrorlist, need location where user can edit this without root privilege
 ```bash
 $ mkdir ~/.config/ghostmirror
@@ -102,12 +102,12 @@ Include = /home/<username>/.config/ghostmirror/mirrorlist
 [extra]
 Include = /home/<username>/.config/ghostmirror/mirrorlist
 ```
-###First step
+### First step
 same manually mode you need create a big good mirrorlist
 ```bash
 $ ghostmirror -PoclLS Italy,Germany,France ~/.config/ghostmirror/mirrorlist 30 state,outofdate,morerecent,ping
 ```
-###Last step
+### Last step
 the arguments,lsS, you pass to ghostmirror at this point it's saved for auto reuse it in service.<br>
 so, the only difference with manually second step is -D option, this enable ghostmirror.timer and loginctl linger<br>
 ```bash
@@ -115,7 +115,7 @@ $ ghostmirror -PoDumlsS  ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/
 ```
 Now you can forget about mirrors forever.
 
-##Investigation
+## Investigation
 It's be simple, add -i option and it's show the list of error server with motivation.
 
 Reference
@@ -132,6 +132,8 @@ accept short option with - or multiple option, followed by value
 -o value
 -abc valueA valueB valueC
 ```
+all options
+```bash
 -a --arch <required string><br>
     select arch, default 'x86_64'<br>
 -m --mirrorfile <required string><br>
@@ -168,11 +170,12 @@ accept short option with - or multiple option, followed by value
     auto manager systemd.timer<br>
 -h --help <not required argument><br>
     display this<br>
-
+```
 
 
 State:
 ======
+* v0.9.4 doc have a problem, need to write the doc
 * v0.9.3 doc have a problem, need to write the doc
 * v0.9.2 local mirror now is get from correct but not perfect location
 * v0.9.1 unmask service, mkalldir, wrong argument to sd-bus, end first systemd test

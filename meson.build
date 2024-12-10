@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.3')
+project('ghostmirror', 'c', version: '0.9.4')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
