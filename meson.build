@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.2')
+project('ghostmirror', 'c', version: '0.9.3')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'local mirror now is get from correct but not perfect location'
+  'dsc': 'doc have a problem, need to write the doc'
 }
 
 if get_option('eveloper')
