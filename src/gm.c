@@ -28,6 +28,7 @@
 //  0.x.x fix optarg error unknow option
 //  0.x.x add  investigate=error,outofdate,all
 //  0.x.x how many test can add to investigate?
+//  0.x.x local mirror is always get from pacman.d/mirrorlist, need change to m?
 //  0.x.0 systemd auto mirroring
 //  0.x.1 documentation
 //  0.x.2 scanbuild
@@ -49,8 +50,8 @@
 //	         [extra]
 //	         Include = /home/vbextreme/.config/ghostmirror/mirrorlist
 //	         
-//    step1: ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
-//    step2: ghostmirror -PoDumlsS  ./mirrorlist.new ./mirrorlist.new light state,outofdate,morerecent,extimated,speed
+//    step1: ghostmirror -PoclLS Italy,Germany,France ~/.config/ghostmirror/mirrorlist 30 state,outofdate,morerecent,ping
+//    step2: ghostmirror -PoDumlsS  ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist light state,outofdate,morerecent,extimated,speed
 //    step3: forget about the mirrors.
 
 
@@ -499,7 +500,7 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_L, ULONG_MAX);
 
 	www_begin();
-
+	
 /*
 mirror_s* mirrors = MANY(mirror_s, 16);
 mem_header(mirrors)->len = 4;
