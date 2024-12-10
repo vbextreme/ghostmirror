@@ -70,6 +70,7 @@ void tar_mopen(tar_s* tar, void* data){
 	tar->start  = data;
 	tar->loaddr = (uintptr_t)data;
 	tar->end    = tar->loaddr + mem_header(data)->len;
+	tar->err    = 0;
 	//dbg_info("start: %lu end: %lu tot: %lu n: %lu", tar->loaddr, tar->end, tar->end-tar->loaddr, (tar->end-tar->loaddr)/512);
 	memset(&tar->global, 0, sizeof tar->global);
 }
@@ -93,7 +94,7 @@ __private unsigned tar_checksum(void* data){
 __private htar_s* htar_get(tar_s* tar){
 	if( tar->loaddr >= tar->end ){
 		dbg_error("out of tar bound");
-		errno = ENOENT;
+		tar->err = ENOENT;
 		return NULL;
 	}
 	htar_s* h = (htar_s*)tar->loaddr;
@@ -101,7 +102,7 @@ __private htar_s* htar_get(tar_s* tar){
 		tar->loaddr += sizeof(htar_s);
 		if( tar->loaddr >= tar->end ){
 			dbg_error("no more data");
-			errno = ENOENT;
+			tar->err = ENOENT;
 			return NULL;
 		}
 		h = (htar_s*)tar->loaddr;
@@ -110,25 +111,25 @@ __private htar_s* htar_get(tar_s* tar){
 			return NULL;
 		}
 		dbg_error("aspected end block");
-		errno = EBADF;
+		tar->err = EBADF;
 		return NULL;
 	}
 
 	unsigned chk = strtoul(h->checksum, NULL, 8);
 	if( chk != tar_checksum(h) ){
 		dbg_error("wrong checksum");
-		errno = EBADE;
+		tar->err = EBADE;
 		return NULL;
 	}
 	if( strcmp(h->magic, TAR_MAGIC) ){
 		dbg_error("wrong magic");
-		errno = ENOEXEC;
+		tar->err = ENOEXEC;
 		return NULL;
 	}
 	return h;
 }
 
-__private int htar_pax(htar_s* h, tarent_s* ent){
+__private int htar_pax(tar_s* tar, htar_s* h, tarent_s* ent){
 	unsigned size = strtoul(h->size, NULL, 8);
 	char* kv  = (char*)((uintptr_t)h + sizeof(htar_s));
 	char* ekv = kv + size;
@@ -138,7 +139,7 @@ __private int htar_pax(htar_s* h, tarent_s* ent){
 		char* k = kv;
 		char* ek = strchr(k, '=');
 		if( !ek ){
-			errno = EINVAL;
+			tar->err = EINVAL;
 			dbg_error("aspected assign: '%s'", kv);
 			return -1;
 		}
@@ -187,12 +188,12 @@ tarent_s* tar_next(tar_s* tar){
 	while( (h = htar_get(tar)) ){
 		switch( h->typeflag ){
 			case 'g':
-				if( htar_pax(h, &tar->global) ) goto ONERR;
+				if( htar_pax(tar, h, &tar->global) ) goto ONERR;
 				htar_next_htar(tar, h);
 			break;
 
 			case 'x':
-				if( htar_pax(h, &pax) ) goto ONERR;
+				if( htar_pax(tar, h, &pax) ) goto ONERR;
 				htar_next_htar(tar, h);
 			break;
 
@@ -258,7 +259,9 @@ void tar_close(tar_s* tar){
 	}
 }
 
-
+int tar_errno(tar_s* tar){
+	return tar->err;
+}
 
 
 

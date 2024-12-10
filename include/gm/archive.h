@@ -18,6 +18,7 @@ typedef struct tar_s{
 	uintptr_t loaddr;
 	size_t    end;
 	tarent_s  global;
+	int       err;
 }tar_s;
 
 void* gzip_decompress(void* data);
@@ -25,5 +26,6 @@ void* gzip_decompress(void* data);
 void tar_mopen(tar_s* tar, void* data);
 tarent_s* tar_next(tar_s* tar);
 void tar_close(tar_s* tar);
+int tar_errno(tar_s* tar);
 
 #endif

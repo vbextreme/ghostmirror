@@ -110,7 +110,7 @@ __malloc void* mem_alloc(unsigned sof, size_t count, mcleanup_f dtor){
 	size_t size = sof * count + sizeof(hmem_s);
 	size = ROUND_UP(size, sizeof(uintptr_t));
 	hmem_s* hm  = malloc(size);
-	iassert( hm );
+	if( !hm ) die("on malloc: %m");
 	hm->refs    = 1;
 	hm->flags   = HMEM_FLAG_CHECK;
 	hm->size    = size;

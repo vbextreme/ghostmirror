@@ -1,4 +1,4 @@
-ghostmirror v0.8.4
+ghostmirror v0.9.0
 ==================
 Introduction:
 =============
@@ -13,6 +13,7 @@ It compares the mirror databases with the local database and provides a detailed
 
 State:
 ======
+* v0.9.0 warning this version not have systemd tested, change option name, t->d, o->O, o->table output, D->systemd linger, tar pax error, sort stability->extimated
 * v0.8.4 add internal error for more precise investigation and better output, fix sync interrupt threads not initialized, change another time time out
 * v0.8.3 investigation, add basic support for simple server test, not affidable need more and more test
 * v0.8.2 ping field and sort, better status sort, prepare for investigation

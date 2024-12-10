@@ -49,7 +49,7 @@ __private char* load_file(const char* fname, int exists){
 	dbg_info("loading %s", fname);
 	int fd = open(fname, O_RDONLY);
 	if( fd < 0 ){
-		if( exists ) die("unable to open file: %s, error: %s", fname, strerror(errno));
+		if( exists ) die("unable to open file: %s, error: %m", fname);
 		return NULL;
 	}
 	char* buf = MANY(char, 4096);
@@ -59,7 +59,7 @@ __private char* load_file(const char* fname, int exists){
 		buf = mem_upsize(buf, 4096);
 	}
 	close(fd);
-	if( nr < 0 ) die("unable to read file: %s, error: %s", fname, strerror(errno));
+	if( nr < 0 ) die("unable to read file: %s, error: %m", fname);
 	buf = mem_fit(buf);
 	return buf;
 }
@@ -198,16 +198,14 @@ __private pkgdesc_s* generate_db(void* tarbuf){
 	tar_mopen(&tar, tarbuf);
 	tarent_s* ent;
 	pkgdesc_s* db = MANY(pkgdesc_s, 100);
-	errno = 0;
 	while( (ent=tar_next(&tar)) ){
 		if( ent->type == TAR_FILE ){
 			db = mem_upsize(db, 1);
 			pkgdesc_parse(&db[mem_header(db)->len++], ent->data, ent->size);
 			mem_free(ent);
 		}
-		errno = 0;
 	}
-	if( errno ){
+	if( (errno=tar_errno(&tar)) ){
 		mem_free(db);
 		return NULL;
 	}
@@ -305,6 +303,7 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 				case EBADF  : mirror->error = ERROR_TAR_BLOCKEND; break;  
 				case EBADE  : mirror->error = ERROR_TAR_CHECKSUM; break;
 				case ENOEXEC: mirror->error = ERROR_TAR_MAGIC; break;
+				case EINVAL : mirror->error = ERROR_TAR_KV_ASSIGN; break;
 				default: die("internal error, not catch error %d: %s, please report this issue", errno, strerror(errno)); break;
 			}
 			dbg_error("untar archive from mirror: %s", mirror->url);
@@ -585,7 +584,7 @@ __private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const unsigned
 		case  8: return a->retry - b->retry;
 		case  9: return a->speed > b->speed ? -1 : a->speed < b->speed ? 1 : 0;
 		case 10: return ping_cmp(a->ping, b->ping);
-		case 11: return a->stability > b->stability ? -1 : a->stability < b->stability ? 1 : 0;
+		case 11: return b->extimated - a->extimated;
 		default: die("internal error, sort set wrong field");
 	}
 }
@@ -712,6 +711,16 @@ __private double mirror_weight(mirror_s* mirror, const double avgSpeed, const do
 	return total;
 }
 
+__private unsigned stability_to_day(double val){
+	__private double STABILITYMAP[] = { 98.0, 99.0, 99.5, 100.0 };
+	__private unsigned DAYMAP[]     = {    1,    2,    5,    10 };
+
+	for( unsigned i = 0; i < sizeof_vector(STABILITYMAP); ++i ){
+		if( val < STABILITYMAP[i] ) return DAYMAP[i];
+	}
+	return DAYMAP[sizeof_vector(STABILITYMAP)-1];
+}
+
 void mirrors_stability(mirror_s* mirrors){
 	double avgSpeed;
 	double avgOutofdate;
@@ -722,6 +731,7 @@ void mirrors_stability(mirror_s* mirrors){
 	for( unsigned i = 0; i < count; ++i ){
 		dbg_info("%s", mirrors[i].url);
 		mirrors[i].stability = mirror_weight(&mirrors[i], avgSpeed, sddSpeed, avgOutofdate, avgMorerecent);
+		mirrors[i].extimated = stability_to_day(mirrors[i].stability);
 	}
 }
 

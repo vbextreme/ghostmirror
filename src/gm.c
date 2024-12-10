@@ -6,10 +6,12 @@
 #include <gm/archive.h>
 #include <gm/arch.h>
 #include <gm/investigation.h>
+#include <gm/systemd.h>
 
 #include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
+#include <pwd.h>
 
 #define DEFAULT_THREADS 4
 #define DEFAULT_TOUT    5
@@ -20,13 +22,37 @@
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
 //
-//  0.8.x add  investigate=error,outofdate,all
-//  0.8.x how many test can add to investigate?, why server change url but follow not find here?
+//	create good mirror config
+//  can check if enable-linger is enable?
+//
+//  0.x.x fix optarg error unknow option
+//  0.x.x add  investigate=error,outofdate,all
+//  0.x.x how many test can add to investigate?
 //  0.x.0 systemd auto mirroring
 //  0.x.1 documentation
 //  0.x.2 scanbuild
 //  0.x.3 valgrind
 //  1.0.0 first release?
+//
+//  systemd: false
+//    step1: ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
+//    step2: ghostmirror -PmuolsS  ./mirrorlist.new ./mirrorlist.new light state,outofdate,morerecent,extimated,speed
+//  step3.a: sudo cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.old
+//  step3.b: sudo mv ./mirrorlist.new /etc/pacman.d/mirrorlist
+//
+//	systemd: yes
+//  step0.a: mkdir ~/.config/ghostmirror
+//  step0.b: edit /etc/pacman.conf
+//	         [core]
+//	         Include = /home/vbextreme/.config/ghostmirror/mirrorlist
+//
+//	         [extra]
+//	         Include = /home/vbextreme/.config/ghostmirror/mirrorlist
+//	         
+//    step1: ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
+//    step2: ghostmirror -PoDumlsS  ./mirrorlist.new ./mirrorlist.new light state,outofdate,morerecent,extimated,speed
+//    step3: forget about the mirrors.
+
 
 __private unsigned COLORS[][6] = { 
 	{   1, 196, 226, 190,  48,  46 }, // red to green
@@ -52,25 +78,24 @@ __private unsigned CERR = 1;
 __private unsigned CSTATUS[] = { 230, 118, 1 };
 __private unsigned CBG = 238;
 
-__private double STABILITYMAP[] = { 98.0, 99.0, 99.5, 100.0 };
-__private unsigned DAYMAP[]     = {    1,    2,    5,    10 };
-
 typedef enum{
 	O_a,
 	O_m,
 	O_c,
 	O_C,
 	O_u,
-	O_t,
-	O_o,
+	O_d,
+	O_O,
 	O_p,
 	O_P,
+	O_o,
 	O_s,
 	O_S,
 	O_l,
 	O_L,
 	O_T,
 	O_i,
+	O_D,
 	O_h
 }OPT_E;
 
@@ -80,18 +105,55 @@ option_s OPT[] = {
 	{'c', "--country"        , "select country from mirrorlist"                                     , OPT_ARRAY | OPT_STR  , 0, 0},
 	{'C', "--country-list"   , "show all possibile country"                                         , OPT_NOARG, 0, 0},
 	{'u', "--uncommented"    , "use only uncommented mirror"                                        , OPT_NOARG, 0, 0},
-	{'t', "--threads"        , "set numbers of parallel download, default '4'"                      , OPT_NUM  , 0, 0},
-	{'o', "--timeout"        , "set timeout in seconds for not reply mirror, default '20's"         , OPT_NUM  , 0, 0},
+	{'d', "--downloads"      , "set numbers of parallel download, default '4'"                      , OPT_NUM  , 0, 0},
+	{'O', "--timeout"        , "set timeout in seconds for not reply mirror, default '20's"         , OPT_NUM  , 0, 0},
 	{'p', "--progress"       , "show progress, default false"                                       , OPT_NOARG, 0, 0},
 	{'P', "--progress-colors", "same -p but with colors"                                            , OPT_NOARG, 0, 0},
+	{'o', "--output"         , "enable table output"                                                , OPT_NOARG, 0, 0},
 	{'s', "--speed"          , "test speed for downloading one pkg, light, normal, heavy"           , OPT_STR  , 0, 0},
 	{'S', "--sort"           , "sort result for any of fields, mutiple fields supported"            , OPT_ARRAY | OPT_STR, 0, 0},
 	{'l', "--list"           , "create a file with list of mirrors, stdout as arg for output here"  , OPT_STR, 0, 0},
 	{'L', "--max-list"       , "set max numbers of output mirrors"                                  , OPT_NUM, 0, 0},
 	{'T', "--type"           , "select mirrors type, http,https,all"                                , OPT_ARRAY | OPT_STR, 0, 0},
 	{'i', "--investigate"    , "search mirror errors to detect the problem"                         , OPT_NOARG, 0, 0},
+	{'D', "--systemd"        , "auto manager systemd.timer"                                         , OPT_NOARG, 0, 0},
 	{'h', "--help"           , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
+
+
+char* path_home(char* path){
+	char *hd;
+	if( (hd = getenv("HOME")) == NULL ){
+		struct passwd* spwd = getpwuid(getuid());
+		if( !spwd ) die("impossible to get home directory");
+        strcpy(path, spwd->pw_dir);
+	}   
+	else{
+		strcpy(path, hd);
+    }
+	return path;
+}
+
+
+__private char* path_explode(const char* path){
+	if( path[0] == '~' && path[1] == '/' ){
+		char home[PATH_MAX];
+		return str_printf("%s%s", path_home(home), &path[1]);
+	}
+	else if( path[0] == '.' && path[1] == '/' ){
+		char cwd[PATH_MAX];
+		return str_printf("%s%s", getcwd(cwd, PATH_MAX), &path[1]);
+	}
+	else if( path[0] == '.' && path[1] == '.' && path[2] == '/' ){
+		char cwd[PATH_MAX];
+		getcwd(cwd, PATH_MAX);
+		const char* bk = strrchr(cwd, '/');
+		iassert( bk );
+		if( bk > cwd ) --bk;
+		return str_printf("%s%s", bk, &path[2]);
+	}
+	return str_dup(path, 0);
+}
 
 __private void colorfg_set(unsigned color){
 	if( !color ){
@@ -290,14 +352,7 @@ __private void print_ping(long val, mirrorStatus_e status, unsigned size, int co
 	fputs("│", stdout);
 }
 
-__private unsigned stability_to_day(double val){
-	for( unsigned i = 0; i < sizeof_vector(STABILITYMAP); ++i ){
-		if( val < STABILITYMAP[i] ) return DAYMAP[i];
-	}
-	return DAYMAP[sizeof_vector(STABILITYMAP)-1];
-}
-
-__private void print_stability(double val, mirrorStatus_e status, unsigned size, int colormode){
+__private void print_stability(unsigned val, mirrorStatus_e status, unsigned size, int colormode){
 	const unsigned left  = (size - 4) / 2;
 	const unsigned right = size - (left+4);
 	if( colormode >= 0 ){
@@ -309,7 +364,7 @@ __private void print_stability(double val, mirrorStatus_e status, unsigned size,
 		}
 	}
 	print_repeat(left, ' ');
-	printf("%2dgg", stability_to_day(val));
+	printf("%2dgg", val);
 	print_repeat(right, ' ');
 	if( colormode >= 0 ) colorfg_set(0);
 	fputs("│", stdout);
@@ -366,7 +421,7 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 		print_unsigned_field(mirrors[i].retry, mirrors[i].status, tblsize[8], tblcolor[8]);
 		print_speed(mirrors[i].speed, mirrors[i].status, tblsize[9], tblcolor[9]);
 		print_ping(mirrors[i].ping, mirrors[i].status, tblsize[10], tblcolor[10]);
-		print_stability(mirrors[i].stability, mirrors[i].status, tblsize[11], tblcolor[11]);
+		print_stability(mirrors[i].extimated, mirrors[i].status, tblsize[11], tblcolor[11]);
 		fputc('\n', stdout);
 	}
 
@@ -374,16 +429,27 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 }
 
 __private void print_list(mirror_s* mirrors, const char* where, unsigned max){
-	FILE* out = strcmp(where, "stdout") ? fopen(where, "w") : stdout;
-	if( !out ) die("on open file: '%s' with error: %s", where, strerror(errno));
+	__free char* dwhere = path_explode(where);
+	FILE* out = strcmp(dwhere, "stdout") ? fopen(dwhere, "w") : stdout;
+	if( !out ) die("on open file: '%s' with error: %s", dwhere, strerror(errno));
 	
+	time_t expired = time(NULL);
+	struct tm* sexpired = gmtime(&expired);
+	fprintf(out, "# lastsync<dd.mm.yyyy> %02u.%02u.%u\n", sexpired->tm_mday, sexpired->tm_mon+1, sexpired->tm_year + 1900);
+	fprintf(out, "# country outofdate uptodate morerecent total speed stability\n");
+
 	const unsigned count = mem_header(mirrors)->len;
 	for(unsigned i = 0; i < count && i < max; ++i ){
 		fprintf(out, "#* '%s'", mirrors[i].country);
-		fprintf(out, " %f\n", mirrors[i].speed);
+		fprintf(out, " %u", mirrors[i].outofdate);
+		fprintf(out, " %u", mirrors[i].uptodate);
+		fprintf(out, " %u", mirrors[i].morerecent);
+		fprintf(out, " %u", mirrors[i].total);
+		fprintf(out, " %f", mirrors[i].speed);
+		fprintf(out, " %f\n", mirrors[i].stability);
 		fprintf(out, "Server=%s/$repo/os/$arch\n", mirrors[i].url);
 	}
-	if( strcmp(where, "stdout") ) fclose(out);
+	if( strcmp(dwhere, "stdout") ) fclose(out);
 }
 
 __private unsigned cast_mirror_type(unsigned type, const char* name){
@@ -403,6 +469,21 @@ __private unsigned cast_speed_type(const char* name){
 	die("unknow type name: %s", name);
 }
 
+__private char* merge_sort(optValue_u* value, const unsigned count){
+	char* out = MANY(char, 12*10);
+	for( unsigned i = 0; i < count; ++i ){
+		unsigned lenval = strlen(value[i].str);
+		dbg_info("value: %s[%u]", value[i].str, lenval);
+		out = mem_upsize(out, lenval + 1);
+		unsigned len = mem_header(out)->len;
+		memcpy(&out[len], value[i].str, lenval);
+		out[len + lenval] = ',';
+		mem_header(out)->len += lenval + 1;
+	}
+	out[--mem_header(out)->len] = 0;
+	return out;
+}
+
 int main(int argc, char** argv){
 	notstd_begin();
 	
@@ -410,14 +491,15 @@ int main(int argc, char** argv){
 	if( opt[O_h].set ) argv_usage(opt, argv[0]);
 
 	argv_default_str(OPT, O_a, DEFAULT_ARCH);
-	argv_default_num(OPT, O_t, DEFAULT_THREADS);
-	argv_default_num(OPT, O_o, DEFAULT_TOUT);
+	argv_default_num(OPT, O_d, DEFAULT_THREADS);
+	argv_default_num(OPT, O_O, DEFAULT_TOUT);
 	argv_default_str(OPT, O_m, NULL);
 	argv_default_str(OPT, O_S, NULL);
 	argv_default_str(OPT, O_T, "all");
 	argv_default_num(OPT, O_L, ULONG_MAX);
 
 	www_begin();
+
 /*
 mirror_s* mirrors = MANY(mirror_s, 16);
 mem_header(mirrors)->len = 4;
@@ -456,8 +538,8 @@ mirrors_sort(mirrors);
 print_cmp_mirrors(mirrors,1);	
 die("");
 */
-	__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_o].value->ui);
-	__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_o].value->ui) : str_dup(mirrorlist, 0);
+	__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_O].value->ui);
+	__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_O].value->ui) : str_dup(mirrorlist, 0);
 	
 	if( opt[O_P].set ) opt[O_p].set = 1;
 
@@ -486,7 +568,7 @@ die("");
 		mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
 	}
 	
-	mirrors_update(mirrors, opt[O_p].set, opt[O_t].value->ui, opt[O_o].value->ui);	
+	mirrors_update(mirrors, opt[O_p].set, opt[O_d].value->ui, opt[O_O].value->ui);	
 	mirrors_cmp_db(mirrors, opt[O_p].set);
 	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set, cast_speed_type(opt[O_s].value->str));
 	mirrors_stability(mirrors);
@@ -498,10 +580,19 @@ die("");
 		mirrors_sort(mirrors);
 	}
 	
-	print_cmp_mirrors(mirrors, opt[O_P].set);
+	if( opt[O_o].set ) print_cmp_mirrors(mirrors, opt[O_P].set);
 	if( opt[O_l].set ) print_list(mirrors, opt[O_l].value->str, opt[O_L].value->ui);
 	
 	if( opt[O_i].set ) investigate_mirrors(mirrors);
+	
+	if( opt[O_D].set ){
+		if( !opt[O_l].set ) die("for start daemon required output list, -l");
+		if( !opt[O_s].set ) die("required speed test, --speed");
+		if( !opt[O_S].set ) die("required any tipe of sort, --sort");
+		__free char* where = path_explode(opt[O_l].value->str);
+		__free char* sorta = merge_sort(opt[O_S].value, opt[O_S].set);
+		systemd_timer_set(mirrors[0].extimated, where, opt[O_s].value->str, sorta);
+	}
 
 	www_end();
 	return 0;

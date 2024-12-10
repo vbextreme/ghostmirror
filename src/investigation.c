@@ -44,12 +44,13 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local){
 	if( mirror->status == MIRROR_ERR ){
 		puts("  state: error");
 		switch( mirror->error ){
-			case 0                 : break;
-			case ERROR_GZIP        : puts("  error: unable to gzip file, probably corrupted file"); break;
-			case ERROR_TAR_MAGIC   : puts("  error: wrong magic tar value, probably corrupted file"); break;
-			case ERROR_TAR_NOBLOCK : puts("  error: tar aspected another block but not finding, probably connection interrupt download or corrupted file"); break;
-			case ERROR_TAR_BLOCKEND: puts("  error: tar aspected end block but not finding, probably connection interrupt download or corrupted file"); break;
-			case ERROR_TAR_CHECKSUM: puts("  error: fail tar checksum, probably corrupted file"); break;
+			case 0                  : break;
+			case ERROR_GZIP         : puts("  error: unable to gzip file, probably corrupted file"); break;
+			case ERROR_TAR_MAGIC    : puts("  error: wrong magic tar value, probably corrupted file"); break;
+			case ERROR_TAR_NOBLOCK  : puts("  error: tar aspected another block but not finding, probably connection interrupt download or corrupted file"); break;
+			case ERROR_TAR_BLOCKEND : puts("  error: tar aspected end block but not finding, probably connection interrupt download or corrupted file"); break;
+			case ERROR_TAR_CHECKSUM : puts("  error: fail tar checksum, probably corrupted file"); break;
+			case ERROR_TAR_KV_ASSIGN: puts("  error: fail tar pax kv, probably corrupted file"); break;
 			default: die("internal error, unmanaged %u error, please report this", mirror->error); break;
 		}
 

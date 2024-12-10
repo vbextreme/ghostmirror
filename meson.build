@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.8.4')
+project('ghostmirror', 'c', version: '0.9.0')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'add internal error for more precise investigation and better output, fix sync interrupt threads not initialized, change another time time out'
+  'dsc': 'warning this version not have systemd tested, change option name, t->d, o->O, o->table output, D->systemd linger, tar pax error, sort stability->extimated'
 }
 
 if get_option('eveloper')
@@ -56,6 +56,7 @@ src += [ 'src/archive.c' ]
 src += [ 'src/gm.c' ]
 src += [ 'src/arch.c' ]
 src += [ 'src/investigation.c' ]
+src += [ 'src/systemd.c' ]
 
 ##############
 # data files #
@@ -144,6 +145,7 @@ add_global_arguments('-DAPP_VERSION_STR="' + version['str'] + '"', language: 'c'
 libDeps  = [ cc.find_library('m', required : true) ] # math
 libDeps += [ dependency('libcurl', required: true) ]
 libDeps += [ dependency('zlib', required: true) ]
+libDeps += [ dependency('libsystemd', required: true) ]
 
 #########################
 # software dependencies #
