@@ -707,29 +707,22 @@ __private void avg_mirror(mirror_s* mirrors, double* avgSpeed, double* avgOutofd
 
 __private double mirror_weight(mirror_s* mirror, const double avgSpeed, const double sddSpeed, const double avgOutofdate, const double avgMorerecent){
 	//Gauss
-	const double wspeed = (unsigned long)(mirror->speed * 1000000.0) == 0 ? 0.0 : (WEIGHT_SPEED * exp(-pow(mirror->speed - avgSpeed, 2) / (2 * pow(sddSpeed, 2))));
+	const double wspeed = (unsigned long)(mirror->speed * 1000000.0) == 0 ? 0.0 : exp(-pow(mirror->speed - avgSpeed, 2) / (2.0 * pow(sddSpeed/WEIGHT_SPEED, 2)));
 	//exp dev
-	const double pout   = (mirror->outofdate * 100.0 / mirror->total) / 100.0;
-	const double lamout = 1.0 / avgOutofdate;
-	const double disout = WEIGHT_OUTOFDATE * (mirror->outofdate == 0 ? 1 : exp(-lamout * pout));
+	const double lamout = (mirror->outofdate > 2 ? (mirror->outofdate - 2.0) / mirror->outofdate : 1.0) / avgOutofdate;
+	const double disout = mirror->outofdate ? exp(-lamout * mirror->outofdate) : 1.0;
 
-	const double pmor   = (mirror->morerecent * 100.0 / mirror->total) / 100.0;
-	const double lammor = 1.0 / avgMorerecent;
-	const double dismor = WEIGHT_MOREUPDATE * (mirror->morerecent == 0 ? 1 : exp(-lammor * pmor));
+	const double lammor = (mirror->morerecent > 2 ? (mirror->morerecent-2.0)/mirror->morerecent : 1.0) / avgMorerecent;
+	const double dismor = mirror->morerecent ? exp(-lammor * mirror->morerecent) : 1.0;
 	
-	const double total = wspeed + disout + dismor;	
-	dbg_info("speed:%5.2f [%2u|%4.1f]outofdate:%5.2f [%2u|%4.1f]morerecent:%5.2f total: %5.2f", wspeed, mirror->outofdate, pout, disout, mirror->morerecent, pmor, dismor, total);
+	const double total = wspeed * disout * dismor;	
+	dbg_info("[%2.2f|%2.2f]speed:%5.2f [%2u|%4.1f]outofdate:%5.2f [%2u|%4.1f]morerecent:%5.2f total: %5.2f", 
+			mirror->speed, avgSpeed, wspeed, 
+			mirror->outofdate, mirror->outofdate * 100.0 / mirror->total, disout, 
+			mirror->morerecent, mirror->morerecent * 100.0 / mirror->total, dismor, 
+			total
+	);
 	return total;
-}
-
-__private unsigned stability_to_day(double val){
-	__private double STABILITYMAP[] = { 98.0, 99.0, 99.5, 100.0 };
-	__private unsigned DAYMAP[]     = {    1,    2,    5,    10 };
-
-	for( unsigned i = 0; i < sizeof_vector(STABILITYMAP); ++i ){
-		if( val < STABILITYMAP[i] ) return DAYMAP[i];
-	}
-	return DAYMAP[sizeof_vector(STABILITYMAP)-1];
 }
 
 void mirrors_stability(mirror_s* mirrors){
@@ -742,7 +735,7 @@ void mirrors_stability(mirror_s* mirrors){
 	for( unsigned i = 0; i < count; ++i ){
 		dbg_info("%s", mirrors[i].url);
 		mirrors[i].stability = mirror_weight(&mirrors[i], avgSpeed, sddSpeed, avgOutofdate, avgMorerecent);
-		mirrors[i].extimated = stability_to_day(mirrors[i].stability);
+		mirrors[i].extimated = EXTIMATED_DAY_MIN + (EXTIMATED_DAY_MAX - EXTIMATED_DAY_MIN) * mirrors[i].stability + 0.5;
 	}
 }
 

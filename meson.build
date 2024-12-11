@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.7')
+project('ghostmirror', 'c', version: '0.9.8')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'there was a piece of test code left'
+  'dsc': 'more precise and elegant stability'
 }
 
 if get_option('eveloper')

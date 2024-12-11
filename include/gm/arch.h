@@ -28,9 +28,9 @@
 #define SPEED_NORMAL "chromium"
 #define SPEED_HEAVY  "linux-firmware"
 
-#define WEIGHT_OUTOFDATE  49.0
-#define WEIGHT_MOREUPDATE 49.0
-#define WEIGHT_SPEED      2.0
+#define WEIGHT_SPEED      0.4
+#define EXTIMATED_DAY_MAX 10
+#define EXTIMATED_DAY_MIN 1
 
 typedef enum { MIRROR_UNKNOW, MIRROR_LOCAL, MIRROR_ERR } mirrorStatus_e;
 

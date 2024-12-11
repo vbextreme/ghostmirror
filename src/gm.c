@@ -60,7 +60,7 @@ __private unsigned COLORS[][6] = {
 	{  23,  24,  25,  26,  27,  46 }, // for colorize value have only good result
 	{  46, 226,   1,   1,   1,   1 }, // retry color, green yellow red...
 	{   1, 196, 226, 190,  48,  46 }, // red to green
-	{   1, 226,  48,  46,  46,  46 }, // green to red								  
+	{   1, 196, 226, 190,  48,  46 }, // red to green
 	{  46,  48, 190, 226, 196,   1 }  // green to red
 };
 __private double CMAP[][6] = {
@@ -70,7 +70,7 @@ __private double CMAP[][6] = {
 	{  0.5,  1.0,  2.0,   3.0,   4.0,   5.0 },
 	{  1.0,  2.0,  3.0,   4.0,   5.0,   6.0 }, 
 	{  1.0,  1.5,  2.0,   3.0,   6.5,  10.0 },
-	{ 98.0, 99.0, 99.5, 100.0, 100.0, 100.0 },
+	{  2.0,  3.0,  3.0,   4.0,   9.0,  10.0 },
 	{ 50.0,100.0,150.0, 200.0, 250.0, 500.0 }
 };
 __private unsigned CERR = 1;
@@ -499,7 +499,7 @@ int main(int argc, char** argv){
 	www_begin();
 /*
 mirror_s* mirrors = MANY(mirror_s, 16);
-mem_header(mirrors)->len = 4;
+mem_header(mirrors)->len = 8;
 mem_zero(mirrors);
 mirrors[0].url = "https://uptodate";
 mirrors[0].uptodate   = 100;
@@ -509,28 +509,53 @@ mirrors[0].speed = 3;
 mirrors[0].status = MIRROR_LOCAL;
 mirrors[0].ping = 220000;
 mirrors[1].url = "https://morerecent";
-mirrors[1].uptodate   = 98;
-mirrors[1].morerecent = 2;
+mirrors[1].uptodate   = 80;
+mirrors[1].morerecent = 20;
 mirrors[1].total      = 100;
-mirrors[1].speed = 2.7;
+mirrors[1].speed = 3.6;
 mirrors[1].ping = 280000;
-mirrors[2].url = "https://outofdate";
-mirrors[2].outofdate  = 2;
-mirrors[2].uptodate   = 98;
+mirrors[2].url = "https://morerecent";
+mirrors[2].uptodate   = 70;
+mirrors[2].morerecent = 30;
 mirrors[2].total      = 100;
-mirrors[2].speed = 3.3;
-mirrors[2].ping = 120000;
-mirrors[3].url = "https://sync";
-mirrors[3].sync       = 94;
-mirrors[3].uptodate   = 100;
+mirrors[2].speed = 3.6;
+mirrors[2].ping = 280000;
+mirrors[3].url = "https://outofdate";
+mirrors[3].uptodate   = 99;
+mirrors[3].outofdate  = 1;
 mirrors[3].total      = 100;
-mirrors[3].retry      = 3;
-mirrors[3].speed = 7.0;
-mirrors[3].ping = 170000;
-mirrors[3].status = MIRROR_ERR;
+mirrors[3].speed = 3.5;
+mirrors[3].ping = 120000;
+mirrors[4].url = "https://outofdate";
+mirrors[4].uptodate   = 90;
+mirrors[4].outofdate  = 10;
+mirrors[4].total      = 100;
+mirrors[4].speed = 3.5;
+mirrors[4].ping = 120000;
+mirrors[5].url = "https://sync";
+mirrors[5].sync       = 98;
+mirrors[5].uptodate   = 100;
+mirrors[5].morerecent = 0;
+mirrors[5].total      = 100;
+mirrors[5].retry      = 3;
+mirrors[5].speed = 6.0;
+mirrors[5].ping = 170000;
+mirrors[5].status = MIRROR_ERR;
+mirrors[6].url = "https://speed";
+mirrors[6].uptodate   = 100;
+mirrors[6].total      = 100;
+mirrors[6].retry      = 3;
+mirrors[6].speed = 3.7;
+mirrors[6].ping = 170000;
+mirrors[7].url = "https://speed";
+mirrors[7].uptodate   = 100;
+mirrors[7].total      = 100;
+mirrors[7].retry      = 3;
+mirrors[7].speed = 5.0;
+mirrors[7].ping = 170000;
 
 mirrors_stability(mirrors);
-add_sort_mode("ping");
+add_sort_mode("proxy");
 mirrors_sort(mirrors);
 print_cmp_mirrors(mirrors,1);	
 die("");
