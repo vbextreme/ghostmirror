@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.4')
+project('ghostmirror', 'c', version: '0.9.5')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'doc have a problem, need to write the doc'
+  'dsc': 'strong systemd: better config for autorestart, auto use local db. get local pacman database if many fail remote local database. can use manually RESTART_COUNT=999. Versioning config for automatic reconfigure when new version is released'
 }
 
 if get_option('eveloper')
@@ -137,7 +137,10 @@ endif
 # Define #
 ##########
 
-add_global_arguments('-DAPP_VERSION_STR="' + version['str'] + '"', language: 'c')
+add_global_arguments('-DVERSION_STR="' + version['str'] + '"', language: 'c')
+add_global_arguments('-DVERSION_MAJ="' + version['mmr'][0] + '"', language: 'c')
+add_global_arguments('-DVERSION_MIN="' + version['mmr'][1] + '"', language: 'c')
+add_global_arguments('-DVERSION_REV="' + version['mmr'][2] + '"', language: 'c')
 
 ##########################
 # libraries dependencies #

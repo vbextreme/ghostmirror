@@ -1,4 +1,4 @@
-ghostmirror v0.9.4
+ghostmirror v0.9.5
 ==================
 Introduction:
 =============
@@ -134,47 +134,48 @@ accept short option with - or multiple option, followed by value
 ```
 all options
 ```bash
--a --arch <required string><br>
-    select arch, default 'x86_64'<br>
--m --mirrorfile <required string><br>
-    use mirror file instead of downloading mirrorlist<br>
--c --country <required string><br>
-    select country from mirrorlist<br>
--C --country-list <not required argument><br>
-    show all possibile country<br>
--u --uncommented <not required argument><br>
-    use only uncommented mirror<br>
--d --downloads <required unsigned integer><br>
-    set numbers of parallel download, default '4'<br>
--O --timeout <required unsigned integer><br>
-    set timeout in seconds for not reply mirror, default '20's<br>
--p --progress <not required argument><br>
-    show progress, default false<br>
--P --progress-colors <not required argument><br>
-    same -p but with colors<br>
--o --output <not required argument><br>
-    enable table output<br>
--s --speed <required string><br>
-    test speed for downloading one pkg, light, normal, heavy<br>
--S --sort <required string><br>
-    sort result for any of fields, mutiple fields supported<br>
--l --list <required string><br>
-    create a file with list of mirrors, stdout as arg for output here<br>
--L --max-list <required unsigned integer><br>
-    set max numbers of output mirrors<br>
--T --type <required string><br>
-    select mirrors type, http,https,all<br>
--i --investigate <not required argument><br>
-    search mirror errors to detect the problem<br>
--D --systemd <not required argument><br>
-    auto manager systemd.timer<br>
--h --help <not required argument><br>
-    display this<br>
+-a --arch <required string>
+    select arch, default 'x86_64'
+-m --mirrorfile <required string>
+    use mirror file instead of downloading mirrorlist
+-c --country <required string>
+    select country from mirrorlist
+-C --country-list <not required argument>
+    show all possibile country
+-u --uncommented <not required argument>
+    use only uncommented mirror
+-d --downloads <required unsigned integer>
+    set numbers of parallel download, default '4'
+-O --timeout <required unsigned integer>
+    set timeout in seconds for not reply mirror, default '20's
+-p --progress <not required argument>
+    show progress, default false
+-P --progress-colors <not required argument>
+    same -p but with colors
+-o --output <not required argument>
+    enable table output
+-s --speed <required string>
+    test speed for downloading one pkg, light, normal, heavy
+-S --sort <required string>
+    sort result for any of fields, mutiple fields supported
+-l --list <required string>
+    create a file with list of mirrors, stdout as arg for output here
+-L --max-list <required unsigned integer>
+    set max numbers of output mirrors
+-T --type <required string>
+    select mirrors type, http,https,all
+-i --investigate <not required argument>
+    search mirror errors to detect the problem
+-D --systemd <not required argument>
+    auto manager systemd.timer
+-h --help <not required argument>
+    display this
 ```
 
 
 State:
 ======
+* v0.9.5 strong systemd: better config for autorestart, auto use local db. get local pacman database if many fail remote local database. can use manually RESTART_COUNT=999. Versioning config for automatic reconfigure when new version is released
 * v0.9.4 doc have a problem, need to write the doc
 * v0.9.3 doc have a problem, need to write the doc
 * v0.9.2 local mirror now is get from correct but not perfect location

@@ -21,12 +21,16 @@ char* path_home(char* path);
 
 __private const char* SERVICE_UNIT[] = {
 	"Description=Execute ghost mirror",
-	"After=network.target",
+	"After=network-online.target",
+	"Wants=network-online.target",
 	NULL
 };
 __private const char* SERVICE_SERVICE[] = {
-	NULL, //dinamic setting this property
+	NULL, //ExecStart dinamic setting this property
+	NULL, //Enviroment
 	"Type=oneshot",
+	"Restart=on-failure",
+	"RestartSec=30m",
 	NULL
 };
 __private const char* TIMER_UNIT[] = {
@@ -34,7 +38,7 @@ __private const char* TIMER_UNIT[] = {
 	NULL
 };
 __private const char* TIMER_TIMER[] = {
-	NULL, //dinamic setting this property
+	NULL, //OnCalendar dinamic setting this property
 	"Persistent=true",
 	NULL
 };
@@ -270,72 +274,103 @@ __private void sdbus_unmask_timer(const char *name) {
 
 
 //abilita
-__private void sd_enable_timer(const char *name) {
+__private void sd_enable_timer(const char *name, int enable) {
     __sdbus sd_bus *bus = NULL;
 	__sderr sd_bus_error err = SD_BUS_ERROR_NULL;
 
 	int ret = sd_bus_open_user(&bus);
 	if( ret < 0 ) die("sd-bus connection error: %s", strerror(-ret));
 	__free char* unit = str_printf("%s.timer", name);
-	dbg_info("enable timer %s", unit);
+	dbg_info("enable(%d) timer %s", enable, unit);
 
-	ret = sd_bus_call_method(bus,
-		"org.freedesktop.systemd1",
-		"/org/freedesktop/systemd1",
-		"org.freedesktop.systemd1.Manager",
-		"EnableUnitFiles",
-		&err,
-		NULL,
-		"asbb", 
-		1,
-		unit,
-		0,									 // (0=permanent, 1=runtime)
-		1                                    // Enable (0=no, 1=yes)
-	);
-	sdbus_check("enable unit", ret, &err);
-	//if( ret < 0 ) die("enable systemd unit file %s error: %s\n", unit, strerror(-ret));
+	if( enable ){
+		ret = sd_bus_call_method(bus,
+			"org.freedesktop.systemd1",
+			"/org/freedesktop/systemd1",
+			"org.freedesktop.systemd1.Manager",
+			"EnableUnitFiles",
+			&err,
+			NULL,
+			"asbb", 
+			1,
+			unit,
+			0,									 // (0=permanent, 1=runtime)
+			1                                    // Enable (0=no, 1=yes)
+		);
+	}
+	else{
+		ret = sd_bus_call_method(bus,
+			"org.freedesktop.systemd1",
+			"/org/freedesktop/systemd1",
+			"org.freedesktop.systemd1.Manager",
+			"DisableUnitFiles",
+			&err,
+			NULL,
+			"asb", 
+			1,
+			unit,
+			1
+		);
+	}
+	sdbus_check("enable/disable unit", ret, &err);
 }
 
-/*
-__private void sd_start_timer(const char *name) {
+__private void sd_start_timer(const char *name, int start){
     __sdbus sd_bus *bus = NULL;
+	__sderr sd_bus_error err = SD_BUS_ERROR_NULL;
+
 	int ret = sd_bus_open_user(&bus);
 	if( ret < 0 ) die("sd-bus connection error: %s", strerror(-ret));
 	__free char* unit = str_printf("%s.timer", name);
 
+	dbg_info("start(%d) timer %s", start, unit);
+
 	ret = sd_bus_call_method(bus,
 		"org.freedesktop.systemd1",
 		"/org/freedesktop/systemd1",
 		"org.freedesktop.systemd1.Manager",
-		"StartUnit",
-		NULL,
+		(start ? "StartUnit" : "StopUnit"),
+		&err,
 		NULL,
 		"ss",
 		unit,
 		"replace"                          // (replace, fail, isolate, ecc.)
 	);
-	if( ret < 0 ) die("start systemd unit file %s error: %s\n", unit, strerror(-ret));
+	sdbus_check("start/stop timer", ret, &err);
 }
-*/
 
+__private const char* systemd_service_version(void){
+	char *hd;
+	if( (hd = getenv("SERVICE_VERSION")) == NULL ) return "0.0.0";
+	return hd;
+}
 
 void systemd_timer_set(unsigned day, const char* mirrorpath, const char* speedmode, const char* sortmode){
 	unsigned enableService = 0;
 	int uid = getuid();
-
-	dbg_info("systemd uid:%u day:%u path:%s speed:%s sortmode:%s", uid, day, mirrorpath, speedmode, sortmode);
+	
+	dbg_info("systemd serviceV%s appV:%s uid:%u day:%u path:%s speed:%s sortmode:%s", systemd_service_version(), VERSION_STR, uid, day, mirrorpath, speedmode, sortmode);
 	
 	if( !sdbus_user_linger_get(uid) ){
 		dbg_info("linger is not enabled, I'll take care of it.");
 		sdbus_user_linger_set(uid, 1);
 	}
 	
+	int forcereconfig = strcmp(systemd_service_version(), VERSION_STR);
+	
+	if( forcereconfig && sd_exists_wants("ghostmirror", "timer") ){
+		sd_start_timer("ghostmirror", 0);
+		sd_enable_timer("ghostmirror", 0);
+	}
+
 	if( !sd_exists_wants("ghostmirror", "timer") ){
 		sd_mkdir();
-		if( !sd_exists_user_config("ghostmirror", "service") ){
-			dbg_info("create service config");
-			__free char* execstart = str_printf("ExecStart=/usr/bin/ghostmirror -DumlsS %s %s %s %s", mirrorpath, mirrorpath, speedmode, sortmode);
+		if( forcereconfig || !sd_exists_user_config("ghostmirror", "service") ){
+			dbg_info("create service config, forced: %u", forcereconfig);
+			__free char* execstart  = str_printf("ExecStart=/usr/bin/ghostmirror -DumlsS %s %s %s %s", mirrorpath, mirrorpath, speedmode, sortmode);
+			__free char* enviroment = str_printf(ENVIROMENT_FORMAT, VERSION_STR);
 			SERVICE_SERVICE[0] = execstart;
+			SERVICE_SERVICE[1] = enviroment;
 			__fclose FILE* f = sd_create_user_config("ghostmirror", "service");
 			sd_write_section(f, "Unit", SERVICE_UNIT);
 			sd_write_section(f, "Service", SERVICE_SERVICE);
@@ -343,9 +378,9 @@ void systemd_timer_set(unsigned day, const char* mirrorpath, const char* speedmo
 		enableService = 1;
 	}
 
-	time_t expired = time(NULL) + day * 86400;
+	time_t expired = time(NULL);// + day * 86400;
 	struct tm* sexpired = gmtime(&expired);
-	__free char* oncalendar = str_printf("OnCalendar=%u-%u-%u *:*:00", sexpired->tm_year + 1900, sexpired->tm_mon + 1, sexpired->tm_mday);
+	__free char* oncalendar = str_printf(ONCALENDAR_FORMAT, sexpired->tm_mday, day);
 	TIMER_TIMER[0] = oncalendar;
 	
 	{
@@ -358,9 +393,19 @@ void systemd_timer_set(unsigned day, const char* mirrorpath, const char* speedmo
 
 	if( enableService ){
 		sdbus_unmask_timer("ghostmirror");
-		sd_enable_timer("ghostmirror");
+		sd_enable_timer("ghostmirror", 1);
 	}
 	sd_daemon_reload_restart_timer("ghostmirror");
+}
+
+long systemd_restart_count(void){
+	char *hd;
+	if( (hd = getenv("RESTART_COUNT")) == NULL ) return -1;
+	errno = 0;
+	char* end = NULL;
+	long ret = strtol(hd, &end, 10);
+	if( !end || *end || errno ) return -1;
+	return ret;
 }
 
 

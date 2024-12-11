@@ -6,6 +6,7 @@
 #include <gm/arch.h>
 #include <gm/archive.h>
 #include <gm/www.h>
+#include <gm/systemd.h>
 
 #include <ctype.h>
 #include <stdio.h>
@@ -257,8 +258,18 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 		else{
 			ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL);
 		}
-		if( !ret ) mirror->wwwerror = www_errno();
+
 		if( mirror->proxy && strcmp(url, mirror->proxy) ) mirror->isproxy = 1;
+		
+		if( !ret ){
+			mirror->wwwerror = www_errno();
+			if( mirror->status == MIRROR_LOCAL ){
+				dbg_warning("use error on downloading local mirror: %s", mirror->url);
+				if( systemd_restart_count() < SYSTEMD_SERVICE_RETRY_MAX ) return NULL;
+				__free char* localurl = str_printf("%s/%s.db", PACMAN_LOCAL_DB, repo);
+				return load_file(localurl, 1);
+			}	
+		}
 		return ret;
 	}
 }
@@ -355,13 +366,12 @@ void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownl
 	__paralleft(ndownload)
 	for( unsigned i = 0; i < count; ++i){
 		if( !kres ){
-			__atomic int res = mirror_update(&mirrors[i], tos);
-			if( res ) kres = res;
+			if( mirror_update(&mirrors[i], tos) ) kres = -1;
 		}
 		if( progress ) progress_refresh("mirrors updates", ++pvalue, count);
 	}
 	if( progress ) progress_end("mirrors updates");
-	if( kres ) die("impossible to download local mirror, try to decrease numbers of threads or increase timeout");
+	if( kres ) die("impossible to download local mirror, retry manually. Force use database in your pc: $ RESTART_COUNT=999 ghostmirror ...");
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){

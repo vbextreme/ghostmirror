@@ -22,11 +22,13 @@
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
 //
+//  0.x.x manager version
+//  0.x.x all option to systemd
 //  0.x.x fix optarg error unknow option
 //  0.x.x add  investigate=error,outofdate,all
-//  0.x.1 documentation
-//  0.x.2 scanbuild
-//  0.x.3 valgrind
+//  0.x.x documentation
+//  0.x.x scanbuild
+//  0.x.x valgrind
 //  1.0.0 first release?
 //  ?.?.? systemd auto remove mirror error and get new mirror?
 //  ?.?.? how many test can add to investigate?
@@ -116,7 +118,6 @@ option_s OPT[] = {
 	{'D', "--systemd"        , "auto manager systemd.timer"                                         , OPT_NOARG, 0, 0},
 	{'h', "--help"           , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
-
 
 char* path_home(char* path){
 	char *hd;
@@ -496,7 +497,16 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_L, ULONG_MAX);
 
 	www_begin();
-	
+	if( opt[O_D].set ){
+		if( !opt[O_l].set ) die("for start daemon required output list, -l");
+		if( !opt[O_s].set ) die("required speed test, --speed");
+		if( !opt[O_S].set ) die("required any tipe of sort, --sort");
+		__free char* where = path_explode(opt[O_l].value->str);
+		__free char* sorta = merge_sort(opt[O_S].value, opt[O_S].set);
+		systemd_timer_set(10, where, opt[O_s].value->str, sorta);
+	}
+
+
 /*
 mirror_s* mirrors = MANY(mirror_s, 16);
 mem_header(mirrors)->len = 4;
