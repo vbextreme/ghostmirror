@@ -497,16 +497,6 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_L, ULONG_MAX);
 
 	www_begin();
-	if( opt[O_D].set ){
-		if( !opt[O_l].set ) die("for start daemon required output list, -l");
-		if( !opt[O_s].set ) die("required speed test, --speed");
-		if( !opt[O_S].set ) die("required any tipe of sort, --sort");
-		__free char* where = path_explode(opt[O_l].value->str);
-		__free char* sorta = merge_sort(opt[O_S].value, opt[O_S].set);
-		systemd_timer_set(10, where, opt[O_s].value->str, sorta);
-	}
-
-
 /*
 mirror_s* mirrors = MANY(mirror_s, 16);
 mem_header(mirrors)->len = 4;

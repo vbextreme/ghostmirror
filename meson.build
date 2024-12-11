@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.5')
+project('ghostmirror', 'c', version: '0.9.7')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'strong systemd: better config for autorestart, auto use local db. get local pacman database if many fail remote local database. can use manually RESTART_COUNT=999. Versioning config for automatic reconfigure when new version is released'
+  'dsc': 'there was a piece of test code left'
 }
 
 if get_option('eveloper')
