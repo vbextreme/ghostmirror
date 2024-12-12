@@ -6,6 +6,10 @@
 
 extern char* REPO[2];
 
+#define INVESTIGATE_ERROR     0x01
+#define INVESTIGATE_OUTOFDATE 0x02
+#define INVESTIGATE_ALL       0xFF
+
 __private const char* repo_from_url(const char* url){
 	const char* fname = strrchr(url, '/');
 	if( !fname ) return NULL;
@@ -29,11 +33,11 @@ __private int test_check_redirect_url(const char* url, const char* arch){
 	return 0;
 }
 
-__private void investigate_mirror(mirror_s* mirror, mirror_s* local){
+__private void investigate_mirror(mirror_s* mirror, mirror_s* local, unsigned mode){
 	if( mirror->status != MIRROR_ERR && mirror->outofdate == 0 ) return;
 	
 	printf("server: '%s'\n", mirror->url);
-	if( mirror->isproxy ){
+	if( (mode & INVESTIGATE_ERROR) && mirror->isproxy ){
 		printf("  redirect: '%s'\n", mirror->proxy);
 		switch( test_check_redirect_url(mirror->proxy, mirror->arch) ){
 			case -1: puts("  test url string: redirect url not contain repo name"); break;
@@ -41,7 +45,7 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local){
 			case  0: puts("  test url string: successfull"); break;
 		}
 	}
-	if( mirror->status == MIRROR_ERR ){
+	if( (mode & INVESTIGATE_ERROR) && mirror->status == MIRROR_ERR ){
 		puts("  state: error");
 		switch( mirror->error ){
 			case 0                  : break;
@@ -79,7 +83,7 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local){
 		puts("  state: successfull");
 	}
 
-	if( mirror->status != MIRROR_ERR && mirror->outofdate ){
+	if( (mode & INVESTIGATE_OUTOFDATE) && mirror->status != MIRROR_ERR && mirror->outofdate ){
 		const unsigned repocount = sizeof_vector(REPO);
 		for( unsigned ir = 0; ir < repocount; ++ir ){
 			unsigned const dbcount = mem_header(local->repo[ir].db)->len;
@@ -108,7 +112,21 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local){
 	putchar('\n');
 }
 
-void investigate_mirrors(mirror_s* mirrors){
+__private unsigned cast_mode(const char* mode){
+	static char*    invname[] = { "error"          , "outofdate"          , "all"           };
+	static unsigned inval[]   = { INVESTIGATE_ERROR, INVESTIGATE_OUTOFDATE, INVESTIGATE_ALL };
+	for( unsigned i = 0; i < sizeof_vector(invname); ++i ){
+		if( !strcmp(invname[i], mode) ) return inval[i];
+	}
+	die("unknow investigation mode: %s", mode);
+}
+
+void investigate_mirrors(mirror_s* mirrors, option_s* oinv){
+	unsigned mode = 0;
+	for( unsigned i = 0; i < oinv->set; ++i ){
+		mode |= cast_mode(oinv->value[i].str);
+	}
+	
 	mirror_s* local = NULL;
 	const unsigned count = mem_header(mirrors)->len;
 	for( unsigned i = 0; i < count; ++i ){
@@ -119,6 +137,6 @@ void investigate_mirrors(mirror_s* mirrors){
 	}
 	if( !local ) die("internal error, not find local mirror");
 	for( unsigned i = 0; i < count; ++i ){
-		investigate_mirror(&mirrors[i], local);
+		investigate_mirror(&mirrors[i], local, mode);
 	}
 }

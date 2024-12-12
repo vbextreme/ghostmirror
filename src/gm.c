@@ -23,7 +23,6 @@
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
 //
-//  0.x.x all option to systemd
 //  0.x.x add  investigate=error,outofdate,all
 //  0.x.x documentation
 //  0.x.x scanbuild
@@ -32,7 +31,7 @@
 //  x.x.x better colormap
 //  x.x.x systemd auto remove mirror error and get new mirror?
 //  x.x.x how many test can add to investigate?
-//  x.x.x fix optarg error unknow option
+//  x.x.x redraw table from list, possible because list have value, need version for future change?
 //
 //  systemd: false
 //    step1: ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
@@ -85,17 +84,17 @@ option_s OPT[] = {
 	{'c', "--country"        , "select country from mirrorlist"                                     , OPT_ARRAY | OPT_STR  , 0, 0},
 	{'C', "--country-list"   , "show all possibile country"                                         , OPT_NOARG, 0, 0},
 	{'u', "--uncommented"    , "use only uncommented mirror"                                        , OPT_NOARG, 0, 0},
-	{'d', "--downloads"      , "set numbers of parallel download, default '4'"                      , OPT_NUM  , 0, 0},
-	{'O', "--timeout"        , "set timeout in seconds for not reply mirror, default '20's"         , OPT_NUM  , 0, 0},
+	{'d', "--downloads"      , "set numbers of parallel download, default 4"                        , OPT_NUM  , 0, 0},
+	{'O', "--timeout"        , "set timeout in seconds for not reply mirror, default 5s"            , OPT_NUM  , 0, 0},
 	{'p', "--progress"       , "show progress, default false"                                       , OPT_NOARG, 0, 0},
 	{'P', "--progress-colors", "same -p but with colors"                                            , OPT_NOARG, 0, 0},
 	{'o', "--output"         , "enable table output"                                                , OPT_NOARG, 0, 0},
-	{'s', "--speed"          , "test speed for downloading one pkg, light, normal, heavy"           , OPT_STR  , 0, 0},
+	{'s', "--speed"          , "test speed for downloading pkg, light/normal/heavy"                 , OPT_STR  , 0, 0},
 	{'S', "--sort"           , "sort result for any of fields, mutiple fields supported"            , OPT_ARRAY | OPT_STR, 0, 0},
 	{'l', "--list"           , "create a file with list of mirrors, stdout as arg for output here"  , OPT_STR, 0, 0},
 	{'L', "--max-list"       , "set max numbers of output mirrors"                                  , OPT_NUM, 0, 0},
 	{'T', "--type"           , "select mirrors type, http,https,all"                                , OPT_ARRAY | OPT_STR, 0, 0},
-	{'i', "--investigate"    , "search mirror errors to detect the problem"                         , OPT_NOARG, 0, 0},
+	{'i', "--investigate"    , "investigate on mirror, mode: outofdate/error/all"                   , OPT_ARRAY | OPT_STR, 0, 0},
 	{'D', "--systemd"        , "auto manager systemd.timer"                                         , OPT_NOARG, 0, 0},
 	{'h', "--help"           , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
@@ -477,7 +476,6 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_L, ULONG_MAX);
 
 	www_begin();
-
 /*
 mirror_s* mirrors = MANY(mirror_s, 16);
 mem_header(mirrors)->len = 8;
@@ -586,7 +584,7 @@ die("");
 	if( opt[O_o].set ) print_cmp_mirrors(mirrors, opt[O_P].set);
 	if( opt[O_l].set ) print_list(mirrors, opt[O_l].value->str, opt[O_L].value->ui);
 	
-	if( opt[O_i].set ) investigate_mirrors(mirrors);
+	if( opt[O_i].set ) investigate_mirrors(mirrors, &opt[O_i]);
 	
 	if( opt[O_D].set ){
 		if( !opt[O_l].set ) die("for start daemon required output list, -l");

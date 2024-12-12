@@ -21,7 +21,7 @@
 
 __private const char* SERVICE_UNIT[] = {
 	"Description=Execute ghost mirror",
-	"After=network-online.target",
+	"After=network-online.target nss-lookup.target",
 	"Wants=network-online.target",
 	NULL
 };

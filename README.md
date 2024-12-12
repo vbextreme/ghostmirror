@@ -1,4 +1,4 @@
-ghostmirror v0.9.9
+ghostmirror v0.9.10
 ==================
 Introduction:
 =============
@@ -27,29 +27,6 @@ otherwise you can find PKGBUILD in distro dir
 $ cd distro && makepkg -sirc
 ```
 
-Manual Build
-============
-This section is for developer
-
-## Require:
-libcurl, zlib, systemd-libs
-
-## Build:
-```bash
-$ meson setup build
-$ cd build
-$ ninja
-```
-
-### Debug:
-for enable very verbose output.
-```bash
-$ meson configure -Debug=4
-```
-warning this is only for contributor, enable auto versioning and auto push
-```bash
-$ meson configure -Developer=true
-```
 
 Usage:
 ======
@@ -113,6 +90,17 @@ so, the only difference with manually second step is -D option, this enable ghos
 ```bash
 $ ghostmirror -PoDumlsS  ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist light state,outofdate,morerecent,extimated,speed
 ```
+### Use of systemd
+show the timer
+```bash
+$ systemctl --user list-timers
+```
+force start ghostmirror before timer ellapsed
+```bash
+$ systemctl --user ghostmirror.service
+```
+
+### End
 Now you can forget about mirrors forever.
 
 ## Investigation
@@ -132,49 +120,96 @@ accept short option with - or multiple option, followed by value
 -o value
 -abc valueA valueB valueC
 ```
-all options
+## All Options
+### -a --arch <required string>
+select arch, default 'x86_64'
+### -m --mirrorfile <required string>
+use mirror file instead of downloading mirrorlist, without -m and -u ghostmirror download mirrorlist and search in all mirror.<br>
+you can use -m /etc/pacman.d/mirrorlist.pacnew if you not want downloading mirrorlist but used local list.<br>
+### -c --country <required string>
+select country from mirrorlist.<br>
+if mirrorlist is not same the default mirrorlist and not have ##Country or mixed mirror, the selection country fail
+### -C --country-list <not required argument>
+show all possibile country
+### -u --uncommented <not required argument>
+use only uncommented mirror, by default use commented and uncommented mirror.<br>
+with -m is simple to check local mirrolist  -mu /etc/pacman.d/mirrorlist.
+### -d --downloads <required unsigned integer>
+set numbers of parallel download, default '4'.<br>
+if you abuse the download is more simple to fail, 1,4,8,16 is good value, >16 you can try but is not very affidable
+### -O --timeout <required unsigned integer>
+set timeout in seconds for not reply mirror, default 5s
+### -p --progress <not required argument>
+show progress, default false
+### -P --progress-colors <not required argument>
+same -p but with -o add color table
+### -o --output <not required argument>
+enable table output, with -P display with colors
+### -s --speed <required string>
+test speed for downloading:<br>
+light: download one small package ~6MiB<br>
+normal: download light + normal package ~250Mib<br>
+heavy: download light+normal+heavy packege ~350MiB, total download >500Mib
+### -S --sort <required string>
+sort result for any of fields display in table, mutiple fields supported.<br>
+country and mirror is sorted by name<br>
+proxy first false, last true<br>
+state first success last error<br>
+outofdate, retry and ping, display first less value<br>
+uptodate, morerecent, sync, speed and extimated, display first great value<br>
+### -l --list <required string>
+save new mirrorlist in file passed as argument.<br>
+special name, stdout, can be used for write to stdout file.
+### -L --max-list <required unsigned integer>
+set max numbers of output mirrors
+### -T --type <required string>
+select mirrors type, http,https,all
+### -i --investigate <required string>
+search mirror errors to detect the problem.<br>
+can select mode: error, outofdate, all.<br>
+error: investigate only on error.<br>
+outofdate: investigate only on outofdate package.<br>
+all: same passing -i error,uptodate
+### -D --systemd <not required argument>
+auto manager systemd.timer.<br>
+when you pass this option the software activate login linger if not ebabled.<br>
+auto create ghostmirror.service and ghostmirror.timer<br>
+the config.service start ghostmirror in the same mode you haved executed it, with only differences that need -l.<br>
+for exaples if you execute: -DmuldsS <mirrorlist> <mirrorlist> 16 light extimated,speed<br>
+the service is always start with <mirrorlist> 16 parallel downloads, speed light and extimated,speed sort.<br>
+for change you can simple repeat a command.<br>
+the expire timer is the first element in table and is dinamic, can change every time.<br>
+### -h --help <not required argument>
+display this
+
+Manual Build
+============
+This section is for developer
+
+## Require:
+libcurl, zlib, systemd-libs
+
+## Build:
 ```bash
--a --arch <required string>
-    select arch, default 'x86_64'
--m --mirrorfile <required string>
-    use mirror file instead of downloading mirrorlist
--c --country <required string>
-    select country from mirrorlist
--C --country-list <not required argument>
-    show all possibile country
--u --uncommented <not required argument>
-    use only uncommented mirror
--d --downloads <required unsigned integer>
-    set numbers of parallel download, default '4'
--O --timeout <required unsigned integer>
-    set timeout in seconds for not reply mirror, default '20's
--p --progress <not required argument>
-    show progress, default false
--P --progress-colors <not required argument>
-    same -p but with colors
--o --output <not required argument>
-    enable table output
--s --speed <required string>
-    test speed for downloading one pkg, light, normal, heavy
--S --sort <required string>
-    sort result for any of fields, mutiple fields supported
--l --list <required string>
-    create a file with list of mirrors, stdout as arg for output here
--L --max-list <required unsigned integer>
-    set max numbers of output mirrors
--T --type <required string>
-    select mirrors type, http,https,all
--i --investigate <not required argument>
-    search mirror errors to detect the problem
--D --systemd <not required argument>
-    auto manager systemd.timer
--h --help <not required argument>
-    display this
+$ meson setup build
+$ cd build
+$ ninja
+```
+
+### Debug:
+for enable very verbose output.
+```bash
+$ meson configure -Debug=4
+```
+warning this is only for contributor, enable auto versioning and auto push
+```bash
+$ meson configure -Developer=true
 ```
 
 
 State:
 ======
+* v0.9.10 little more doc, change conf for waiting nss-lockup.service, removed opt show unknonw option at end of argument, opt usage show is array
 * v0.9.9 support all flags to systemd service
 * v0.9.8 more precise and elegant stability
 * v0.9.7 there was a piece of test code left

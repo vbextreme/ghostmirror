@@ -167,7 +167,10 @@ __private void opt_value(optctx_s* ctx, unsigned id, const char* value){
 }
 
 __private void opt_set(optctx_s* ctx, int id){
-	if( id == -1 ) opt_die(ctx, "unknow option");
+	if( id == -1 ){
+		ctx->current = ctx->paarg;
+		opt_die(ctx, "unknow option");
+	}
 	option_s* opt = &ctx->opt[id];
 	++opt->set;
 	if( opt->set > 1 && !(opt->flags & OPT_REPEAT) ) opt_die(ctx, "unacepted repeated option");
@@ -283,6 +286,7 @@ void argv_usage(option_s* opt, const char* argv0){
 		if( opt[i].sh ) printf("-%c ", opt[i].sh);
 		if( *opt[i].lo ) printf("%s ", opt[i].lo);
 		if( opt[i].flags & OPT_REPEAT ) printf("<can repeat this option>");
+		if( opt[i].flags & OPT_ARRAY  ) printf("<can use as array>");
 		if( opt[i].flags & OPT_EXTRA  ) printf("<accept not option value>");
 		switch( opt[i].flags & 0xF ){
 			case OPT_NOARG: puts("<not required argument>"); break;
