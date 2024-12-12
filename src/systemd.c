@@ -1,7 +1,9 @@
 #include <notstd/core.h>
 #include <notstd/str.h>
+#include <notstd/opt.h>
 
 #include <gm/systemd.h>
+#include <gm/gm.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,8 +18,6 @@
 #define __sdbus __cleanup(sd_bus_flush_close_unrefp)
 #define __sderr __cleanup(sd_bus_error_free)
 #define __sdmsg __cleanup(sd_bus_message_unrefp)
-
-char* path_home(char* path);
 
 __private const char* SERVICE_UNIT[] = {
 	"Description=Execute ghost mirror",
@@ -345,12 +345,59 @@ __private const char* systemd_service_version(void){
 	return hd;
 }
 
-void systemd_timer_set(unsigned day, const char* mirrorpath, const char* speedmode, const char* sortmode){
+__private char* merge_sort(optValue_u* value, const unsigned count){
+	char* out = MANY(char, 12*10);
+	for( unsigned i = 0; i < count; ++i ){
+		unsigned lenval = strlen(value[i].str);
+		dbg_info("value: %s[%u]", value[i].str, lenval);
+		out = mem_upsize(out, lenval + 1);
+		unsigned len = mem_header(out)->len;
+		memcpy(&out[len], value[i].str, lenval);
+		out[len + lenval] = ',';
+		mem_header(out)->len += lenval + 1;
+	}
+	out[--mem_header(out)->len] = 0;
+	return out;
+}
+/*
+__private char* str_push(char* str, const char* restrict src){
+	const unsigned len = strlen(src);
+	mem_upsize(str, len+1);
+	const unsigned dlen = mem_header(str)->len;
+	memcpy(&str[dlen], src, len);
+	str[dlen+len] = 0;
+	mem_header(str)->len += len;
+	return str;
+}
+*/
+__private char* pusharg_str(char* str, const char* arg, const char* value){
+	const unsigned vlen = strlen(value);
+	const unsigned alen = strlen(arg);
+	str = mem_upsize(str, vlen+alen+4);
+	unsigned dlen = mem_header(str)->len;
+	str[dlen++] = ' ';
+	memcpy(&str[dlen], arg, alen);
+	dlen += alen;
+	str[dlen++] = ' ';
+	memcpy(&str[dlen], value, vlen);
+	dlen += vlen;
+	str[dlen] = 0;
+	mem_header(str)->len = dlen;
+	return str;
+}
+
+__private char* pusharg_num(char* str, const char* arg, unsigned long u){
+	char value[1024];
+	sprintf(value, "%lu", u);
+	return pusharg_str(str, arg, value);
+}
+
+void systemd_timer_set(unsigned day, option_s* opt){
 	unsigned enableService = 0;
 	int uid = getuid();
 	
-	dbg_info("systemd serviceV%s appV:%s uid:%u day:%u path:%s speed:%s sortmode:%s", systemd_service_version(), VERSION_STR, uid, day, mirrorpath, speedmode, sortmode);
-	
+	dbg_info("systemd service v%s app v%s uid:%u day:%u", systemd_service_version(), VERSION_STR, uid, day);
+
 	if( !sdbus_user_linger_get(uid) ){
 		dbg_info("linger is not enabled, I'll take care of it.");
 		sdbus_user_linger_set(uid, 1);
@@ -367,8 +414,25 @@ void systemd_timer_set(unsigned day, const char* mirrorpath, const char* speedmo
 		sd_mkdir();
 		if( forcereconfig || !sd_exists_user_config("ghostmirror", "service") ){
 			dbg_info("create service config, forced: %u", forcereconfig);
-			__free char* execstart  = str_printf("ExecStart=/usr/bin/ghostmirror -DumlsS %s %s %s %s", mirrorpath, mirrorpath, speedmode, sortmode);
+
+			if( !opt[O_l].set ) die("for start daemon required output list, -l");
+			__free char* where = path_explode(opt[O_l].value->str);
+
+			__free char* execstart  = str_printf("ExecStart=/usr/bin/ghostmirror -Duml %s %s", where, where);
+			if( opt[O_s].set ) execstart = pusharg_str(execstart,"-s", opt[O_s].value->str);
+			if( opt[O_a].set ) execstart = pusharg_str(execstart,"-a", opt[O_a].value->str);
+			if( opt[O_T].set ) execstart = pusharg_str(execstart,"-T", opt[O_T].value->str);
+			if( opt[O_d].set ) execstart = pusharg_num(execstart,"-d", opt[O_d].value->ui);
+			if( opt[O_O].set ) execstart = pusharg_num(execstart,"-O", opt[O_O].value->ui);
+			if( opt[O_S].set ){
+				__free char* sorta = merge_sort(opt[O_S].value, opt[O_S].set);
+				execstart = pusharg_str(execstart,"-S", sorta);
+			}
+			
 			__free char* enviroment = str_printf(ENVIROMENT_FORMAT, VERSION_STR);
+			dbg_info("execstart : '%s'", execstart);
+			dbg_info("enviroment: '%s'", enviroment);
+
 			SERVICE_SERVICE[0] = execstart;
 			SERVICE_SERVICE[1] = enviroment;
 			__fclose FILE* f = sd_create_user_config("ghostmirror", "service");

@@ -1,4 +1,4 @@
-ghostmirror v0.9.8
+ghostmirror v0.9.9
 ==================
 Introduction:
 =============
@@ -175,6 +175,7 @@ all options
 
 State:
 ======
+* v0.9.9 support all flags to systemd service
 * v0.9.8 more precise and elegant stability
 * v0.9.7 there was a piece of test code left
 * v0.9.5 strong systemd: better config for autorestart, auto use local db. get local pacman database if many fail remote local database. can use manually RESTART_COUNT=999. Versioning config for automatic reconfigure when new version is released

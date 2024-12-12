@@ -12,7 +12,9 @@
 
 #define PATH_PRIVIL 0760
 
-void systemd_timer_set(unsigned day, const char* mirrorpath, const char* speedmode, const char* sortmode);
+#include <notstd/opt.h>
+
+void systemd_timer_set(unsigned day, option_s* opt);
 long systemd_restart_count(void);
 
 #endif

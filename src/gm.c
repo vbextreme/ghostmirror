@@ -7,6 +7,7 @@
 #include <gm/arch.h>
 #include <gm/investigation.h>
 #include <gm/systemd.h>
+#include <gm/gm.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -22,16 +23,16 @@
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
 //
-//  0.x.x manager version
 //  0.x.x all option to systemd
-//  0.x.x fix optarg error unknow option
 //  0.x.x add  investigate=error,outofdate,all
 //  0.x.x documentation
 //  0.x.x scanbuild
 //  0.x.x valgrind
 //  1.0.0 first release?
-//  ?.?.? systemd auto remove mirror error and get new mirror?
-//  ?.?.? how many test can add to investigate?
+//  x.x.x better colormap
+//  x.x.x systemd auto remove mirror error and get new mirror?
+//  x.x.x how many test can add to investigate?
+//  x.x.x fix optarg error unknow option
 //
 //  systemd: false
 //    step1: ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
@@ -77,26 +78,6 @@ __private unsigned CERR = 1;
 __private unsigned CSTATUS[] = { 230, 118, 1 };
 __private unsigned CBG = 238;
 
-typedef enum{
-	O_a,
-	O_m,
-	O_c,
-	O_C,
-	O_u,
-	O_d,
-	O_O,
-	O_p,
-	O_P,
-	O_o,
-	O_s,
-	O_S,
-	O_l,
-	O_L,
-	O_T,
-	O_i,
-	O_D,
-	O_h
-}OPT_E;
 
 option_s OPT[] = {
 	{'a', "--arch"           , "select arch, default 'x86_64'"                                      , OPT_STR  , 0, 0}, 
@@ -132,8 +113,7 @@ char* path_home(char* path){
 	return path;
 }
 
-
-__private char* path_explode(const char* path){
+char* path_explode(const char* path){
 	if( path[0] == '~' && path[1] == '/' ){
 		char home[PATH_MAX];
 		return str_printf("%s%s", path_home(home), &path[1]);
@@ -497,6 +477,7 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_L, ULONG_MAX);
 
 	www_begin();
+
 /*
 mirror_s* mirrors = MANY(mirror_s, 16);
 mem_header(mirrors)->len = 8;
@@ -613,7 +594,7 @@ die("");
 		if( !opt[O_S].set ) die("required any tipe of sort, --sort");
 		__free char* where = path_explode(opt[O_l].value->str);
 		__free char* sorta = merge_sort(opt[O_S].value, opt[O_S].set);
-		systemd_timer_set(mirrors[0].extimated, where, opt[O_s].value->str, sorta);
+		systemd_timer_set(mirrors[0].extimated, opt);
 	}
 
 	www_end();
