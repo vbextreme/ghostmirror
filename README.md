@@ -16,7 +16,7 @@ It can analyze the mirrors and display in-depth errors or the names of packages 
 Thanks to the custom sorting mode, it can create a list of mirrors based on each user's needs.<br>
 If you don't have time to update the mirror list manually, by adding a single command-line argument, the systemd service will be automatically activated. Feel free to forget about the mirrors.<br>
 
-![Alt text](relative%20screenshot/simple_output.jpg?raw=true "GhostMirror")
+![Alt text](relative%20screenshot/simple_output.png?raw=true "GhostMirror")
 
 Install:
 ========
