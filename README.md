@@ -1,4 +1,4 @@
-ghostmirror v0.9.10
+ghostmirror v0.9.11
 ==================
 Introduction:
 =============
@@ -15,6 +15,8 @@ It compares the mirror databases with the local database and provides a detailed
 It can analyze the mirrors and display in-depth errors or the names of packages that are not updated.<br>
 Thanks to the custom sorting mode, it can create a list of mirrors based on each user's needs.<br>
 If you don't have time to update the mirror list manually, by adding a single command-line argument, the systemd service will be automatically activated. Feel free to forget about the mirrors.<br>
+
+![Alt text](relative%20screenshot/simple_output.jpg?raw=true "GhostMirror")
 
 Install:
 ========
@@ -209,6 +211,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.9.11 the prev version not build, missing gm.h. add screenshot.
 * v0.9.10 little more doc, change conf for waiting nss-lockup.service, removed opt show unknonw option at end of argument, opt usage show is array
 * v0.9.9 support all flags to systemd service
 * v0.9.8 more precise and elegant stability

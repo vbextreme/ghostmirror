@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.10')
+project('ghostmirror', 'c', version: '0.9.11')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'little more doc, change conf for waiting nss-lockup.service, removed opt show unknonw option at end of argument, opt usage show is array'
+  'dsc': 'the prev version not build, missing gm.h. add screenshot.'
 }
 
 if get_option('eveloper')
