@@ -1,4 +1,4 @@
-ghostmirror v0.9.11
+ghostmirror v0.9.12
 ==================
 Introduction:
 =============
@@ -28,7 +28,6 @@ otherwise you can find PKGBUILD in distro dir
 ```bash
 $ cd distro && makepkg -sirc
 ```
-
 
 Usage:
 ======
@@ -211,6 +210,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.9.12 more doc and wiki.
 * v0.9.11 the prev version not build, missing gm.h. add screenshot.
 * v0.9.10 little more doc, change conf for waiting nss-lockup.service, removed opt show unknonw option at end of argument, opt usage show is array
 * v0.9.9 support all flags to systemd service

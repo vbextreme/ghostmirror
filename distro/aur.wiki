@@ -1,0 +1,115 @@
+<!--
+== title ==
+[[Category:nome categoria]]
+[url/ nome]
+[[refpage]]
+{{Pkg|nome del pacchetto}}
+{{Warning|sfondo rosso}}
+{{ic|evidenzia}}
+{{man|1|nome|EXAMPLES}}
+{{AUR|nome pacchetto aur}}
+-->
+
+[[Category:Package management]]
+{{Related articles start}}
+{{Related|Mirrors}}
+{{Related|Pacman}}
+{{Related|Reflector}}
+{{Related articles end}}
+[https://github.com/vbextreme/ghostmirror/ GhostMirror] It can generate a mirrorlist from the most recent [[Mirrors]], compare them with the local mirror, and indicate whether they are outdated, identical, or more up-to-date than the current local mirror in use.<br>
+It can perform speed tests using ping and download methods.<br>
+It can analyze a non-working mirror to identify potential issues, a feature particularly useful for mirror maintainers.<br>
+It can also function as a systemd service, automatically determining when mirrors need to be rechecked.<br>
+
+== Installation ==
+
+[[Install]] the {{AUR|ghostmirror}} package.
+
+== Usage ==
+
+To see all of the available options, run the following command:
+
+ $ ghostmirror --help
+
+=== Best Mirror ===
+
+If your mirrorlist already contains a good number of mirrors that you consider valid, you can skip this step. From my experience, a good number is more than 20. Feel free to have anywhere from 3 to 100 mirrors.<br>
+One of the first things you'll definitely want to do is search for reliable mirrors to include in your list.<br>
+To achieve this goal, you'll need several options at your disposal.<br>
+{{ic|-Po}} show a progress and show a colorful table.<br>
+{{ic|-c}} select country, to find good mirrors, it is recommended to search within your own country and neighboring ones.<br>
+The more mirrors you add, the slower the search might become, but this operation doesn't need to be done periodically—it's just an initial sift through the countless mirrors available.<br>
+for example Italy,Germany,France<br>
+{{ic|-l}} the path where you want to save the new mirrorlist.<br>
+{{ic|-L}} max numbers of output mirror in list.<br>
+{{ic|-S}} sort mode, we need remove error mirror and for this add state as first sortmode, after you can add outofdate in this mode display first the mirror sync, can also add morerecent to ensure you never go out of sync, and at the end, you can add ping to try to prioritize the closest ones.<br>
+
+ $ ghostmirror -Po -c Italy,Germany,France -l ./mirrorlist.new -L 30 -S state,outofdate,morerecent,ping
+ 
+The estimated field won't provide an optimal value without a speed test, but for finding a stable mirror, it's not necessary.<br>
+If the operation is particularly slow, you can try increasing the number of simultaneous downloads with {{ic|-d}}<br>
+
+=== Sort Mirror ===
+
+Once you have a good mirrorlist, you can perform periodic checks to reorganize it and continue using the best mirrors based on your usage patterns.<br>
+Let's keep the options {{ic|-Pol}} of previous command.<br>
+{{ic|-mu}} set path mirrorlist and use only uncommented mirror.<br>
+{{ic|-s}} apply test for mirror speed.<br>
+We need to change the sorting method. While we were previously looking for the closest mirrors, now we will focus on finding the most stable and fastest ones.
+
+ $ ghostmirror -Po -mu ./mirrorlist.new -l ./mirrorlist.new -s light -S state,outofdate,morerecent,extimated,speed
+
+now you can copy to apply modify to pacman
+
+ # cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
+ # cp ./mirrorlist.new /etc/pacman.d/mirrorlist
+
+== Automation ==
+
+The process I previously referred to as "Sort Mirror" can be automated using systemd timers, specifically, use the {{ic|linger}} functionality for automation.<br>
+You won’t need to worry about anything, as linger will be automatically activated along with its configuration files—you’ll just need to run the appropriate command.
+
+=== Prepare ===
+
+you need manual make dir for a new location of mirrorlist, need location where user can edit this without root privilege
+
+ $ mkdir ~/.config/ghostmirror
+
+inform pacman where you have stored mirrorlist.<br>
+edit file /etc/pacman.conf, search and replace this line and change <username> with your username.
+
+ [core]
+ Include = /home/<username>/.config/ghostmirror/mirrorlist
+ 
+ [extra]
+ Include = /home/<username>/.config/ghostmirror/mirrorlist
+
+=== Activate ===
+
+create a mirrorlist in {{ic|~/.config/ghostmirror}} in the same mode "Best Mirror" or simple copy from {{ic|/etc/pacman.d/mirrorlist}}<br>
+The command we will run will with {{ic|-D}} enable linger if it's not already enabled, create a new mirrorlist, start the timer, and use the command for subsequent automatic mirror checks.
+
+ $ ghostmirror -DPo -mul ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist -s light -S state,outofdate,morerecent,extimated,speed
+
+=== Systemd ===
+
+can check running timer
+
+ $ systemctl --user list-timers
+
+force refresh mirrorlist
+
+ $ systemctl --user start ghostmirror.service
+
+== Analyzer ==
+
+To analyze mirrors, simply add the -i option to check if the mirror redirects to another server, verify if the URLs are correct, the errors reported by the mirror, and optionally the package names that have not been synchronized.<br>
+example for exexute investigation only in specific mirrorlist
+
+ $ ghostmirror -Pomui ./mirrorlist.mantainer all
+
+
+== See also ==
+
+* [https://github.com/vbextreme/ghostmirror GitHub page]
+

@@ -23,11 +23,10 @@
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
 //
-//  0.x.x add  investigate=error,outofdate,all
-//  0.x.x documentation
 //  0.x.x scanbuild
 //  0.x.x valgrind
 //  1.0.0 first release?
+//  x.x.x time, add option for select time when need start service
 //  x.x.x better colormap
 //  x.x.x systemd auto remove mirror error and get new mirror?
 //  x.x.x how many test can add to investigate?
