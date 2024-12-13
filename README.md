@@ -1,4 +1,4 @@
-ghostmirror v0.9.12
+ghostmirror v0.9.13
 ==================
 Introduction:
 =============
@@ -210,6 +210,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.9.13 pkgbuild doc, thanks, fix possible issue by scan-build, valgrind success (only remain memory when exit from software, its not problem), this is first candidate for stable version
 * v0.9.12 more doc and wiki.
 * v0.9.11 the prev version not build, missing gm.h. add screenshot.
 * v0.9.10 little more doc, change conf for waiting nss-lockup.service, removed opt show unknonw option at end of argument, opt usage show is array

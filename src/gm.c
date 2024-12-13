@@ -23,8 +23,6 @@
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
 //
-//  0.x.x scanbuild
-//  0.x.x valgrind
 //  1.0.0 first release?
 //  x.x.x time, add option for select time when need start service
 //  x.x.x better colormap
@@ -567,7 +565,8 @@ die("");
 	else{
 		mirrors = mirrors_country(mirrors, opt[O_m].value->str,  mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
 	}
-	
+	if( mirrors == NULL ) die("internal error, please report this issue, mirrors is not correctly created");
+
 	mirrors_update(mirrors, opt[O_p].set, opt[O_d].value->ui, opt[O_O].value->ui);	
 	mirrors_cmp_db(mirrors, opt[O_p].set);
 	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set, cast_speed_type(opt[O_s].value->str));

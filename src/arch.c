@@ -690,6 +690,7 @@ __private double std_dev_speed(mirror_s* mirrors, const double avg){
 	return sqrt(sum / count);
 }
 
+/* special thanks Andrea993 for help to adjust this formula */
 __private void avg_mirror(mirror_s* mirrors, double* avgSpeed, double* avgOutofdate, double* avgMorerecent){
 	*avgSpeed      = 0.0;
 	*avgOutofdate  = 0.0;
