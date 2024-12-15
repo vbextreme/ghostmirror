@@ -1,4 +1,4 @@
-ghostmirror v0.9.13
+ghostmirror v0.9.14
 ==================
 Introduction:
 =============
@@ -180,6 +180,12 @@ for exaples if you execute: -DmuldsS <mirrorlist> <mirrorlist> 16 light extimate
 the service is always start with <mirrorlist> 16 parallel downloads, speed light and extimated,speed sort.<br>
 for change you can simple repeat a command.<br>
 the expire timer is the first element in table and is dinamic, can change every time.<br>
+### -t --time <required string>
+in systemd timer whend extimate date is ellapsed can set a time. Set specific hh:mm:ss when start service, default 00:00:00.<br>
+validate input with systemd-analyzer calendar hh:mm:ss before use
+### -f --fixed-time <required string>
+in systemd timer use fixed time instead of extimated time.<br>
+validate input with systemd-analyzer calendar hh:mm:ss before use
 ### -h --help <not required argument>
 display this
 
@@ -210,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.9.14 custom time and fixed time, specific option for path, wrong indentation
 * v0.9.13 pkgbuild doc, thanks, fix possible issue by scan-build, valgrind success (only remain memory when exit from software, its not problem), this is first candidate for stable version
 * v0.9.12 more doc and wiki.
 * v0.9.11 the prev version not build, missing gm.h. add screenshot.

@@ -57,7 +57,7 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local, unsigned mo
 			case ERROR_TAR_KV_ASSIGN: puts("  error: fail tar pax kv, probably corrupted file"); break;
 			default: die("internal error, unmanaged %u error, please report this", mirror->error); break;
 		}
-
+		
 		unsigned errconnection = www_connection_error(mirror->wwwerror);
 		unsigned errhttp       = www_http_error(mirror->wwwerror);
 		if( errconnection ){

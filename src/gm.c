@@ -19,16 +19,17 @@
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
+//	0.9.14 PRIMA DI FARE PUSH CONTROLLARE -t e -f, aggiornare la wiki, aggiungere un plugin per visualizzare i tab
+//
 //  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
 //
 //  1.0.0 first release?
-//  x.x.x time, add option for select time when need start service
+//  x.x.x move all text in separate location, better way for simple translation
 //  x.x.x better colormap
 //  x.x.x systemd auto remove mirror error and get new mirror?
 //  x.x.x how many test can add to investigate?
-//  x.x.x redraw table from list, possible because list have value, need version for future change?
 //
 //  systemd: false
 //    step1: ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
@@ -93,6 +94,8 @@ option_s OPT[] = {
 	{'T', "--type"           , "select mirrors type, http,https,all"                                , OPT_ARRAY | OPT_STR, 0, 0},
 	{'i', "--investigate"    , "investigate on mirror, mode: outofdate/error/all"                   , OPT_ARRAY | OPT_STR, 0, 0},
 	{'D', "--systemd"        , "auto manager systemd.timer"                                         , OPT_NOARG, 0, 0},
+	{'t', "--time"           , "specific your preferite time in hh:mm:ss"                           , OPT_STR, 0, 0},
+	{'f', "--fixed-time"     , "use fixed OnCalenda, systemd-analyzer calendar ..., for test valid" , OPT_STR, 0, 0},
 	{'h', "--help"           , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
 

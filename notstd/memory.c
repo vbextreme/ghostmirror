@@ -49,7 +49,7 @@ __private void unlock(hmem_s* hm){
 	int32_t current, wanted;
 	do {
 		current = hm->lock;
-        if( current == LOCK_OPEN ) return;
+		if( current == LOCK_OPEN ) return;
 		wanted = current == LOCK_WLOCKED ? LOCK_OPEN : current - 1;
 	}while( __sync_val_compare_and_swap(&hm->lock, current, wanted) != current );
 	futex(&hm->lock, FUTEX_WAKE, 1, NULL, NULL, 0);
@@ -59,8 +59,8 @@ __private void lock_read(hmem_s* hm){
     int32_t current;
 	while( (current = hm->lock) == LOCK_WLOCKED || __sync_val_compare_and_swap(&hm->lock, current, current + 1) != current ){
 		while( futex(&hm->lock, FUTEX_WAIT, current, NULL, NULL, 0) != 0 ){
-            cpu_relax();
-            if (hm->lock >= LOCK_OPEN) break;
+			cpu_relax();
+			if (hm->lock >= LOCK_OPEN) break;
 		}
 	}
 }
@@ -181,7 +181,7 @@ void* mem_delete(void* mem, size_t index, size_t count ){
 		errno = EINVAL;
 		return mem;
 	}
-
+	
 	hmem_s* hm = givehm(mem);
 
 	if( index >= hm->len ){
@@ -193,13 +193,13 @@ void* mem_delete(void* mem, size_t index, size_t count ){
 		hm->len = index;
 		return mem;
 	}
-
+	
 	void*  dst  = (void*)ADDRTO(mem, hm->sof, index);
 	void*  src  = (void*)ADDRTO(mem, hm->sof, (index+count));
 	size_t size = (hm->len - (index+count)) * hm->sof;
 	memmove(dst, src, size);
 	hm->len -= count;
-
+	
 	return mem;
 }
 
@@ -210,23 +210,23 @@ void* mem_widen(void* mem, size_t index, size_t count){
 	}
 	mem = mem_upsize(mem, count);
 	hmem_s* hm = givehm(mem);
-
+	
 	if( index > hm->len ){
 		errno = EINVAL;
 		return mem;
 	}
-
+	
 	if( index == hm->len ){
 		hm->len = index + count;
 		return mem;
 	}
-
+	
 	void*  src  = (void*)ADDRTO(mem, hm->sof, index);
 	void*  dst  = (void*)ADDRTO(mem, hm->sof, (index+count));
 	size_t size = (hm->len - (index+count)) * hm->sof;
 	memmove(dst, src, size);
 	hm->len += count;
-
+	
 	return mem;
 }
 
@@ -238,7 +238,7 @@ void* mem_insert(void* restrict dst, size_t index, void* restrict src, size_t co
 	const unsigned sof = givehm(dst)->sof;
 	void* draw = (void*)ADDRTO(dst, sof, index);
 	memcpy(draw, src, count * sof);
-
+	
 	return dst;
 }
 
@@ -260,7 +260,7 @@ void* mem_pop(void* restrict mem, void* restrict element){
 		memcpy(element, draw, hm->sof);
 	}
 	--hm->len;
-
+	
 	return element;
 }
 
@@ -279,7 +279,7 @@ void* mem_shuffle(void* mem, size_t begin, size_t end){
 	hmem_s* hm = givehm(mem);
 	if( end == 0 && hm->len ) end = hm->len-1;
 	if( end == 0 ) return mem;
-
+	
 	const size_t count = (end - begin) + 1;
 	for( size_t i = begin; i <= end; ++i ){
 		size_t j = begin + mth_random(count);

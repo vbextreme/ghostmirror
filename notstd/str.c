@@ -241,7 +241,7 @@ char* str_escape_decode(const char* str, unsigned len){
 	const char* e;
 	char* out = MANY(char, len+1);
 	char* o = out;
-
+	
 	while( str < end ){
 		int ch = chr_escape_decode(str, &e);
 		if( ch == -1 ) goto ONERR;

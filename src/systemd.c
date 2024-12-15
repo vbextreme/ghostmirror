@@ -9,9 +9,11 @@
 #include <stdio.h>
 #include <limits.h>
 #include <sys/stat.h>
-#include <systemd/sd-bus.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <systemd/sd-bus.h>
+#include <systemd/sd-event.h>
+
 
 /* loginctl enable-linger your_username */
 
@@ -134,10 +136,10 @@ __private int sdbus_user_linger_get(uid_t uid){
 	__sdbus sd_bus *bus = NULL;
 	int linger = 0;
 	const char* path = NULL;
-
+	
 	int ret = sd_bus_open_system(&bus);
     if( ret < 0 ) die("sd-bus connection error: %s", strerror(-ret));
-
+	
 	{
 		//logind
 		__sdmsg sd_bus_message *reply = NULL;
@@ -149,7 +151,7 @@ __private int sdbus_user_linger_get(uid_t uid){
 			"GetUser",
 			&error,
 			&reply,
-		    "u",
+			"u",
 			uid
 		);
 		sdbus_check("logind.getuser", ret, &error);
@@ -170,8 +172,8 @@ __private int sdbus_user_linger_get(uid_t uid){
 		);
 		sdbus_check("logind.linger", ret, &error);
 		if( (ret = sd_bus_message_read(reply, "b", &linger)) < 0 ) die("read systemd reply.linger: %s", strerror(-ret));
-    }
-
+	}
+	
 	return linger;
 }
 
@@ -179,8 +181,8 @@ __private void sdbus_user_linger_set(uid_t uid, int enable){
 	enable = !!enable;
 	sd_bus *bus = NULL;
 	int ret = sd_bus_open_system(&bus);
-    if( ret < 0 ) die("sd-bus connection error: %s", strerror(-ret));
-
+	if( ret < 0 ) die("sd-bus connection error: %s", strerror(-ret));
+	
 	{
 		__sderr sd_bus_error error = SD_BUS_ERROR_NULL;
 		ret = sd_bus_call_method(bus,
@@ -206,8 +208,8 @@ systemctl --user restart myapp.timer
 __private void sd_daemon_reload_restart_timer(const char *name) {
 	__sdbus sd_bus *bus = NULL;
 	int ret = sd_bus_open_user(&bus);
-    if( ret < 0 ) die("sd-bus connection error: %s", strerror(-ret));
-
+	if( ret < 0 ) die("sd-bus connection error: %s", strerror(-ret));
+	
 	{
 		__sderr sd_bus_error err = SD_BUS_ERROR_NULL;
 		ret = sd_bus_call_method(bus,
@@ -221,7 +223,7 @@ __private void sd_daemon_reload_restart_timer(const char *name) {
 		);
 		sdbus_check("reload timer", ret, &err);
 	}
-
+	
 	{
 		__free char* unit = str_printf("%s.timer", name);
 		__sderr sd_bus_error err = SD_BUS_ERROR_NULL;
@@ -249,9 +251,9 @@ systemctl --user start myapp.timer
 */
 
 __private void sdbus_unmask_timer(const char *name) {
-    __sdbus sd_bus *bus = NULL;
+	__sdbus sd_bus *bus = NULL;
 	__sderr sd_bus_error err = SD_BUS_ERROR_NULL;
-
+	
 	int ret = sd_bus_open_user(&bus);
 	if( ret < 0 ) die("sd-bus connection error: %s", strerror(-ret));
 	__free char* unit = str_printf("%s.timer", name);
@@ -275,14 +277,14 @@ __private void sdbus_unmask_timer(const char *name) {
 
 //abilita
 __private void sd_enable_timer(const char *name, int enable) {
-    __sdbus sd_bus *bus = NULL;
+	__sdbus sd_bus *bus = NULL;
 	__sderr sd_bus_error err = SD_BUS_ERROR_NULL;
-
+	
 	int ret = sd_bus_open_user(&bus);
 	if( ret < 0 ) die("sd-bus connection error: %s", strerror(-ret));
 	__free char* unit = str_printf("%s.timer", name);
 	dbg_info("enable(%d) timer %s", enable, unit);
-
+	
 	if( enable ){
 		ret = sd_bus_call_method(bus,
 			"org.freedesktop.systemd1",
@@ -316,7 +318,7 @@ __private void sd_enable_timer(const char *name, int enable) {
 }
 
 __private void sd_start_timer(const char *name, int start){
-    __sdbus sd_bus *bus = NULL;
+	__sdbus sd_bus *bus = NULL;
 	__sderr sd_bus_error err = SD_BUS_ERROR_NULL;
 
 	int ret = sd_bus_open_user(&bus);
@@ -409,19 +411,21 @@ void systemd_timer_set(unsigned day, option_s* opt){
 		sd_start_timer("ghostmirror", 0);
 		sd_enable_timer("ghostmirror", 0);
 	}
-
+	
 	if( !sd_exists_wants("ghostmirror", "timer") ){
 		sd_mkdir();
 		if( forcereconfig || !sd_exists_user_config("ghostmirror", "service") ){
 			dbg_info("create service config, forced: %u", forcereconfig);
-
+			
 			if( !opt[O_l].set ) die("for start daemon required output list, -l");
 			__free char* where = path_explode(opt[O_l].value->str);
-
+			
 			__free char* execstart  = str_printf("ExecStart=/usr/bin/ghostmirror -Duml %s %s", where, where);
 			if( opt[O_s].set ) execstart = pusharg_str(execstart,"-s", opt[O_s].value->str);
 			if( opt[O_a].set ) execstart = pusharg_str(execstart,"-a", opt[O_a].value->str);
 			if( opt[O_T].set ) execstart = pusharg_str(execstart,"-T", opt[O_T].value->str);
+			if( opt[O_t].set ) execstart = pusharg_str(execstart,"-t", opt[O_t].value->str);
+			if( opt[O_f].set ) execstart = pusharg_str(execstart,"-f", opt[O_f].value->str);
 			if( opt[O_d].set ) execstart = pusharg_num(execstart,"-d", opt[O_d].value->ui);
 			if( opt[O_O].set ) execstart = pusharg_num(execstart,"-O", opt[O_O].value->ui);
 			if( opt[O_S].set ){
@@ -432,7 +436,7 @@ void systemd_timer_set(unsigned day, option_s* opt){
 			__free char* enviroment = str_printf(ENVIROMENT_FORMAT, VERSION_STR);
 			dbg_info("execstart : '%s'", execstart);
 			dbg_info("enviroment: '%s'", enviroment);
-
+			
 			SERVICE_SERVICE[0] = execstart;
 			SERVICE_SERVICE[1] = enviroment;
 			__fclose FILE* f = sd_create_user_config("ghostmirror", "service");
@@ -442,9 +446,16 @@ void systemd_timer_set(unsigned day, option_s* opt){
 		enableService = 1;
 	}
 
-	time_t expired = time(NULL);// + day * 86400;
-	struct tm* sexpired = gmtime(&expired);
-	__free char* oncalendar = str_printf(ONCALENDAR_FORMAT, sexpired->tm_mday, day);
+	__free char* oncalendar = NULL;
+	if( opt[O_f].set ){
+		oncalendar = str_dup(opt[O_f].value->str, 0);
+	}
+	else{
+		time_t expired = time(NULL);
+		struct tm* sexpired = gmtime(&expired);
+		const char* traised = opt[O_t].set ? opt[O_t].value->str : "";
+		oncalendar = str_printf(ONCALENDAR_FORMAT, sexpired->tm_mday, day, traised);
+	}
 	TIMER_TIMER[0] = oncalendar;
 	
 	{
@@ -471,22 +482,4 @@ long systemd_restart_count(void){
 	if( !end || *end || errno ) return -1;
 	return ret;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

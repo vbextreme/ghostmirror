@@ -98,19 +98,19 @@ __private void read_str(char dst[static NAME_MAX], const char* data, const char*
 
 __private void pkgdesc_parse(pkgdesc_s* out, const char* data, size_t len){
 	const char* end = data + len;
-
+	
 	out->filename[0] = 0;
 	out->name[0]     = 0;
 	out->version[0]  = 0;
 	out->lastsync = 0;
-
+	
 	int nval = 3;	
 	while( nval && data < end ){
 		if( *skip_h(data, end) != '%' ){
 			data = next_line(data, end);
 			continue;
 		}
-
+		
 		if( section("FILENAME", data, end) ){
 			data = next_line(data, end);
 			read_str(out->filename, data, end);
@@ -136,62 +136,47 @@ __private void pkgdesc_parse(pkgdesc_s* out, const char* data, size_t len){
 }
 
 int pkg_vercmp(const char *a, const char *b){
-    const char *pa = a, *pb = b;
-    int r = 0;
-
-    while (*pa || *pb) {
-        if (isdigit(*pa) || isdigit(*pb)) {
-            long la = 0, lb = 0;
-            while (*pa == '0') {
-                pa++;
-            }
-            while (*pb == '0') {
-                pb++;
-            }
-            while (isdigit(*pa)) {
-                la = la * 10 + (*pa - '0');
-                pa++;
-            }
-            while (isdigit(*pb)) {
-                lb = lb * 10 + (*pb - '0');
-                pb++;
-            }
-            if (la < lb) {
-                return -1;
-            } else if (la > lb) {
-                return 1;
-            }
-        } else if (*pa && *pb && isalpha(*pa) && isalpha(*pb)) {
-            r = tolower((unsigned char)*pa) - tolower((unsigned char)*pb);
-            if (r != 0) {
-                return r;
-            }
-            pa++;
-            pb++;
-        } else {
-            char ca = *pa ? *pa : 0;
-            char cb = *pb ? *pb : 0;
-
-            if (ca == '-' || ca == '_') {
-                ca = '.';
-            }
-            if (cb == '-' || cb == '_') {
-                cb = '.';
-            }
-
-            if (ca != cb) {
-                return ca - cb;
-            }
-            if (ca) {
-                pa++;
-            }
-            if (cb) {
-                pb++;
-            }
-        }
-    }
-
-    return 0;
+	const char *pa = a, *pb = b;
+	int r = 0;
+	
+	while (*pa || *pb) {
+		if (isdigit(*pa) || isdigit(*pb)) {
+			long la = 0, lb = 0;
+			while (*pa == '0') pa++;
+			while (*pb == '0') pb++;
+			while (isdigit(*pa)) {
+				la = la * 10 + (*pa - '0');
+				pa++;
+			}
+			while (isdigit(*pb)) {
+				lb = lb * 10 + (*pb - '0');
+				pb++;
+			}
+			if (la < lb) {
+				return -1;
+			}
+			else if (la > lb) {
+				return 1;
+			}
+		}
+		else if (*pa && *pb && isalpha(*pa) && isalpha(*pb)) {
+			r = tolower((unsigned char)*pa) - tolower((unsigned char)*pb);
+			if (r != 0) return r;
+			pa++;
+			pb++;
+		}
+		else{
+			char ca = *pa ? *pa : 0;
+			char cb = *pb ? *pb : 0;
+			
+			if (ca == '-' || ca == '_') ca = '.';
+			if (cb == '-' || cb == '_') cb = '.';
+			if (ca != cb) return ca - cb;
+			if (ca) pa++;
+			if (cb) pb++;
+		}
+	}
+	return 0;
 }
 
 __private pkgdesc_s* generate_db(void* tarbuf){
@@ -258,7 +243,7 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 		else{
 			ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL);
 		}
-
+		
 		if( mirror->proxy && strcmp(url, mirror->proxy) ) mirror->isproxy = 1;
 		
 		if( !ret ){
@@ -290,7 +275,7 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 		mirror->status = MIRROR_ERR;
 		return ret;
 	}
-
+	
 	for( unsigned ir = 0; ir < repocount; ++ir ){
 		dbg_info("\t %s", REPO[ir]);
 		__free void* tarzstd = get_tar_zst(mirror, REPO[ir], tos);
@@ -299,7 +284,7 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 			mirror->status = MIRROR_ERR;
 			return ret;
 		}
-
+		
 		__free void* tarbuf = gzip_decompress(tarzstd);
 		if( !tarbuf ){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
@@ -307,7 +292,7 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 			mirror->error  = ERROR_GZIP;
 			return ret;
 		}
-
+		
 		if( !(mirror->repo[ir].db = generate_db(tarbuf)) ){
 			switch( errno ){
 				case ENOENT : mirror->error = ERROR_TAR_NOBLOCK; break;
@@ -321,7 +306,7 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 			mirror->status = MIRROR_ERR;
 			return ret;
 		}
-
+		
 		mem_qsort(mirror->repo[ir].db, pkgname_cmp);
 		mirror->total += mem_header(mirror->repo[ir].db)->len;
 		dbg_info("%u package", mirror->total);
@@ -361,7 +346,7 @@ void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownl
 	__atomic unsigned pvalue = 0;
 	
 	if( progress ) progress_begin("mirrors updates");
-
+	
 	__atomic int kres = 0;
 	__paralleft(ndownload)
 	for( unsigned i = 0; i < count; ++i){
@@ -402,17 +387,17 @@ __private int check_type(const char* url, unsigned type){
 
 __private char* server_url(const char** pline, int uncommented, int restrictcountry, unsigned type){
 	const char* line = *pline;
-
+	
 	while( *line ){
 		while( *line && *line == ' ' ) ++line;
 		if( !*line ) return NULL;
 		if( *line == '\n' ){ ++line; continue; }
-
+		
 		if( restrictcountry && !strncmp(line, "## ", 3) ) break;
 		
 		if( uncommented && *line == '#' ){ line = str_next_line(line); continue; }
 		if( *line == '#' ) ++line;
-
+		
 		while( *line && *line == ' ' ) ++line;
 		if( strncmp(line, "Server", 6) ){ line = str_next_line(line); continue; }
 		line += 6;
@@ -464,13 +449,13 @@ __private int server_unique(mirror_s* mirrors, const char* url){
 mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorpath, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type){
 	char* url;
 	const char* fromcountry = country ? find_country(mirrorlist, country) : mirrorlist;
-
+	
 	if( !mirrors ){
 		mirrors = MANY(mirror_s, 10);
 		if( !mirrorpath ) mirrorpath = PACMAN_MIRRORLIST; 
 		__free char* localmirror = load_file(mirrorpath, 1);
 		localmirror = mem_nullterm(localmirror);
-
+		
 		url = server_url((const char**)&localmirror, 1, 0, type);
 		if( !url ) url = PACMAN_LOCAL_DB;
 		const unsigned id = mem_header(mirrors)->len++;

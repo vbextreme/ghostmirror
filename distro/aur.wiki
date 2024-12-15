@@ -20,6 +20,9 @@
 It can perform speed tests using ping and download methods.<br>
 It can analyze a non-working mirror to identify potential issues, a feature particularly useful for mirror maintainers.<br>
 It can also function as a systemd service, automatically determining when mirrors need to be rechecked.<br>
+The main difference with [[Reflector]] is that Reflector uses the mirror list status to check the state of each mirror, particularly the lastsync, and uses ping as a measure of speed.<br>
+Ghostmirror does not consider lastsync reliable, so it downloads the mirror databases and compares them, showing the actual state of a mirror.<br>
+For speed, in addition to ping, Ghostmirror downloads packages to detect the actual speed of the mirror; the result is therefore more accurate.<br>
 
 == Installation ==
 
@@ -33,7 +36,8 @@ To see all of the available options, run the following command:
 
 === Best Mirror ===
 
-If your mirrorlist already contains a good number of mirrors that you consider valid, you can skip this step. From my experience, a good number is more than 20. Feel free to have anywhere from 3 to 100 mirrors.<br>
+If your mirrorlist already contains a good number of mirrors that you consider valid, you can skip this step.<br>
+From my experience, a good number is more than 20. Feel free to have anywhere from 1 to 100+ mirrors.<br>
 One of the first things you'll definitely want to do is search for reliable mirrors to include in your list.<br>
 To achieve this goal, you'll need several options at your disposal.<br>
 {{ic|-Po}} show a progress and show a colorful table.<br>
@@ -90,6 +94,13 @@ create a mirrorlist in {{ic|~/.config/ghostmirror}} in the same mode "Best Mirro
 The command we will run will with {{ic|-D}} enable linger if it's not already enabled, create a new mirrorlist, start the timer, and use the command for subsequent automatic mirror checks.
 
  $ ghostmirror -DPo -mul ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist -s light -S state,outofdate,morerecent,extimated,speed
+
+By default, it uses the first element of the estimated time to determine when the service should run again.<br>
+You can choose to add a time in the format {{ic|-t hh:mm:ss}}, default {{ic|00:00:00}}.<br>
+If you don't want to use the estimated time but a fixed period to refresh the mirrors, you can use a fixed date with {{ic|-f}}.<br>
+Before using these parameters, check if the values are correct with
+
+ $ systemd-analyze calendar <date to check>
 
 === Systemd ===
 

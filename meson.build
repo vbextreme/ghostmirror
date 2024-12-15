@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.13')
+project('ghostmirror', 'c', version: '0.9.14')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'pkgbuild doc, thanks, fix possible issue by scan-build, valgrind success (only remain memory when exit from software, its not problem), this is first candidate for stable version'
+  'dsc': 'custom time and fixed time, specific option for path, wrong indentation'
 }
 
 if get_option('eveloper')

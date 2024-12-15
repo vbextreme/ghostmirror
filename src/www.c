@@ -22,22 +22,22 @@ void www_end(void){
 }
 
 __private const char* www_errno_http(long resCode) {
-    switch (resCode) {
-        case 200: return "HTTP OK";
-        case 201: return "HTTP Created";
-        case 202: return "HTTP Accepted";
-        case 204: return "HTTP No Content";
-        case 301: return "HTTP Moved Permanently";
-        case 302: return "HTTP Found";
-        case 400: return "HTTP Bad Request";
-        case 401: return "HTTP Unauthorized";
-        case 403: return "HTTP Forbidden";
-        case 404: return "HTTP Not Found";
-        case 500: return "HTTP Internal Server Error";
-        case 502: return "HTTP Bad Gateway";
-        case 503: return "HTTP Service Unavailable";
-        default: return "Unknown HTTP Status Code";
-    }
+	switch (resCode) {
+		case 200: return "HTTP OK";
+		case 201: return "HTTP Created";
+		case 202: return "HTTP Accepted";
+		case 204: return "HTTP No Content";
+		case 301: return "HTTP Moved Permanently";
+		case 302: return "HTTP Found";
+		case 400: return "HTTP Bad Request";
+		case 401: return "HTTP Unauthorized";
+		case 403: return "HTTP Forbidden";
+		case 404: return "HTTP Not Found";
+		case 500: return "HTTP Internal Server Error";
+		case 502: return "HTTP Bad Gateway";
+		case 503: return "HTTP Service Unavailable";
+		default: return "Unknown HTTP Status Code";
+	}
 }
 
 const char* www_errno_str(void){
@@ -46,7 +46,7 @@ const char* www_errno_str(void){
 }
 
 unsigned www_errno(void){
-   return wwwerrno;
+	return wwwerrno;
 }
 
 unsigned www_connection_error(unsigned error){
@@ -189,7 +189,7 @@ long www_ping(const char* url){
 	if( es == -1 ) return -1;
 	if( ping < 0 ) return -1;
 	if( !WIFEXITED(es) || WEXITSTATUS(es) != 0) return -1;
-    return ping;
+	return ping;
 }
 
 

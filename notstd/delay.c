@@ -11,43 +11,43 @@
 delay_t time_ms(void){
 	struct timespec ts; 
 	clock_gettime(CLOCK_REALTIME, &ts); 
-    return ts.tv_sec * 1000ULL + ts.tv_nsec / 1000000ULL;
+	return ts.tv_sec * 1000ULL + ts.tv_nsec / 1000000ULL;
 }
 
 delay_t time_us(void){
 	struct timespec ts; 
 	clock_gettime(CLOCK_REALTIME, &ts); 
-    return ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000ULL;
+	return ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000ULL;
 }
 
 delay_t time_ns(void){
 	struct timespec ts; 
 	clock_gettime(CLOCK_REALTIME, &ts); 
-    return ts.tv_sec * 1000000000ULL + ts.tv_nsec;
+	return ts.tv_sec * 1000000000ULL + ts.tv_nsec;
 }
 
 delay_t time_cpu_ms(void){
 	struct timespec ts; 
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts); 
-    return ts.tv_sec * 1000UL + ts.tv_nsec / 1000000UL;
+	return ts.tv_sec * 1000UL + ts.tv_nsec / 1000000UL;
 }
 
 delay_t time_cpu_us(void){
 	struct timespec ts; 
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts); 
-    return ts.tv_sec * 1000000UL + ts.tv_nsec / 1000UL;
+	return ts.tv_sec * 1000000UL + ts.tv_nsec / 1000UL;
 }
 
 delay_t time_cpu_ns(void){
 	struct timespec ts; 
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts); 
-    return ts.tv_sec * 1000000000UL + ts.tv_nsec;
+	return ts.tv_sec * 1000000000UL + ts.tv_nsec;
 }
 
 double time_sec(void){
 	struct timespec ts;  
 	clock_gettime(CLOCK_REALTIME, &ts); 
-    return ts.tv_sec + ts.tv_nsec*1e-9;
+	return ts.tv_sec + ts.tv_nsec*1e-9;
 }
 
 __private void timespec_ms(struct timespec* tv, uint64_t ms){

@@ -19,6 +19,8 @@ typedef enum{
 	O_T,
 	O_i,
 	O_D,
+	O_t,
+	O_f,
 	O_h
 }OPT_E;
 

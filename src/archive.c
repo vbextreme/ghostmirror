@@ -7,21 +7,21 @@
 #include <zlib.h>
 
 void* gzip_decompress(void* data) {
-    z_stream strm;
-    memset(&strm, 0, sizeof(strm));
-    if( inflateInit2(&strm, 16 + MAX_WBITS) != Z_OK ) die("Unable to initialize zlib");
+	z_stream strm;
+	memset(&strm, 0, sizeof(strm));
+	if( inflateInit2(&strm, 16 + MAX_WBITS) != Z_OK ) die("Unable to initialize zlib");
 	size_t datasize = mem_header(data)->len;
 	size_t framesize = datasize * 2;
-    void* dec = MANY(char, framesize);
-
-    strm.avail_in  = datasize;
-    strm.next_in   = (Bytef*)data;
-    strm.avail_out = framesize;
-    strm.next_out  = (Bytef*)dec;
-
-    int ret;
-    do{
-        if( (ret=inflate(&strm, Z_NO_FLUSH)) == Z_ERRNO ){
+	void* dec = MANY(char, framesize);
+	
+	strm.avail_in  = datasize;
+	strm.next_in   = (Bytef*)data;
+	strm.avail_out = framesize;
+	strm.next_out  = (Bytef*)dec;
+	
+	int ret;
+	do{
+		if( (ret=inflate(&strm, Z_NO_FLUSH)) == Z_ERRNO ){
 			mem_free(dec);
 			dbg_error("decompression failed");
 			return NULL;
@@ -33,10 +33,10 @@ void* gzip_decompress(void* data) {
 			strm.avail_out = framesize;
 		}
 		strm.next_out  = (Bytef*)(mem_addressing(dec, mem_header(dec)->len));
-    }while( ret != Z_STREAM_END );
-
-    inflateEnd(&strm);
-    return dec;
+	}while( ret != Z_STREAM_END );
+	
+	inflateEnd(&strm);
+	return dec;
 }
 
 #define TAR_BLK  148
@@ -79,7 +79,7 @@ __private unsigned tar_checksum(void* data){
 	uint8_t* d = (uint8_t*) data;
 	unsigned i;
 	unsigned chk = 0;
-
+	
 	for( i = 0; i < TAR_BLK; ++i )
 		chk += d[i];
 	for( unsigned k = 0; k < TAR_CHK; ++k )
@@ -114,7 +114,7 @@ __private htar_s* htar_get(tar_s* tar){
 		tar->err = EBADF;
 		return NULL;
 	}
-
+	
 	unsigned chk = strtoul(h->checksum, NULL, 8);
 	if( chk != tar_checksum(h) ){
 		dbg_error("wrong checksum");
@@ -146,7 +146,7 @@ __private int htar_pax(tar_s* tar, htar_s* h, tarent_s* ent){
 		char* v = ek+1;
 		kv = k + kvsize;
 		char* ev = kv - 1;
-
+	
 		if( !strncmp(k, "size", 4) ){
 			ent->size = strtoul(v, NULL, 10);
 		}
@@ -184,24 +184,24 @@ tarent_s* tar_next(tar_s* tar){
 	htar_s* h;
 	tarent_s pax = {0};
  	tarent_s* ent;
-
+	
 	while( (h = htar_get(tar)) ){
 		switch( h->typeflag ){
 			case 'g':
 				if( htar_pax(tar, h, &tar->global) ) goto ONERR;
 				htar_next_htar(tar, h);
 			break;
-
+			
 			case 'x':
 				if( htar_pax(tar, h, &pax) ) goto ONERR;
 				htar_next_htar(tar, h);
 			break;
-
+			
 			case '0' ... '9':
 				ent = NEW(tarent_s);
 				mem_header(ent)->cleanup = ent_dtor;
 				memset(ent, 0, sizeof(tarent_s));
-
+				
 				ent->type = h->typeflag - '0';
 				if( pax.size > 0 ){
 					ent->size = pax.size;
@@ -213,7 +213,7 @@ tarent_s* tar_next(tar_s* tar){
 					ent->size = strtoul(h->size, NULL, 8);
 				}
 				ent->data = ent->size ? (void*)(tar->loaddr + sizeof(htar_s)) : NULL;
-
+				
 				if( pax.path ){
 					ent->path = pax.path;
 					pax.path = NULL;

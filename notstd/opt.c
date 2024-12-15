@@ -2,6 +2,8 @@
 #include <notstd/str.h>
 #include <notstd/opt.h>
 
+#include <sys/stat.h>
+
 typedef struct kv{
 	char* name;
 	char* value;
@@ -89,7 +91,7 @@ __private void next_is_nopt(optctx_s* ctx, unsigned next){
 			goto ONERR;
 		}
 	}
-
+	
 	return;
 ONERR:
 	opt_die(ctx, "option required value");
@@ -139,16 +141,31 @@ __private double opt_parse_fnum(optctx_s* ctx, const char* value){
 	return num;
 }
 
+__private char* opt_parse_path(optctx_s* ctx, char* value, unsigned flags){
+	if( flags & OPT_EXISTS ){
+		struct stat sb;
+		if (stat(value, &sb) < 0) opt_die(ctx, "option aspected a valid path");
+		if( flags & OPT_DIR ){
+			if( !S_ISDIR(sb.st_mode) ) opt_die(ctx, "option aspected a valid dir");
+		}
+		else{
+			if( !S_ISREG(sb.st_mode) ) opt_die(ctx, "option aspected a valid file");
+		}
+	}
+	return value;
+}
+
 __private void opt_value(optctx_s* ctx, unsigned id, const char* value){
 	if( ctx->opt[id].flags & OPT_ARRAY ){
 		char* v;
 		--ctx->opt[id].set;
 		while( (v=opt_array(&value)) ){
-			switch( ctx->opt[id].flags & 0xF ){
+			switch( ctx->opt[id].flags & OPT_TYPE ){
 				case OPT_STR : opt_value_new(ctx->opt, id)->str = mem_borrowed(v); break;
-				case OPT_NUM : opt_value_new(ctx->opt, id)->ui = opt_parse_num(ctx, v); break;
-				case OPT_INUM: opt_value_new(ctx->opt, id)->ui = opt_parse_inum(ctx, v); break;
-				case OPT_FNUM: opt_value_new(ctx->opt, id)->ui = opt_parse_fnum(ctx, v); break;
+				case OPT_NUM : opt_value_new(ctx->opt, id)->ui  = opt_parse_num(ctx, v); break;
+				case OPT_INUM: opt_value_new(ctx->opt, id)->ui  = opt_parse_inum(ctx, v); break;
+				case OPT_FNUM: opt_value_new(ctx->opt, id)->ui  = opt_parse_fnum(ctx, v); break;
+				case OPT_PATH: opt_value_new(ctx->opt, id)->str = opt_parse_path(ctx, mem_borrowed(v), ctx->opt[id].flags); break;
 				default: die("internal error, unaspected option type, report this error"); break;
 			}
 			++ctx->opt[id].set;
@@ -156,11 +173,12 @@ __private void opt_value(optctx_s* ctx, unsigned id, const char* value){
 		}
 	}
 	else{
-		switch( ctx->opt[id].flags & 0xF ){
+		switch( ctx->opt[id].flags & OPT_TYPE ){
 			case OPT_STR : opt_value_new(ctx->opt, id)->str = value; break;
-			case OPT_NUM : opt_value_new(ctx->opt, id)->ui = opt_parse_num(ctx, value); break;
-			case OPT_INUM: opt_value_new(ctx->opt, id)->ui = opt_parse_inum(ctx, value); break;
-			case OPT_FNUM: opt_value_new(ctx->opt, id)->ui = opt_parse_fnum(ctx, value); break;
+			case OPT_NUM : opt_value_new(ctx->opt, id)->ui  = opt_parse_num(ctx, value); break;
+			case OPT_INUM: opt_value_new(ctx->opt, id)->ui  = opt_parse_inum(ctx, value); break;
+			case OPT_FNUM: opt_value_new(ctx->opt, id)->ui  = opt_parse_fnum(ctx, value); break;
+			case OPT_PATH: opt_value_new(ctx->opt, id)->str = opt_parse_path(ctx, (char*)value, ctx->opt[id].flags); break;
 			default: die("internal error, unaspected option type, report this error"); break;
 		}
 	}
@@ -178,7 +196,7 @@ __private void opt_set(optctx_s* ctx, int id){
 
 __private void add_to_option(optctx_s* ctx, int id, kv_s* kv){
 	opt_set(ctx, id);
-	if( (ctx->opt[id].flags & 0xF) != OPT_NOARG ){
+	if( (ctx->opt[id].flags & OPT_TYPE) != OPT_NOARG ){
 		char* v = NULL;
 		if( !kv || !*kv->value ){
 			next_is_nopt(ctx, ++ctx->current);
@@ -288,12 +306,15 @@ void argv_usage(option_s* opt, const char* argv0){
 		if( opt[i].flags & OPT_REPEAT ) printf("<can repeat this option>");
 		if( opt[i].flags & OPT_ARRAY  ) printf("<can use as array>");
 		if( opt[i].flags & OPT_EXTRA  ) printf("<accept not option value>");
-		switch( opt[i].flags & 0xF ){
+		if( opt[i].flags & OPT_EXISTS ) printf("<path need exists>");
+		if( opt[i].flags & OPT_DIR    ) printf("<is dir>");
+		switch( opt[i].flags & OPT_TYPE ){
 			case OPT_NOARG: puts("<not required argument>"); break;
 			case OPT_STR  : puts("<required string>"); break;
 			case OPT_NUM  : puts("<required unsigned integer>"); break;
-			case OPT_INUM  : puts("<required integer>"); break;
-			case OPT_FNUM  : puts("<required float>"); break;
+			case OPT_INUM : puts("<required integer>"); break;
+			case OPT_FNUM : puts("<required float>"); break;
+			case OPT_PATH : puts("<required path>"); break;
 			default: die("internal error, report this message");
 		}
 		putchar('\t');
