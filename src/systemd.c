@@ -132,6 +132,14 @@ __private void sdbus_check(const char* desc, int err, sd_bus_error* sderr){
 	}
 }
 
+__private void sdbus_check_start(const char* desc, int err, sd_bus_error* sderr, int ss){
+	if( err < 0 || sd_bus_error_is_set(sderr) ){
+		if( !ss && -err == 2 ) return;
+		if( sd_bus_error_is_set(sderr) ) die("%s systemd dbus error(%d:%s): %s::%s", desc, err, strerror(-err), sderr->name, sderr->message);
+		else die("%s systemd dbus error(%d): %s", desc, err, strerror(-err));
+	}
+}
+
 __private int sdbus_user_linger_get(uid_t uid){
 	__sdbus sd_bus *bus = NULL;
 	int linger = 0;
@@ -139,7 +147,7 @@ __private int sdbus_user_linger_get(uid_t uid){
 	
 	int ret = sd_bus_open_system(&bus);
     if( ret < 0 ) die("sd-bus connection error: %s", strerror(-ret));
-	
+
 	{
 		//logind
 		__sdmsg sd_bus_message *reply = NULL;
@@ -338,7 +346,7 @@ __private void sd_start_timer(const char *name, int start){
 		unit,
 		"replace"                          // (replace, fail, isolate, ecc.)
 	);
-	sdbus_check("start/stop timer", ret, &err);
+	sdbus_check_start("start/stop timer", ret, &err, start);
 }
 
 __private const char* systemd_service_version(void){
@@ -456,7 +464,7 @@ void systemd_timer_set(unsigned day, option_s* opt){
 		struct tm* sexpired = gmtime(&expired);
 		const char* traised = opt[O_t].set ? opt[O_t].value->str : "";
 		unsigned daysafe = (unsigned)sexpired->tm_mday + 1 <= monthsafe[sexpired->tm_mon] ? (unsigned)sexpired->tm_mday : monthsafe[sexpired->tm_mon] - 1;
-		oncalendar = str_printf(ONCALENDAR_FORMAT, daysafe, 1, traised);
+		oncalendar = str_printf("OnCalendar=%u-%u-%u/1 %s", sexpired->tm_year + 1900, sexpired->tm_mon + 1,  daysafe, traised);
 	}
 	TIMER_TIMER[0] = oncalendar;
 	

@@ -1,4 +1,4 @@
-ghostmirror v0.9.16
+ghostmirror v0.9.17
 ==================
 Introduction:
 =============
@@ -216,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.9.17 fix unable restart unit if not file exists
 * v0.9.16 systemd oncalendar does not work as expected, changed the time calculation and forcing method, remove warning sign
 * v0.9.15 systemd oncalendar does not work as expected, changed the time calculation and forcing method
 * v0.9.14 custom time and fixed time, specific option for path, wrong indentation
