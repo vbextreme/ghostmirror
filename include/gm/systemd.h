@@ -5,7 +5,6 @@
 #define SYSTEMD_USER_WANTS_PATH ".config/systemd/user/timers.target.wants"
 #define ONCALENDAR_FORMAT       "OnCalendar=*-*-%u/%u %s"
 #define ENVIROMENT_FORMAT       "Enviroment=RESTART_COUNT,SERVICE_VERSION=%s"
-
 #define SYSTEMD_SERVICE_RETRY_MAX 3
 
 #define __fclose __cleanup(file_cleanup)

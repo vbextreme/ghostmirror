@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.14')
+project('ghostmirror', 'c', version: '0.9.15')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'custom time and fixed time, specific option for path, wrong indentation'
+  'dsc': 'systemd oncalendar does not work as expected, changed the time calculation and forcing method'
 }
 
 if get_option('eveloper')

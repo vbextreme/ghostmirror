@@ -1,4 +1,4 @@
-ghostmirror v0.9.14
+ghostmirror v0.9.15
 ==================
 Introduction:
 =============
@@ -216,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.9.15 systemd oncalendar does not work as expected, changed the time calculation and forcing method
 * v0.9.14 custom time and fixed time, specific option for path, wrong indentation
 * v0.9.13 pkgbuild doc, thanks, fix possible issue by scan-build, valgrind success (only remain memory when exit from software, its not problem), this is first candidate for stable version
 * v0.9.12 more doc and wiki.
