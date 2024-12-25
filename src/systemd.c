@@ -403,7 +403,6 @@ __private char* pusharg_num(char* str, const char* arg, unsigned long u){
 }
 
 void systemd_timer_set(unsigned day, option_s* opt){
-	__private unsigned monthsafe[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 	unsigned enableService = 0;
 	int uid = getuid();
 	
@@ -463,8 +462,7 @@ void systemd_timer_set(unsigned day, option_s* opt){
 		time_t expired = time(NULL) + day * 86400;
 		struct tm* sexpired = gmtime(&expired);
 		const char* traised = opt[O_t].set ? opt[O_t].value->str : "";
-		unsigned daysafe = (unsigned)sexpired->tm_mday + 1 <= monthsafe[sexpired->tm_mon] ? (unsigned)sexpired->tm_mday : monthsafe[sexpired->tm_mon] - 1;
-		oncalendar = str_printf("OnCalendar=%u-%u-%u/1 %s", sexpired->tm_year + 1900, sexpired->tm_mon + 1,  daysafe, traised);
+		oncalendar = str_printf("OnCalendar=%u-%u-%u %s", sexpired->tm_year + 1900, sexpired->tm_mon + 1,  sexpired->tm_mday, traised);
 	}
 	TIMER_TIMER[0] = oncalendar;
 	

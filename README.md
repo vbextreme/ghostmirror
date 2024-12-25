@@ -1,4 +1,4 @@
-ghostmirror v0.9.17
+ghostmirror v0.9.18
 ==================
 Introduction:
 =============
@@ -216,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.9.18 returned to the old method of the pre-calculated and fixed date in the calculation of time, theoretically it should never fail, I had unnecessarily complicated things
 * v0.9.17 fix unable restart unit if not file exists
 * v0.9.16 systemd oncalendar does not work as expected, changed the time calculation and forcing method, remove warning sign
 * v0.9.15 systemd oncalendar does not work as expected, changed the time calculation and forcing method

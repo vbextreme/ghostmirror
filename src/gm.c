@@ -19,8 +19,6 @@
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
-//	0.9.14 PRIMA DI FARE PUSH CONTROLLARE -t e -f, aggiornare la wiki, aggiungere un plugin per visualizzare i tab
-//
 //  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
 //  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.

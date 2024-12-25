@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.17')
+project('ghostmirror', 'c', version: '0.9.18')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix unable restart unit if not file exists'
+  'dsc': 'returned to the old method of the pre-calculated and fixed date in the calculation of time, theoretically it should never fail, I had unnecessarily complicated things'
 }
 
 if get_option('eveloper')
