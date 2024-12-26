@@ -66,6 +66,9 @@ src += [ 'src/systemd.c' ]
 # man files #
 #############
 
+message('compressing manpages')
+run_command('gzip', '-kf', './man/ghostmirror.1', check: true)
+
 ##################
 # compiler flags #
 ##################
