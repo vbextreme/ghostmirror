@@ -69,6 +69,11 @@ src += [ 'src/systemd.c' ]
 message('compressing manpages')
 run_command('gzip', '-kf', './man/ghostmirror.1', check: true)
 
+# thx chatgpt
+install_data('man/ghostmirror.1.gz',
+    install_dir: join_paths(get_option('datadir'), 'man', 'man1')
+)
+
 ##################
 # compiler flags #
 ##################
@@ -123,7 +128,7 @@ elif( get_option('optimize') == 1 )
   message('generic optimization enabled')
   add_global_arguments('-O2', language: 'c')
 else
-   add_global_arguments('-O0', language: 'c') 
+  add_global_arguments('-O0', language: 'c') 
   add_global_arguments('-g', language: 'c')
 endif
 
