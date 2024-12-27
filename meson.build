@@ -66,6 +66,11 @@ src += [ 'src/systemd.c' ]
 # man files #
 #############
 
+message('generating manpages')
+run_command('bash', './man/gen-manpages.sh', env: {
+    'CURRENT_VERSION': meson.project_version()
+})
+
 message('compressing manpages')
 run_command('gzip', '-kf', './man/ghostmirror.1', check: true)
 
