@@ -1,0 +1,189 @@
+.\" Manpage for ghostmirror\&.
+.\" Contact vbextreme to correct errors or typos\&.
+.TH man 1 "27 Dec 2024" "'0\&.9\&.18'" "ghostmirror man page"
+.SH NAME
+ghostmirror \- rank pacman mirrors
+.SH SYNOPSIS
+\fIghostmirror\fR [options] <values>
+.SH DESCRIPTION
+\fIghostmirror\fR compares mirror databases with the local database and provides a detailed report on the status of mirror packages. It identifies whether the mirrors are more or less up-to-date compared to the local database, displaying errors or the names of packages that are outdated\&. 
+
+Custom sorting mode allows generation of a prioritized mirror list tailored to user requirements\&.  For users who prefer automation, adding a single command-line argument enables automatic activation of the systemd service, managing
+mirrors without manual intervention\&. 
+
+
+
+.SH OPTIONS
+\fB\-a, \-\-arch\fR
+.RS 4
+select arch, default 'x86_64'
+.RE
+.PP
+\fB\-m, \-\-mirrorfile\fR
+.RS 4
+use mirror file instead of downloading mirrorlist, without -m and -u ghostmirror download mirrorlist and search in all mirror\&.
+you can use -m /etc/pacman\&.d/mirrorlist\&.pacnew if you not want downloading mirrorlist but used local list\&.
+.RE
+.PP
+\fB\-c, \-\-country\fR
+.RS 4
+select country from mirrorlist\&.
+if mirrorlist is not same the default mirrorlist and not have ##Country or mixed mirror, the selection country fail
+.RE
+.PP
+\fB\-C, \-\-country-list\fR
+.RS 4
+show all possibile country
+.RE
+.PP
+\fB\-u, \-\-uncommented\fR
+.RS 4
+use only uncommented mirror, by default use commented and uncommented mirror\&.
+with -m is simple to check local mirrolist -mu /etc/pacman\&.d/mirrorlist\&.
+.RE
+.PP
+\fB\-d, \-\-downloads\fR
+.RS 4
+set numbers of parallel download, default '4'\&.
+if you abuse the download is more simple to fail, 1,4,8,16 is good value, >16 you can try but is not very affidable
+.RE
+.PP
+\fB\-O, \-\-timeout\fR
+.RS 4
+set timeout in seconds for not reply mirror, default 5s
+.RE
+.PP
+\fB\-p, \-\-progress\fR
+.RS 4
+show progress, default false
+.RE
+.PP
+\fB\-P, \-\-progress-colors\fR
+.RS 4
+same -p but with -o add color table
+.RE
+.PP
+\fB\-o, \-\-output\fR
+.RS 4
+enable table output, with -P display with colors
+.RE
+.PP
+\fB\-s, \-\-speed\fR
+.RS 4
+test speed for downloading:
+light: download one small package ~6MiB
+normal: download light + normal package ~250Mib
+heavy: download light+normal+heavy packege ~350MiB, total download >500Mib
+.RE
+.PP
+\fB\-S, \-\-sort\fR
+.RS 4
+sort result for any of fields display in table, mutiple fields supported\&.
+country and mirror is sorted by name
+proxy first false, last true
+state first success last error
+outofdate, retry and ping, display first less value
+uptodate, morerecent, sync, speed and extimated, display first great value
+.RE
+.PP
+\fB\-l, \-\-list\fR
+.RS 4
+save new mirrorlist in file passed as argument\&.
+special name, stdout, can be used for write to stdout file\&.
+.RE
+.PP
+\fB\-L, \-\-max-list\fR
+.RS 4
+set max numbers of output mirrors
+.RE
+.PP
+\fB\-T, \-\-type\fR
+.RS 4
+select mirrors type, http,https,all
+.RE
+.PP
+\fB\-i, \-\-investigate\fR
+.RS 4
+search mirror errors to detect the problem\&.
+can select mode: error, outofdate, all\&.
+error: investigate only on error\&.
+outofdate: investigate only on outofdate package\&.
+all: same passing -i error,uptodate
+.RE
+.PP
+\fB\-D, \-\-systemd\fR
+.RS 4
+auto manager systemd\&.timer\&.
+when you pass this option the software activate login linger if not ebabled\&.
+auto create ghostmirror\&.service and ghostmirror\&.timer
+the config\&.service start ghostmirror in the same mode you haved executed it, with only differences that need -l\&.
+for exaples if you execute: -DmuldsS 16 light extimated,speed
+the service is always start with 16 parallel downloads, speed light and extimated,speed sort\&.
+for change you can simple repeat a command\&.
+the expire timer is the first element in table and is dinamic, can change every time\&.
+.RE
+.PP
+\fB\-t, \-\-time\fR
+.RS 4
+in systemd timer whend extimate date is ellapsed can set a time\&. Set specific hh:mm:ss when start service, default 00:00:00\&.
+validate input with systemd-analyzer calendar hh:mm:ss before use
+.RE
+.PP
+\fB\-f, \-\-fixed-time\fR
+.RS 4
+in systemd timer use fixed time instead of extimated time\&.
+validate input with systemd-analyzer calendar hh:mm:ss before use
+.RE
+.PP
+\fB\-h, \-\-help\fR
+display this help
+.RE
+.PP
+.RS 4
+.SH EXAMPLES
+
+in the first step you need to search a good quantity of mirrors\&.
+-P for get progress and output colors, -o for get output table\&.
+-c for select country, for example Italy,Germany,France
+-l where do you save list
+-L max numbers of output mirror in list
+-S sort mode, first add state, in this mode remove error mirror, after you can add outofdate, in this mode display first the mirror sync, can also add morerecent to ensure you never go out of sync, and at the end, you can add ping to try to prioritize the closest ones\&.
+.IP
+.nf
+\f[C]
+$ \fIghostmirror\fR -PoclLS Italy,Germany,France \&./mirrorlist\&.new 30 state,outofdate,morerecent,ping
+\f[R]
+.fi
+.PP
+
+
+Now, instead of taking the mirrors from the global list, we will better evaluate the mirrors found in the first step\&.
+While the first step will be performed only once or rarely, this step will be the one you repeat periodically\&.
+-P -o -l is same the previous step
+-m tell software to use a local mirror list, and -u for use only uncommented mirror
+-s for apply a real test for mirror speed
+-S change a sort mode, remove ping, add extimated for get more stable mirror and speed for reorder speed
+.IP
+.nf
+\f[C]
+$ \fIghostmirror\fR -PmuolsS  \&./mirrorlist\&.new \&./mirrorlist\&.new light state,outofdate,morerecent,extimated,speed
+\f[R]
+.fi
+.PP
+
+The following command analyzes mirrors for the selected country (Italy) using 16 threads, displays a progress bar, and sorts them based on the specified criteria (recent updates, outdated status, and speed) and print the result to the stdout
+.IP  
+.nf  
+\f[C]  
+$ \fIghostmirror\fR -Pc Italy -t 16 -s light -S morerecent,outofdate,speed  
+\f[R]  
+.fi  
+.PP  
+
+
+.SH SEE ALSO
+rankmirrors(8) reflector(1)
+.SH BUGS
+No known bugs\&.
+.SH AUTHOR
+vbextreme - https://github\&.com/vbextreme/ghostmirror

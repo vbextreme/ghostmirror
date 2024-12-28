@@ -18,6 +18,10 @@ if get_option('eveloper')
     message('update README')
     run_command('sed', '-i', '-r', '-e', 's/^' + meson.project_name() + '[ \\t]*v(.*)/' + meson.project_name() + ' v' + version['str'] + '/', './README.md', check: true)
     run_command('sed', '-i', '-r', '-e', '0,/^\* v.*/{s/\*(.*)/\* v' + version['str'] + ' ' + version['dsc'] + '\\n\*\\1/}' , './README.md', check: true).stdout().strip()
+    message('generating manpages')
+    run_command('bash', './man/gen-manpages.sh', env: {
+        'CURRENT_VERSION': version['str']
+    })
     message('update git')
     run_command('git', 'commit', '-a', '-m', version['dsc'], check: true)
     run_command('git', 'tag', '-a', 'v' + version['str'], '-m', version['dsc'], check: true)
@@ -65,6 +69,10 @@ src += [ 'src/systemd.c' ]
 #############
 # man files #
 #############
+
+
+
+install_man('man/ghostmirror.1')
 
 ##################
 # compiler flags #
@@ -120,7 +128,7 @@ elif( get_option('optimize') == 1 )
   message('generic optimization enabled')
   add_global_arguments('-O2', language: 'c')
 else
-   add_global_arguments('-O0', language: 'c') 
+  add_global_arguments('-O0', language: 'c') 
   add_global_arguments('-g', language: 'c')
 endif
 
