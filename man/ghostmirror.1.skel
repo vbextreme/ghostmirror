@@ -108,7 +108,7 @@ search mirror errors to detect the problem\&.
 can select mode: error, outofdate, all\&.
 error: investigate only on error\&.
 outofdate: investigate only on outofdate package\&.
-all: same passing -i error,uptodate
+all: same passing -i error,outofdate
 .RE
 .PP
 \fB\-D, \-\-systemd\fR
