@@ -9,6 +9,16 @@ _ghostmirror_completion() {
 	prev="${COMP_WORDS[COMP_CWORD-1]}"
 
 	case $prev in
+		'-d'|'--downloads')
+			DOWNLOAD_OPTS="$(seq 16)"
+			COMPREPLY=( $(compgen -W "${DOWNLOAD_OPTS}" -- "${cur}") )
+			return 0
+			;;
+		'-O'|'--timeout')
+			TIMEOUT_OPTS="$(seq -s's ' 5 5 30)s"
+			COMPREPLY=( $(compgen -W "${TIMEOUT_OPTS}" -- "${cur}") )
+			return 0
+			;;
 		'-S'|'--sort')
 			SORT_OPTS='estimated morerecent outofdate ping proxy retry speed state sync uptodate'
 			COMPREPLY=( $(compgen -W "${SORT_OPTS}" -- "${cur}") )
@@ -25,7 +35,7 @@ _ghostmirror_completion() {
 			return 0
 			;;
 		'-i'|'--investigate')
-			INVESTIGATE_OPTS='error outofdate all' # uptodate?
+			INVESTIGATE_OPTS='error outofdate all'
 			COMPREPLY=( $(compgen -W "${INVESTIGATE_OPTS}" -- "${cur}") )
 			return 0
 			;;
