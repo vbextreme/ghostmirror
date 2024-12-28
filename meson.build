@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.18')
+project('ghostmirror', 'c', version: '0.9.19')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'returned to the old method of the pre-calculated and fixed date in the calculation of time, theoretically it should never fail, I had unnecessarily complicated things'
+  'dsc': 'merge man page, check on generate man page, test.'
 }
 
 if get_option('eveloper')
@@ -19,9 +19,7 @@ if get_option('eveloper')
     run_command('sed', '-i', '-r', '-e', 's/^' + meson.project_name() + '[ \\t]*v(.*)/' + meson.project_name() + ' v' + version['str'] + '/', './README.md', check: true)
     run_command('sed', '-i', '-r', '-e', '0,/^\* v.*/{s/\*(.*)/\* v' + version['str'] + ' ' + version['dsc'] + '\\n\*\\1/}' , './README.md', check: true).stdout().strip()
     message('generating manpages')
-    run_command('bash', './man/gen-manpages.sh', env: {
-        'CURRENT_VERSION': version['str']
-    })
+    run_command('bash', './man/gen-manpages.sh', env: {'CURRENT_VERSION': version['str']}, check: true)
     message('update git')
     run_command('git', 'commit', '-a', '-m', version['dsc'], check: true)
     run_command('git', 'tag', '-a', 'v' + version['str'], '-m', version['dsc'], check: true)
@@ -34,7 +32,6 @@ if get_option('eveloper')
     run_command('git', '-C', './distro/ghostmirror', 'push', check: true)
   endif
 endif
-
 ###########
 # include #
 ###########
