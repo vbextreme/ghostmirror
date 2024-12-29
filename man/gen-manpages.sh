@@ -4,7 +4,7 @@ CWD="$(dirname "$0")"
 OUTPUT_FILE="${CWD}/ghostmirror.1"
 
 # read from environment if set otherwise use a default value
-CURRENT_VERSION="${CURRENT_VERSION:='0.9.18'}"
+CURRENT_VERSION="${CURRENT_VERSION:='0.9.19'}"
 CURRENT_DATE="$(LC_ALL='C' date '+%d %b %Y')"
 
 # escape dots '.' became '\&.'

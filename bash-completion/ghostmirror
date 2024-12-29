@@ -15,7 +15,7 @@ _ghostmirror_completion() {
 			return 0
 			;;
 		'-O'|'--timeout')
-			TIMEOUT_OPTS="$(echo {1..5}s {5..30..5}s)"
+			TIMEOUT_OPTS="$(echo {1..5} {5..30..5})"
 			COMPREPLY=( $(compgen -W "${TIMEOUT_OPTS}" -- "${cur}") )
 			return 0
 			;;
@@ -79,8 +79,8 @@ _ghostmirror_completion() {
 	case $cur in
 		-*)
 			# ghostmirror -h|awk '/^-/{ print $1, $2 }'
-			# ghostmirror -h|awk '/^-[a-zA-Z]{1}\s+--/{ print $2}'
-			LONG_OPTS=$(ghostmirror -h|awk '/^-[a-zA-Z]{1}\s+--/{ print $2}')
+			# ghostmirror -h|awk '/^-[a-zA-Z]{1}\s+--/{ print $2 }'
+			LONG_OPTS=$(ghostmirror -h|awk '/^-[a-zA-Z]{1}\s+--/{ print $2 }')
 			COMPREPLY=( $(compgen -W "${LONG_OPTS[*]}" -- "${cur}") )
 			return 0
 			;;
