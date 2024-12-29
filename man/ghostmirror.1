@@ -9,8 +9,7 @@ ghostmirror \- rank pacman mirrors
 \fIghostmirror\fR compares mirror databases with the local database and provides a detailed report on the status of mirror packages. It identifies whether the mirrors are more or less up-to-date compared to the local database, displaying errors or the names of packages that are outdated\&. 
 
 Custom sorting mode allows generation of a prioritized mirror list tailored to user requirements\&.  For users who prefer automation, adding a single command-line argument enables automatic activation of the systemd service, managing
-mirrors without manual intervention\&. 
-
+mirrors without manual intervention\&.
 
 
 .SH OPTIONS
@@ -73,17 +72,33 @@ enable table output, with -P display with colors
 test speed for downloading:
 light: download one small package ~6MiB
 normal: download light + normal package ~250Mib
-heavy: download light+normal+heavy packege ~350MiB, total download >500Mib
+heavy: download light+normal+heavy package ~350MiB, total download >500Mib
+
+.ie c \[shc] \
+.  ds soft-hyphen \[shc]
+.el \
+.  ds soft-hyphen \(hy
+.TS
+tab (@);
+l c c c.
+Option@Size
+_
+light@~6MiB
+normal@~250MiB
+heavy@~350Mib
+total@>500Mib
+.TE
+
 .RE
 .PP
 \fB\-S, \-\-sort\fR
 .RS 4
 sort result for any of fields display in table, mutiple fields supported\&.
-country and mirror is sorted by name
-proxy first false, last true
-state first success last error
-outofdate, retry and ping, display first less value
-uptodate, morerecent, sync, speed and extimated, display first great value
+\fIcountry\fR and \fImirror\fR is sorted by name
+\fIproxy\fR first false, last true
+\fIstate\fR first success last error
+\fIoutofdate\fR, retry and \fIping\fR, display first less value
+\fIuptodate\fR, \fImorerecent\fR, \fIsync\fR, \fIspeed\fR and \fIextimated\fR, display first great value
 .RE
 .PP
 \fB\-l, \-\-list\fR
@@ -99,16 +114,30 @@ set max numbers of output mirrors
 .PP
 \fB\-T, \-\-type\fR
 .RS 4
-select mirrors type, http,https,all
+select mirrors type, \fIhttp\fR,\fIhttps\fR,\fIall\fR
 .RE
 .PP
 \fB\-i, \-\-investigate\fR
 .RS 4
 search mirror errors to detect the problem\&.
-can select mode: error, outofdate, all\&.
-error: investigate only on error\&.
-outofdate: investigate only on outofdate package\&.
-all: same passing -i error,outofdate
+can select mode: \fIerror\fR, \fIoutofdate\fR, \fIall\fR\&.
+.P
+
+.ie c \[shc] \
+.  ds soft-hyphen \[shc]
+.el \
+.  ds soft-hyphen \(hy
+.TS
+tab (@);
+l c c c.
+Option@Description
+_
+\fIerror\fR@investigate only on error
+\fIoutofdate\fR@investigate only on outofdate package
+\fIall\fR@same passing -i error,outofdate
+.TE
+
+
 .RE
 .PP
 \fB\-D, \-\-systemd\fR
@@ -187,3 +216,4 @@ rankmirrors(8) reflector(1)
 No known bugs\&.
 .SH AUTHOR
 vbextreme - https://github\&.com/vbextreme/ghostmirror
+
