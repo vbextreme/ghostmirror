@@ -39,7 +39,7 @@ show all possibile countries
 \fB\-u, \-\-uncommented\fR
 .RS 4
 use only uncommented mirrors, by default ghostmirror use commented and uncommented mirrors\&.
-This option can be used in combination with the \fB-m\fR option to provide a local mirrorlist to parse \fB-mu\fR /etc/pacman\&.d/mirrorlist\&.
+This option can be used in combination with the \fB-m\fR option to provide a local mirrorlist \fB-mu\fR /etc/pacman\&.d/mirrorlist\&.
 .RE
 .PP
 \fB\-d, \-\-downloads\fR
