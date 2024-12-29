@@ -10,12 +10,12 @@ _ghostmirror_completion() {
 
 	case $prev in
 		'-d'|'--downloads')
-			DOWNLOAD_OPTS="$(seq 16)"
+			DOWNLOAD_OPTS="$(echo {1..16})"
 			COMPREPLY=( $(compgen -W "${DOWNLOAD_OPTS}" -- "${cur}") )
 			return 0
 			;;
 		'-O'|'--timeout')
-			TIMEOUT_OPTS="$(seq -s's ' 5 5 30)s"
+			TIMEOUT_OPTS="$(echo {1..5}s {5..30..5}s)"
 			COMPREPLY=( $(compgen -W "${TIMEOUT_OPTS}" -- "${cur}") )
 			return 0
 			;;
