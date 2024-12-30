@@ -49,7 +49,7 @@ if you abuse the download could fail, \fI1\fR, \fI4\fR, \fI8\fR, \fI16\fR are go
 .PP
 \fB\-O, \-\-timeout\fR
 .RS 4
-set timeout in seconds for not reply mirror, default 5s
+set timeout in seconds for not replying mirrors, default 5s
 .RE
 .PP
 \fB\-p, \-\-progress\fR
@@ -94,7 +94,7 @@ _
 \fB\-S, \-\-sort\fR
 .RS 4
 sort result for any of fields display in table, multiple fields are allowed\&.
-\fIcountry\fR and \fImirror\fR are sorted by name
+\fIproxy\fR first false, last true (ascending)
 \fIproxy\fR first false, last true (ascending)
 \fIstate\fR first success last error (descending)
 \fIoutofdate\fR, retry and \fIping\fR, display first small values (ascending)
@@ -132,9 +132,9 @@ tab (@);
 l c c c.
 Option@Description
 _
-\fIerror\fR@investigate only on error
-\fIoutofdate\fR@investigate only on outofdate package
-\fIall\fR@same passing -i error,outofdate
+\fIerror\fR@investigate only on errors
+\fIoutofdate\fR@investigate only on outofdate packages
+\fIall\fR@same of \fB-i\fR \fIerror\fR,\fIoutofdate\fR
 .TE
 
 
@@ -142,13 +142,13 @@ _
 .PP
 \fB\-D, \-\-systemd\fR
 .RS 4
-auto manager systemd\&.timer\&.
-when you pass this option the software activate login linger if not enables\&.
-auto create ghostmirror\&.service and ghostmirror\&.timer
-the config\&.service start ghostmirror in the same mode you haved executed it, with only differences that need -l\&.
+auto manage systemd\&.timer\&.
+using this option will also enable login lingering if not already enabled\&.
+ghostmirror will automatically create ghostmirror\&.service and ghostmirror\&.timer
+the config\&.service start ghostmirror in the same mode you have executed it, with only differences that need -l\&.
 for example if you execute: -DmuldsS 16 light extimated,speed
-the service is always start with 16 parallel downloads, speed light and extimated,speed sort\&.
-for change you can simple repeat a command\&.
+the service will always start with 16 parallel downloads, speed light and extimated,speed sort\&.
+for change that you can simple repeat a command\&.
 the expire timer is the first element in table and is dinamic, can change every time\&.
 .RE
 .PP
@@ -171,7 +171,7 @@ display this help
 .RS 4
 .SH EXAMPLES
 
-in the first step you need to search a good quantity of mirrors\&.
+first of all you need to search a good quantity of mirrors\&.
 -P for get progress and output colors, -o for get output table\&.
 -c for select country, for example Italy,Germany,France
 -l where do you save list
