@@ -97,3 +97,4 @@ _ghostmirror_completion() {
 }
 
 complete -F _ghostmirror_completion ghostmirror
+# ex: filetype=bash
