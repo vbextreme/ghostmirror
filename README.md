@@ -1,4 +1,4 @@
-ghostmirror v0.9.19
+ghostmirror v0.9.20
 ==================
 Introduction:
 =============
@@ -216,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.9.20 bash completion(request 4), fix environment(issue 5)
 * v0.9.19 merge man page, check on generate man page, test.
 * v0.9.18 returned to the old method of the pre-calculated and fixed date in the calculation of time, theoretically it should never fail, I had unnecessarily complicated things
 * v0.9.17 fix unable restart unit if not file exists

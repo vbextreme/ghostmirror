@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.19')
+project('ghostmirror', 'c', version: '0.9.20')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'merge man page, check on generate man page, test.'
+  'dsc': 'bash completion(request 4), fix environment(issue 5)'
 }
 
 if get_option('eveloper')

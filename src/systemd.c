@@ -29,7 +29,7 @@ __private const char* SERVICE_UNIT[] = {
 };
 __private const char* SERVICE_SERVICE[] = {
 	NULL, //ExecStart dinamic setting this property
-	NULL, //Enviroment
+	NULL, //Environment
 	"Type=oneshot",
 	"Restart=on-failure",
 	"RestartSec=30m",
@@ -442,8 +442,8 @@ void systemd_timer_set(unsigned day, option_s* opt){
 			}
 			
 			__free char* enviroment = str_printf(ENVIROMENT_FORMAT, VERSION_STR);
-			dbg_info("execstart : '%s'", execstart);
-			dbg_info("enviroment: '%s'", enviroment);
+			dbg_info("execstart  : '%s'", execstart);
+			dbg_info("environment: '%s'", enviroment);
 			
 			SERVICE_SERVICE[0] = execstart;
 			SERVICE_SERVICE[1] = enviroment;
