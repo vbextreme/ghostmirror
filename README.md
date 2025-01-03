@@ -170,7 +170,7 @@ search mirror errors to detect the problem.<br>
 can select mode: error, outofdate, all.<br>
 error: investigate only on error.<br>
 outofdate: investigate only on outofdate package.<br>
-all: same passing -i error,uptodate
+all: same passing -i error,outofdate
 ### -D --systemd <not required argument>
 auto manager systemd.timer.<br>
 when you pass this option the software activate login linger if not ebabled.<br>

@@ -67,9 +67,13 @@ src += [ 'src/systemd.c' ]
 # man files #
 #############
 
-
-
 install_man('man/ghostmirror.1')
+
+#########################
+# bash completion files #
+#########################
+
+install_data('bash-completion/ghostmirror', install_dir: '/etc/bash_completion.d/')
 
 ##################
 # compiler flags #

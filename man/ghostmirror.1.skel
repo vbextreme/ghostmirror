@@ -16,41 +16,41 @@ mirrors without manual intervention\&.
 .SH OPTIONS
 \fB\-a, \-\-arch\fR
 .RS 4
-select arch, default 'x86_64'
+select arch, default \fI'x86_64'\fR
 .RE
 .PP
 \fB\-m, \-\-mirrorfile\fR
 .RS 4
-use mirror file instead of downloading mirrorlist, without -m and -u ghostmirror download mirrorlist and search in all mirror\&.
-you can use -m /etc/pacman\&.d/mirrorlist\&.pacnew if you not want downloading mirrorlist but used local list\&.
+use a mirror file instead of downloading the mirrorlist, without \fB-m\fR and \fB-u\fR ghostmirror download mirrorlist and search in all mirror\&.
+you can use \fB-m\fR /etc/pacman\&.d/mirrorlist\&.pacnew if you want provide a local mirrolist\&.
 .RE
 .PP
 \fB\-c, \-\-country\fR
 .RS 4
-select country from mirrorlist\&.
-if mirrorlist is not same the default mirrorlist and not have ##Country or mixed mirror, the selection country fail
+analyze only mirrors from specific country, multiple values are allowed\&.
+if mirrorlist is not same the default mirrorlist and doesn't have ##Country or mixed mirror, the selection country fail
 .RE
 .PP
 \fB\-C, \-\-country-list\fR
 .RS 4
-show all possibile country
+show all possibile countries
 .RE
 .PP
 \fB\-u, \-\-uncommented\fR
 .RS 4
-use only uncommented mirror, by default use commented and uncommented mirror\&.
-with -m is simple to check local mirrolist -mu /etc/pacman\&.d/mirrorlist\&.
+use only uncommented mirrors, by default ghostmirror use commented and uncommented mirrors\&.
+This option can be used in combination with the \fB-m\fR option to provide a local mirrorlist \fB-mu\fR /etc/pacman\&.d/mirrorlist\&.
 .RE
 .PP
 \fB\-d, \-\-downloads\fR
 .RS 4
-set numbers of parallel download, default '4'\&.
-if you abuse the download is more simple to fail, 1,4,8,16 is good value, >16 you can try but is not very affidable
+set numbers of parallel download, default \fI'4'\fR\&.
+if you abuse the download could fail, \fI1\fR, \fI4\fR, \fI8\fR, \fI16\fR are good starting points, whereas values >16 can leads issues
 .RE
 .PP
 \fB\-O, \-\-timeout\fR
 .RS 4
-set timeout in seconds for not reply mirror, default 5s
+set timeout in seconds for not replying mirrors, default 5s
 .RE
 .PP
 \fB\-p, \-\-progress\fR
@@ -60,36 +60,52 @@ show progress, default false
 .PP
 \fB\-P, \-\-progress-colors\fR
 .RS 4
-same -p but with -o add color table
+can be used combined with \fB-o\fR option to enable colors for the resulting table
 .RE
 .PP
 \fB\-o, \-\-output\fR
 .RS 4
-enable table output, with -P display with colors
+enable table output, combined with \fB-P\fR will display a colored table
 .RE
 .PP
 \fB\-s, \-\-speed\fR
 .RS 4
-test speed for downloading:
-light: download one small package ~6MiB
-normal: download light + normal package ~250Mib
-heavy: download light+normal+heavy packege ~350MiB, total download >500Mib
+test for downloading speed:
+\fIlight\fR: download a small package ~6MiB
+\fInormal\fR: download light + normal package ~250Mib
+\fIheavy\fR: download light+normal+heavy package ~350MiB, \fItotal\fR download >500Mib
+
+.ie c \[shc] \
+.  ds soft-hyphen \[shc]
+.el \
+.  ds soft-hyphen \(hy
+.TS
+tab (@);
+l c c c.
+Option@Size
+_
+\fIlight\fR@~6MiB
+\fInormal\fR@~250MiB
+\fInormal\fR@~350Mib
+\fItotal\fR@>500Mib
+.TE
+
 .RE
 .PP
 \fB\-S, \-\-sort\fR
 .RS 4
-sort result for any of fields display in table, mutiple fields supported\&.
-country and mirror is sorted by name
-proxy first false, last true
-state first success last error
-outofdate, retry and ping, display first less value
-uptodate, morerecent, sync, speed and extimated, display first great value
+sort result for any of fields display in table, multiple fields are allowed\&.
+\fIcountry\fR and \fImirror\fR are sorted by name (ascending)
+\fIproxy\fR first false, last true (ascending)
+\fIstate\fR first success last error (descending)
+\fIoutofdate\fR, retry and \fIping\fR, display first small values (ascending)
+\fIuptodate\fR, \fImorerecent\fR, \fIsync\fR, \fIspeed\fR and \fIextimated\fR, display first great values (descending)
 .RE
 .PP
 \fB\-l, \-\-list\fR
 .RS 4
-save new mirrorlist in file passed as argument\&.
-special name, stdout, can be used for write to stdout file\&.
+specify a path where ghostmirror will save the new mirrorlist\&.
+special files like /dev/stdout, can be used to print the mirrolist to the stdout\&.
 .RE
 .PP
 \fB\-L, \-\-max-list\fR
@@ -99,33 +115,47 @@ set max numbers of output mirrors
 .PP
 \fB\-T, \-\-type\fR
 .RS 4
-select mirrors type, http,https,all
+select mirrors type, possibile choices are: \fIhttp\fR, \fIhttps\fR, \fIall\fR
 .RE
 .PP
 \fB\-i, \-\-investigate\fR
 .RS 4
 search mirror errors to detect the problem\&.
-can select mode: error, outofdate, all\&.
-error: investigate only on error\&.
-outofdate: investigate only on outofdate package\&.
-all: same passing -i error,uptodate
+can select mode: \fIerror\fR, \fIoutofdate\fR, \fIall\fR\&.
+.P
+
+.ie c \[shc] \
+.  ds soft-hyphen \[shc]
+.el \
+.  ds soft-hyphen \(hy
+.TS
+tab (@);
+l c c c.
+Option@Description
+_
+\fIerror\fR@investigate only on errors
+\fIoutofdate\fR@investigate only on outofdate packages
+\fIall\fR@same of \fB-i\fR \fIerror\fR,\fIoutofdate\fR
+.TE
+
+
 .RE
 .PP
 \fB\-D, \-\-systemd\fR
 .RS 4
-auto manager systemd\&.timer\&.
-when you pass this option the software activate login linger if not ebabled\&.
-auto create ghostmirror\&.service and ghostmirror\&.timer
-the config\&.service start ghostmirror in the same mode you haved executed it, with only differences that need -l\&.
-for exaples if you execute: -DmuldsS 16 light extimated,speed
-the service is always start with 16 parallel downloads, speed light and extimated,speed sort\&.
-for change you can simple repeat a command\&.
+auto manage systemd\&.timer\&.
+using this option will also enable login lingering if not already enabled\&.
+ghostmirror will automatically create ghostmirror\&.service and ghostmirror\&.timer
+the config\&.service start ghostmirror in the same mode you have executed it, with only differences that need -l\&.
+for example if you execute: -DmuldsS 16 light extimated,speed
+the service will always start with 16 parallel downloads, speed light and extimated,speed sort\&.
+for change that you can simple repeat a command\&.
 the expire timer is the first element in table and is dinamic, can change every time\&.
 .RE
 .PP
 \fB\-t, \-\-time\fR
 .RS 4
-in systemd timer whend extimate date is ellapsed can set a time\&. Set specific hh:mm:ss when start service, default 00:00:00\&.
+in systemd timer when extimate date is elapsed can set a time\&. Set specific hh:mm:ss when start service, default 00:00:00\&.
 validate input with systemd-analyzer calendar hh:mm:ss before use
 .RE
 .PP
@@ -142,7 +172,7 @@ display this help
 .RS 4
 .SH EXAMPLES
 
-in the first step you need to search a good quantity of mirrors\&.
+first of all you need to search a good quantity of mirrors\&.
 -P for get progress and output colors, -o for get output table\&.
 -c for select country, for example Italy,Germany,France
 -l where do you save list

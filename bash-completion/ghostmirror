@@ -1,0 +1,100 @@
+# http://fahdshariff.blogspot.com/2011/04/writing-your-own-bash-completion.html
+
+_ghostmirror_completion() {
+
+	local cur="${COMP_WORDS[COMP_CWORD]}"
+	local prev="${COMP_WORDS[COMP_CWORD-1]}"
+	COMPREPLY=()
+
+	case $prev in
+
+		'-d'|'--downloads')
+				DOWNLOAD_OPTS="$(echo {1..16})"
+				COMPREPLY=( $(compgen -W "${DOWNLOAD_OPTS}" -- "${cur}") )
+				return 0
+			;;
+
+		'-O'|'--timeout')
+				TIMEOUT_OPTS="$(echo {1..5} {5..30..5})"
+				COMPREPLY=( $(compgen -W "${TIMEOUT_OPTS}" -- "${cur}") )
+				return 0
+			;;
+
+		'-S'|'--sort')
+				SORT_OPTS='estimated morerecent outofdate ping proxy retry speed state sync uptodate'
+				COMPREPLY=( $(compgen -W "${SORT_OPTS}" -- "${cur}") )
+				return 0
+			;;
+
+		'-s'|'--speed')
+				SPEED_OPTS='light normal heavy total'
+				COMPREPLY=( $(compgen -W "${SPEED_OPTS}" -- "${cur}") )
+				return 0
+			;;
+
+		'-T'|'--type')
+				TYPE_OPTS='http https all'
+				COMPREPLY=( $(compgen -W "${TYPE_OPTS}" -- "${cur}") )
+				return 0
+			;;
+
+		'-i'|'--investigate')
+				INVESTIGATE_OPTS='error outofdate all'
+				COMPREPLY=( $(compgen -W "${INVESTIGATE_OPTS}" -- "${cur}") )
+				return 0
+			;;
+
+		'-a'|'--arch')
+				ARCH_OPTS='x86_64'
+				COMPREPLY=( $(compgen -W "${ARCH_OPTS}" -- "${cur}") )
+				return 0
+			;;
+
+		'-m'|'--mirrorfile'|'-l'|'--list')
+				local IFS=$'\n'
+				compopt -o filenames
+				COMPREPLY=( $(compgen -f -- "${cur}") )
+			return 0
+			;;
+
+		'-c'|'--country')
+				# https://stackoverflow.com/questions/1146098/properly-handling-spaces-and-quotes-in-bash-completion#11536437
+
+				local IFS=$'\n'
+
+				COUNTRY_OPTS=(
+					'Worldwide' 'Australia' 'Austria' 'Bangladesh' 'Belarus' 'Belgium' 'Bosnia and Herzegovina' 'Brazil' 'Bulgaria' 'Canada' 'Chile' 'China'            \
+					'Colombia' 'Croatia' 'Czechia' 'Denmark' 'Ecuador' 'Finland' 'France' 'Germany' 'Greece' 'Hong Kong' 'Hungary' 'Iceland' 'India' 'Indonesia' 'Iran' \
+					'Ireland' 'Israel' 'Italy' 'Japan' 'Kazakhstan' 'Latvia' 'Lithuania'  'Luxembourg' 'Macedonia' 'Mexico' 'Netherlands' 'New Caledonia' 'New Zealand' \
+					'Norway' 'Philippines' 'Poland' 'Portugal' 'Qatar' 'Romania' 'Russia' 'Serbia' 'Singapore' 'Slovakia' 'Slovenia' 'South Africa' 'South Korea'       \
+					'Spain' 'Sweden' 'Switzerland' 'Taiwan' 'Thailand' 'Turkey' 'Ukraine' 'United Kingdom' 'United States' 'Vietnam'
+				)
+
+				CANDIDATES=( $(compgen -W "${COUNTRY_OPTS[*]}" -- "${cur}") )
+
+				[ ${#CANDIDATES[*]} -ne 0 ] && {
+					COMPREPLY=($(printf '%q\n' "${CANDIDATES[@]}"))
+				}
+
+				return 0
+			;;
+
+			'-h'|'--help') return 0 ;;
+	esac
+
+	case $cur in
+
+		-*)
+				# ghostmirror -h|awk '/^-/{ print $1, $2 }'
+				# ghostmirror -h|awk '/^-[a-zA-Z]{1}\s+--/{ print $2 }'
+				LONG_OPTS=$(ghostmirror -h|awk '/^-[a-zA-Z]{1}\s+--/{ print $2 }')
+				COMPREPLY=( $(compgen -W "${LONG_OPTS[*]}" -- "${cur}") )
+				return 0
+			;;
+	esac
+
+	return 0
+}
+
+complete -F _ghostmirror_completion ghostmirror
+# ex: filetype=bash
