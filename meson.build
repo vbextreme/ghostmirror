@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.20')
+project('ghostmirror', 'c', version: '0.9.21')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'bash completion(request 4), fix environment(issue 5)'
+  'dsc': 'fix pkgbuild update after git, fix man documentation'
 }
 
 if get_option('eveloper')
@@ -18,14 +18,15 @@ if get_option('eveloper')
     message('update README')
     run_command('sed', '-i', '-r', '-e', 's/^' + meson.project_name() + '[ \\t]*v(.*)/' + meson.project_name() + ' v' + version['str'] + '/', './README.md', check: true)
     run_command('sed', '-i', '-r', '-e', '0,/^\* v.*/{s/\*(.*)/\* v' + version['str'] + ' ' + version['dsc'] + '\\n\*\\1/}' , './README.md', check: true).stdout().strip()
-    message('generating manpages')
+    message('update PKGBUILD')
+    run_command('sed', '-i', '-r', '-e', 's/^pkgver=\'([^\']+)\'/pkgver=\'' + version['str'] + '\'/', './distro/PKGBUILD', check: true)
+    message('generating MANPAGES')
     run_command('bash', './man/gen-manpages.sh', env: {'CURRENT_VERSION': version['str']}, check: true)
-    message('update git')
+    message('update GID')
     run_command('git', 'commit', '-a', '-m', version['dsc'], check: true)
     run_command('git', 'tag', '-a', 'v' + version['str'], '-m', version['dsc'], check: true)
     run_command('git', 'push', '--follow-tags', check: true)
-    message('update PKGBUILD')
-    run_command('sed', '-i', '-r', '-e', 's/^pkgver=\'([^\']+)\'/pkgver=\'' + version['str'] + '\'/', './distro/PKGBUILD', check: true)
+    message('update AUR')
     run_command('cp', './distro/PKGBUILD', './distro/ghostmirror/PKGBUILD', check: true)
     run_command('bash', '-c', 'makepkg -D ./distro --printsrcinfo > ./distro/ghostmirror/.SRCINFO', check: true)
     run_command('git', '-C', './distro/ghostmirror', 'commit', '-a', '-m', version['dsc'], check: true)

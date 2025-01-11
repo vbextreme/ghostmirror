@@ -86,8 +86,7 @@ Option@Size
 _
 \fIlight\fR@~6MiB
 \fInormal\fR@~250MiB
-\fInormal\fR@~350Mib
-\fItotal\fR@>500Mib
+\fheavy\fR@~500MiB
 .TE
 
 .RE
