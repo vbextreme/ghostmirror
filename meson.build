@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.9.21')
+project('ghostmirror', 'c', version: '0.9.22')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix pkgbuild update after git, fix man documentation'
+  'dsc': 'fix path_explode ..'
 }
 
 if get_option('eveloper')

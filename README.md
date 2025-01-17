@@ -1,4 +1,4 @@
-ghostmirror v0.9.21
+ghostmirror v0.9.22
 ==================
 Introduction:
 =============
@@ -216,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.9.22 fix path_explode ..
 * v0.9.21 fix pkgbuild update after git, fix man documentation
 * v0.9.20 bash completion(request 4), fix environment(issue 5)
 * v0.9.19 merge man page, check on generate man page, test.

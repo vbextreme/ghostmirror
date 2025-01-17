@@ -124,8 +124,7 @@ char* path_explode(const char* path){
 		getcwd(cwd, PATH_MAX);
 		const char* bk = strrchr(cwd, '/');
 		iassert( bk );
-		if( bk > cwd ) --bk;
-		return str_printf("%s%s", bk, &path[2]);
+		return str_printf("%.*s%s", (int)(bk-cwd), cwd, &path[2]);
 	}
 	return str_dup(path, 0);
 }
