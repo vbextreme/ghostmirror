@@ -26,7 +26,7 @@
 //  1.0.0 first release?
 //  x.x.x move all text in separate location, better way for simple translation
 //  x.x.x better colormap
-//  x.x.x systemd auto remove mirror error and get new mirror?
+//  x.x.x change local with compare, now can remove retry from systemd?
 //  x.x.x how many test can add to investigate?
 //
 //  systemd: false
@@ -161,6 +161,13 @@ __private void print_repeat(unsigned count, const char ch){
 	while( count --> 0 ) fputc(ch, stdout);
 }
 
+__private void print_ifcompare_color(mirrorStatus_e status){
+	if( status == MIRROR_COMPARE ){
+		colorbg_set(CBG);
+		bold_set();
+	}
+}
+
 __private void print_table_header(char** colname, unsigned* colsize, unsigned count, int color){
 	fputs("┌", stdout);
 	for( unsigned i = 0; i < count - 1; ++i ){
@@ -220,12 +227,8 @@ __private void print_double_field(double val, mirrorStatus_e status, unsigned si
 	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
 		colorfg_set(colormode);
-		if( status == MIRROR_LOCAL ){
-			colorbg_set(CBG);
-			bold_set();
-		}
+		print_ifcompare_color(status);
 	}
-
 	print_repeat(left, ' ');
 	printf("%6.2f%%",val);
 	print_repeat(right, ' ');
@@ -239,10 +242,7 @@ __private void print_unsigned_field(unsigned val, mirrorStatus_e status, unsigne
 	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
 		colorfg_set(colormode);
-		if( status == MIRROR_LOCAL ){
-			colorbg_set(CBG);
-			bold_set();
-		}
+		print_ifcompare_color(status);
 	}
 	print_repeat(left, ' ');
 	printf("%2u",val);
@@ -252,13 +252,10 @@ __private void print_unsigned_field(unsigned val, mirrorStatus_e status, unsigne
 }
 
 __private void print_status(mirrorStatus_e status, unsigned size, int color){
-	static const char* mstate[] = {"success", "local", "error"};
+	static const char* mstate[] = {"success", "compare", "error"};
 	if( color >= 0 ){
 		colorfg_set(CSTATUS[status]);
-		if( status == MIRROR_LOCAL ){
-			colorbg_set(CBG);
-			bold_set();
-		}
+		print_ifcompare_color(status);
 	}
 	printf("%-*s", size, mstate[status]);
 	if( color >= 0 ) colorfg_set(0);
@@ -269,10 +266,7 @@ __private void print_str(const char* str, mirrorStatus_e status, unsigned size, 
 	if( !str || *str == 0 ) str = "unknow";
 	if( color >= 0 ){
 		colorfg_set(CSTATUS[status]);
-		if( status == MIRROR_LOCAL ){
-			colorbg_set(CBG);
-			bold_set();
-		}
+		print_ifcompare_color(status);
 	}
 	printf("%-*s", size, str);
 	if( color >= 0 ) colorfg_set(0);
@@ -285,10 +279,7 @@ __private void print_speed(double val, mirrorStatus_e status, unsigned size, int
 	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
 		colorfg_set(colormode);
-		if( status == MIRROR_LOCAL ){
-			colorbg_set(CBG);
-			bold_set();
-		}
+		print_ifcompare_color(status);
 	}
 	print_repeat(left, ' ');
 	printf("%5.1fMiB/s",val);
@@ -309,10 +300,7 @@ __private void print_ping(long val, mirrorStatus_e status, unsigned size, int co
 			colormode = double_color_map(val / 1000.0, colormode);
 			colorfg_set(colormode);
 		}
-		if( status == MIRROR_LOCAL ){
-			colorbg_set(CBG);
-			bold_set();
-		}
+		print_ifcompare_color(status);
 	}
 	print_repeat(left, ' ');
 	if( val < 0 ){
@@ -332,10 +320,7 @@ __private void print_stability(unsigned val, mirrorStatus_e status, unsigned siz
 	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
 		colorfg_set(colormode);
-		if( status == MIRROR_LOCAL ){
-			colorbg_set(CBG);
-			bold_set();
-		}
+		print_ifcompare_color(status);
 	}
 	print_repeat(left, ' ');
 	printf("%2dgg", val);
@@ -350,7 +335,7 @@ __private void print_bool(int value, mirrorStatus_e status, unsigned size, int c
 	const unsigned right = size - (left+len);
 	if( color >= 0 ){
 		colorfg_set( value && color ? CERR : CSTATUS[0]);
-		if( status == MIRROR_LOCAL ){
+		if( status == MIRROR_COMPARE ){
 			colorbg_set(CBG);
 			bold_set();
 		}
@@ -463,7 +448,7 @@ int main(int argc, char** argv){
 	
 	__argv option_s* opt = argv_parse(OPT, argc, argv);
 	if( opt[O_h].set ) argv_usage(opt, argv[0]);
-
+	
 	argv_default_str(OPT, O_a, DEFAULT_ARCH);
 	argv_default_num(OPT, O_d, DEFAULT_THREADS);
 	argv_default_num(OPT, O_O, DEFAULT_TOUT);
@@ -471,81 +456,18 @@ int main(int argc, char** argv){
 	argv_default_str(OPT, O_S, NULL);
 	argv_default_str(OPT, O_T, "all");
 	argv_default_num(OPT, O_L, ULONG_MAX);
-
+	
 	www_begin();
-/*
-mirror_s* mirrors = MANY(mirror_s, 16);
-mem_header(mirrors)->len = 8;
-mem_zero(mirrors);
-mirrors[0].url = "https://uptodate";
-mirrors[0].uptodate   = 100;
-mirrors[0].total      = 100;
-mirrors[0].proxy      = "https://improxy";
-mirrors[0].speed = 3;
-mirrors[0].status = MIRROR_LOCAL;
-mirrors[0].ping = 220000;
-mirrors[1].url = "https://morerecent";
-mirrors[1].uptodate   = 80;
-mirrors[1].morerecent = 20;
-mirrors[1].total      = 100;
-mirrors[1].speed = 3.6;
-mirrors[1].ping = 280000;
-mirrors[2].url = "https://morerecent";
-mirrors[2].uptodate   = 70;
-mirrors[2].morerecent = 30;
-mirrors[2].total      = 100;
-mirrors[2].speed = 3.6;
-mirrors[2].ping = 280000;
-mirrors[3].url = "https://outofdate";
-mirrors[3].uptodate   = 99;
-mirrors[3].outofdate  = 1;
-mirrors[3].total      = 100;
-mirrors[3].speed = 3.5;
-mirrors[3].ping = 120000;
-mirrors[4].url = "https://outofdate";
-mirrors[4].uptodate   = 90;
-mirrors[4].outofdate  = 10;
-mirrors[4].total      = 100;
-mirrors[4].speed = 3.5;
-mirrors[4].ping = 120000;
-mirrors[5].url = "https://sync";
-mirrors[5].sync       = 98;
-mirrors[5].uptodate   = 100;
-mirrors[5].morerecent = 0;
-mirrors[5].total      = 100;
-mirrors[5].retry      = 3;
-mirrors[5].speed = 6.0;
-mirrors[5].ping = 170000;
-mirrors[5].status = MIRROR_ERR;
-mirrors[6].url = "https://speed";
-mirrors[6].uptodate   = 100;
-mirrors[6].total      = 100;
-mirrors[6].retry      = 3;
-mirrors[6].speed = 3.7;
-mirrors[6].ping = 170000;
-mirrors[7].url = "https://speed";
-mirrors[7].uptodate   = 100;
-mirrors[7].total      = 100;
-mirrors[7].retry      = 3;
-mirrors[7].speed = 5.0;
-mirrors[7].ping = 170000;
-
-mirrors_stability(mirrors);
-add_sort_mode("proxy");
-mirrors_sort(mirrors);
-print_cmp_mirrors(mirrors,1);	
-die("");
-*/
 	__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_O].value->ui);
 	__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_O].value->ui) : str_dup(mirrorlist, 0);
 	
 	if( opt[O_P].set ) opt[O_p].set = 1;
-
+	
 	if( opt[O_C].set ){
 		country_list(mirrorlist);
 		exit(0);
 	}
-
+	
 	unsigned mirrorType = 0;
 	if( opt[O_T].set ){
 		for( unsigned i = 0; i < opt[O_T].set; ++i ){
@@ -555,7 +477,7 @@ die("");
 	else{
 		mirrorType = cast_mirror_type(mirrorType, opt[O_T].value->str);
 	}
-
+	
 	mirror_s* mirrors = NULL;
 	if( opt[O_c].set ){
 		mforeach(opt[O_c].value, i){
@@ -566,12 +488,12 @@ die("");
 		mirrors = mirrors_country(mirrors, opt[O_m].value->str,  mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
 	}
 	if( mirrors == NULL ) die("internal error, please report this issue, mirrors is not correctly created");
-
+	
 	mirrors_update(mirrors, opt[O_p].set, opt[O_d].value->ui, opt[O_O].value->ui);	
 	mirrors_cmp_db(mirrors, opt[O_p].set);
 	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set, cast_speed_type(opt[O_s].value->str));
 	mirrors_stability(mirrors);
-
+	
 	if( opt[O_S].set ){
 		for( unsigned i = 0; i < opt[O_S].set; ++i ){
 			add_sort_mode(opt[O_S].value[i].str);
@@ -592,7 +514,7 @@ die("");
 		__free char* sorta = merge_sort(opt[O_S].value, opt[O_S].set);
 		systemd_timer_set(mirrors[0].extimated, opt);
 	}
-
+	
 	www_end();
 	return 0;
 }

@@ -248,12 +248,6 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 		
 		if( !ret ){
 			mirror->wwwerror = www_errno();
-			if( mirror->status == MIRROR_LOCAL ){
-				dbg_warning("use error on downloading local mirror: %s", mirror->url);
-				if( systemd_restart_count() < SYSTEMD_SERVICE_RETRY_MAX ) return NULL;
-				__free char* localurl = str_printf("%s/%s.db", PACMAN_LOCAL_DB, repo);
-				return load_file(localurl, 1);
-			}	
 		}
 		return ret;
 	}
@@ -265,15 +259,14 @@ __private char* get_mirror_ls(mirror_s* mirror, const char* repo, const unsigned
 	return www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL);
 }
 
-__private int mirror_update(mirror_s* mirror, const unsigned tos){
-	int ret = mirror->status == MIRROR_LOCAL ? -1 : 0;
+__private void mirror_update(mirror_s* mirror, const unsigned tos){
 	const unsigned repocount = sizeof_vector(REPO);
 	dbg_info("update %s", mirror->url);
 	mirror->ping = www_ping(mirror->url);
 	if( mirror->ping < 0 ){
 		dbg_warning("%s fail ping", mirror->url);
 		mirror->status = MIRROR_ERR;
-		return ret;
+		return;
 	}
 	
 	for( unsigned ir = 0; ir < repocount; ++ir ){
@@ -282,7 +275,7 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 		if( !tarzstd ){
 			dbg_error("unable to get remote mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
-			return ret;
+			return;
 		}
 		
 		__free void* tarbuf = gzip_decompress(tarzstd);
@@ -290,7 +283,7 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
 			mirror->error  = ERROR_GZIP;
-			return ret;
+			return;
 		}
 		
 		if( !(mirror->repo[ir].db = generate_db(tarbuf)) ){
@@ -304,7 +297,7 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 			}
 			dbg_error("untar archive from mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
-			return ret;
+			return;
 		}
 		
 		mem_qsort(mirror->repo[ir].db, pkgname_cmp);
@@ -320,8 +313,6 @@ __private int mirror_update(mirror_s* mirror, const unsigned tos){
 			dbg_warning("mirror %s not provide ls", mirror->url);
 		}
 	}
-
-	return 0;
 }
 
 __private void progress_begin(const char* desc){
@@ -347,16 +338,12 @@ void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownl
 	
 	if( progress ) progress_begin("mirrors updates");
 	
-	__atomic int kres = 0;
 	__paralleft(ndownload)
 	for( unsigned i = 0; i < count; ++i){
-		if( !kres ){
-			if( mirror_update(&mirrors[i], tos) ) kres = -1;
-		}
+		mirror_update(&mirrors[i], tos);
 		if( progress ) progress_refresh("mirrors updates", ++pvalue, count);
 	}
 	if( progress ) progress_end("mirrors updates");
-	if( kres ) die("impossible to download local mirror, retry manually. Force use database in your pc: $ RESTART_COUNT=999 ghostmirror ...");
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){
@@ -460,7 +447,7 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorpath, const char*
 		if( !url ) url = PACMAN_LOCAL_DB;
 		const unsigned id = mem_header(mirrors)->len++;
 		mirror_ctor(&mirrors[id], url, arch, server_find_country(url, safemirrorlist));
-		mirrors[id].status  = MIRROR_LOCAL;
+		mirrors[id].status  = MIRROR_COMPARE;
 	}
 
 	while( (url=server_url(&fromcountry, uncommented, country ? 1 : 0, type)) ){
@@ -516,35 +503,43 @@ __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 	test->morerecent += test->total - (test->morerecent + test->uptodate + test->outofdate);
 }
 
-void mirrors_cmp_db(mirror_s* mirrors, const int progress){
-	dbg_info("");
-	mirror_s* local = NULL;
-	const unsigned count = mem_header(mirrors)->len;
-	if( count < 2 ) die("impossible to compare less than 2 mirrors");
-	for( unsigned i = 0; i < count; ++i ){
-		if( mirrors[i].status == MIRROR_LOCAL ){
-			local = &mirrors[i];
-			local->uptodate = local->total;
-			const unsigned repocount = sizeof_vector(REPO);
-			for( unsigned ir = 0; ir < repocount; ++ir ){
-				if( local->repo[ir].ls ){
-					mforeach(local->repo[ir].db, i){
-						if( mem_bsearch(local->repo[ir].ls, local->repo[ir].db[i].filename, lsname_cmp2) ) ++local->sync;
-					}
-				}
+__private void mirror_compare_ctor(mirror_s* cmp){
+	cmp->uptodate = cmp->total;
+	const unsigned repocount = sizeof_vector(REPO);
+	for( unsigned ir = 0; ir < repocount; ++ir ){
+		if( cmp->repo[ir].ls ){
+			mforeach(cmp->repo[ir].db, i){
+				if( mem_bsearch(cmp->repo[ir].ls, cmp->repo[ir].db[i].filename, lsname_cmp2) ) ++cmp->sync;
 			}
-			break;
 		}
 	}
-	if( !local ) die("internal error, not find local db, report this message");
+}
 
-	if( progress ) progress_begin("mirrors db compare");
-	
+__private mirror_s* mirror_find_compare(mirror_s* mirrors, unsigned const count){
 	for( unsigned i = 0; i < count; ++i ){
-		if( mirrors[i].status == MIRROR_UNKNOW ) mirror_cmp_db(local, &mirrors[i]);
+		if( mirrors[i].status == MIRROR_COMPARE ) return &mirrors[i];
+	}
+	for( unsigned i = 0; i < count; ++i ){
+		if( mirrors[i].status == MIRROR_UNKNOW ){
+			mirrors[i].status = MIRROR_COMPARE;
+			return &mirrors[i];
+		}
+	}
+	die("unable to find at least one working mirror, are you sure you have a good internet connection?");
+	return NULL;
+}
+
+void mirrors_cmp_db(mirror_s* mirrors, const int progress){
+	dbg_info("");
+	const unsigned count = mem_header(mirrors)->len;
+	mirror_s* compare = mirror_find_compare(mirrors, count);
+	mirror_compare_ctor(compare);
+	
+	if( progress ) progress_begin("mirrors db compare");
+	for( unsigned i = 0; i < count; ++i ){
+		if( mirrors[i].status == MIRROR_UNKNOW ) mirror_cmp_db(compare, &mirrors[i]);
 		if( progress ) progress_refresh("mirrors db compare", i, count);
 	}
-	
 	if( progress ) progress_end("mirrors db compare");
 	dbg_info("end compare mirror database");
 }
@@ -655,14 +650,12 @@ __private void mirror_speed(mirror_s* mirror, const char* arch, unsigned type){
 void mirrors_speed(mirror_s* mirrors, const char* arch, int progress, unsigned type){
 	const unsigned count = mem_header(mirrors)->len;
 	if( progress ) progress_begin("mirrors speed");
-		
 	mforeach(mirrors, i){
 		if( mirrors[i].status != MIRROR_ERR ){
 			mirror_speed(&mirrors[i], arch, type );
 		}
 		if( progress ) progress_refresh("mirrors speed", i, count);
 	}
-
 	if( progress ) progress_end("mirrors speed");
 }
 

@@ -32,7 +32,7 @@
 #define EXTIMATED_DAY_MAX 10
 #define EXTIMATED_DAY_MIN 1
 
-typedef enum { MIRROR_UNKNOW, MIRROR_LOCAL, MIRROR_ERR } mirrorStatus_e;
+typedef enum { MIRROR_UNKNOW, MIRROR_COMPARE, MIRROR_ERR } mirrorStatus_e;
 
 typedef struct pkgdesc{
 	char   filename[NAME_MAX];

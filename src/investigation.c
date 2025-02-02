@@ -130,7 +130,7 @@ void investigate_mirrors(mirror_s* mirrors, option_s* oinv){
 	mirror_s* local = NULL;
 	const unsigned count = mem_header(mirrors)->len;
 	for( unsigned i = 0; i < count; ++i ){
-		if( mirrors[i].status == MIRROR_LOCAL ){
+		if( mirrors[i].status == MIRROR_COMPARE ){
 			local = &mirrors[i];	
 			break;
 		}
