@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.10.1')
+project('ghostmirror', 'c', version: '0.10.2')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'permanently removed the use of local database. with systemd if it fails for 5 attempts it will stop and try again the following day'
+  'dsc': 'removed sync field, is not portable and not have very good information, add more performance, change default timeout to 8s'
 }
 
 if get_option('eveloper')

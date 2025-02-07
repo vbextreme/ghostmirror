@@ -98,7 +98,7 @@ sort result for any of fields display in table, multiple fields are allowed\&.
 \fIproxy\fR first false, last true (ascending)
 \fIstate\fR first success last error (descending)
 \fIoutofdate\fR, retry and \fIping\fR, display first small values (ascending)
-\fIuptodate\fR, \fImorerecent\fR, \fIsync\fR, \fIspeed\fR and \fIextimated\fR, display first great values (descending)
+\fIuptodate\fR, \fImorerecent\fR, \fIspeed\fR and \fIextimated\fR, display first great values (descending)
 .RE
 .PP
 \fB\-l, \-\-list\fR

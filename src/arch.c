@@ -24,7 +24,7 @@ __private const char* SORTNAME[] = {
 	"outofdate",
 	"uptodate",
 	"morerecent",
-	"sync",
+	//"sync",
 	"retry",
 	"speed",
 	"ping",
@@ -205,30 +205,6 @@ int pkgname_cmp(const void* a, const void* b){
 	return strcmp(da->name, db->name);
 }
 
-__private int lsname_cmp(const void* a, const void* b){
-	const char** da = (const char**)a;
-	const char** db = (const char**)b;
-	return strcmp(*da, *db);
-}
-
-//I can only imagine how portable and safe this is
-__private char** https_ls_parse(const char* str){
-	char** ls = MANY(char*, 64);
-	while( (str=strstr(str, "<a href=\"")) ){
-		str += 9;
-		const char* end = strstr(str, "\">");
-		if( !end ) return ls;
-		if( strncmp(end-4, ".zst", 4) ){
-			str = end;
-			continue;
-		}
-		ls = mem_upsize(ls, 1);
-		ls[mem_header(ls)->len++] = str_dup(str, end-str);
-		str = end;
-	}
-	return ls;
-}
-
 __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned tos){
 	if( mirror->url[0] == '/' ){
 		__free char* url = str_printf("%s/%s.db", mirror->url, repo);
@@ -251,12 +227,6 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 		}
 		return ret;
 	}
-}
-
-__private char* get_mirror_ls(mirror_s* mirror, const char* repo, const unsigned tos){
-	if( mirror->url[0] == '/' ) return NULL;
-	__free char* url = str_printf("%s/%s/os/%s/", mirror->url, repo, mirror->arch);
-	return www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL);
 }
 
 __private void mirror_update(mirror_s* mirror, const unsigned tos){
@@ -303,15 +273,6 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 		mem_qsort(mirror->repo[ir].db, pkgname_cmp);
 		mirror->total += mem_header(mirror->repo[ir].db)->len;
 		dbg_info("%u package", mirror->total);
-
-		__free char* rls = get_mirror_ls(mirror, REPO[ir], tos);
-		if( rls ){
-			mirror->repo[ir].ls = https_ls_parse(rls);
-			mem_qsort(mirror->repo[ir].ls, lsname_cmp);
-		}
-		else{
-			dbg_warning("mirror %s not provide ls", mirror->url);
-		}
 	}
 }
 
@@ -475,12 +436,6 @@ void country_list(const char* mirrorlist){
 	}
 }
 
-__private int lsname_cmp2(const void* a, const void* b){
-	const char* da = (const char*)a;
-	const char** db = (const char**)b;
-	return strcmp(da, *db);
-}
-
 __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 	const unsigned repocount = sizeof_vector(REPO);
 	for( unsigned ir = 0; ir < repocount; ++ir ){
@@ -494,9 +449,6 @@ __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 					case  1: ++test->outofdate; break;
 					case  0: ++test->uptodate; break;
 				}
-				if( test->repo[ir].ls && mem_bsearch(test->repo[ir].ls, tpk->filename, lsname_cmp2) ){
-					++test->sync;
-				}
 			}
 		}
 	}
@@ -506,14 +458,6 @@ __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 
 __private void mirror_compare_ctor(mirror_s* cmp){
 	cmp->uptodate = cmp->total;
-	const unsigned repocount = sizeof_vector(REPO);
-	for( unsigned ir = 0; ir < repocount; ++ir ){
-		if( cmp->repo[ir].ls ){
-			mforeach(cmp->repo[ir].db, i){
-				if( mem_bsearch(cmp->repo[ir].ls, cmp->repo[ir].db[i].filename, lsname_cmp2) ) ++cmp->sync;
-			}
-		}
-	}
 }
 
 __private mirror_s* mirror_find_compare(mirror_s* mirrors, unsigned const count){
@@ -572,11 +516,10 @@ __private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const unsigned
 		case  4: return a->outofdate - b->outofdate;
 		case  5: return b->uptodate - a->uptodate;
 		case  6: return b->morerecent - a->morerecent;
-		case  7: return b->sync - a->sync;
-		case  8: return a->retry - b->retry;
-		case  9: return a->speed > b->speed ? -1 : a->speed < b->speed ? 1 : 0;
-		case 10: return ping_cmp(a->ping, b->ping);
-		case 11: return b->extimated - a->extimated;
+		case  7: return a->retry - b->retry;
+		case  8: return a->speed > b->speed ? -1 : a->speed < b->speed ? 1 : 0;
+		case  9: return ping_cmp(a->ping, b->ping);
+		case 10: return b->extimated - a->extimated;
 		default: die("internal error, sort set wrong field");
 	}
 }

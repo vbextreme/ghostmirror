@@ -43,7 +43,6 @@ typedef struct pkgdesc{
 
 typedef struct repo{
 	pkgdesc_s* db;
-	char**     ls;
 }repo_s;
 
 typedef struct mirror{
@@ -63,7 +62,6 @@ typedef struct mirror{
 	unsigned       outofdate;
 	unsigned       uptodate;
 	unsigned       morerecent;
-	unsigned       sync;
 	unsigned       retry;
 	unsigned       total;
 }mirror_s;

@@ -15,7 +15,7 @@
 #include <pwd.h>
 
 #define DEFAULT_THREADS 4
-#define DEFAULT_TOUT    5
+#define DEFAULT_TOUT    8
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
@@ -80,8 +80,8 @@ option_s OPT[] = {
 	{'c', "--country"        , "select country from mirrorlist"                                     , OPT_ARRAY | OPT_STR  , 0, 0},
 	{'C', "--country-list"   , "show all possibile country"                                         , OPT_NOARG, 0, 0},
 	{'u', "--uncommented"    , "use only uncommented mirror"                                        , OPT_NOARG, 0, 0},
-	{'d', "--downloads"      , "set numbers of parallel download, default 4"                        , OPT_NUM  , 0, 0},
-	{'O', "--timeout"        , "set timeout in seconds for not reply mirror, default 5s"            , OPT_NUM  , 0, 0},
+	{'d', "--downloads"      , "set numbers of parallel download"                                   , OPT_NUM  , 0, 0},
+	{'O', "--timeout"        , "set timeout in seconds for not reply mirror"                        , OPT_NUM  , 0, 0},
 	{'p', "--progress"       , "show progress, default false"                                       , OPT_NOARG, 0, 0},
 	{'P', "--progress-colors", "same -p but with colors"                                            , OPT_NOARG, 0, 0},
 	{'o', "--output"         , "enable table output"                                                , OPT_NOARG, 0, 0},
@@ -230,7 +230,12 @@ __private void print_double_field(double val, mirrorStatus_e status, unsigned si
 		print_ifcompare_color(status);
 	}
 	print_repeat(left, ' ');
-	printf("%6.2f%%",val);
+	if( isnan(val) || isinf(val) ){
+		printf("  err  ");
+	}
+	else{
+		printf("%6.2f%%",val);
+	}
 	print_repeat(right, ' ');
 	if( colormode >= 0 ) colorfg_set(0);
 	fputs("│", stdout);
@@ -362,9 +367,9 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 	}
 
 	colors = colors ? 0 : -1000;
-	char* tblname[]    = { "country", "mirror",  "proxy",  "state", "outofdate", "uptodate", "morerecent",   "sync",  "retry",  "speed",    "ping", "extimated" };
-	unsigned tblsize[] = { mlCountry,    mlUrl,        5,        9,           9,          9,           10,        9,        7,       12,         9,           9 };
-	unsigned tblcolor[]= {  colors+0, colors+0, colors+1, colors+0,    colors+1,   colors+0,     colors+3, colors+2, colors+4, colors+5,  colors+7,    colors+6 };
+	char* tblname[]    = { "country", "mirror",  "proxy",  "state", "outofdate", "uptodate", "morerecent",  "retry",  "speed",    "ping", "extimated" };
+	unsigned tblsize[] = { mlCountry,    mlUrl,        5,        9,           9,          9,           10,        7,       12,         9,           9 };
+	unsigned tblcolor[]= {  colors+0, colors+0, colors+1, colors+0,    colors+1,   colors+0,     colors+3, colors+4, colors+5,  colors+7,    colors+6 };
 	print_table_header(tblname, tblsize, sizeof_vector(tblsize), colors);
 	
 	mforeach(mirrors, i){
@@ -376,11 +381,10 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 		print_double_field(mirrors[i].outofdate  * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[4], tblcolor[4]);
 		print_double_field(mirrors[i].uptodate   * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[5], tblcolor[5]);
 		print_double_field(mirrors[i].morerecent * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[6], tblcolor[6]);
-		print_double_field(mirrors[i].sync       * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[7], tblcolor[7]);
-		print_unsigned_field(mirrors[i].retry, mirrors[i].status, tblsize[8], tblcolor[8]);
-		print_speed(mirrors[i].speed, mirrors[i].status, tblsize[9], tblcolor[9]);
-		print_ping(mirrors[i].ping, mirrors[i].status, tblsize[10], tblcolor[10]);
-		print_stability(mirrors[i].extimated, mirrors[i].status, tblsize[11], tblcolor[11]);
+		print_unsigned_field(mirrors[i].retry, mirrors[i].status, tblsize[7], tblcolor[7]);
+		print_speed(mirrors[i].speed, mirrors[i].status, tblsize[8], tblcolor[8]);
+		print_ping(mirrors[i].ping, mirrors[i].status, tblsize[9], tblcolor[9]);
+		print_stability(mirrors[i].extimated, mirrors[i].status, tblsize[10], tblcolor[10]);
 		fputc('\n', stdout);
 	}
 
