@@ -1,4 +1,4 @@
-ghostmirror v0.10.0
+ghostmirror v0.10.1
 ==================
 Introduction:
 =============
@@ -216,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.10.1 permanently removed the use of local database. with systemd if it fails for 5 attempts it will stop and try again the following day
 * v0.10.0 from issue 6, ghostmirror required the first mirror to be working in order to have a database similar to the one on your PC in order to perform the comparison. Given the developments this is no longer necessary and an alternative mirror will now be sought
 * v0.9.22 fix path_explode ..
 * v0.9.21 fix pkgbuild update after git, fix man documentation

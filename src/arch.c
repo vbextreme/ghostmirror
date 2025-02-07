@@ -444,10 +444,11 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorpath, const char*
 		localmirror = mem_nullterm(localmirror);
 		
 		url = server_url((const char**)&localmirror, 1, 0, type);
-		if( !url ) url = PACMAN_LOCAL_DB;
-		const unsigned id = mem_header(mirrors)->len++;
-		mirror_ctor(&mirrors[id], url, arch, server_find_country(url, safemirrorlist));
-		mirrors[id].status  = MIRROR_COMPARE;
+		if( url ){
+			const unsigned id = mem_header(mirrors)->len++;
+			mirror_ctor(&mirrors[id], url, arch, server_find_country(url, safemirrorlist));
+			mirrors[id].status  = MIRROR_COMPARE;
+		}
 	}
 
 	while( (url=server_url(&fromcountry, uncommented, country ? 1 : 0, type)) ){

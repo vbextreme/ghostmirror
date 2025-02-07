@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.10.0')
+project('ghostmirror', 'c', version: '0.10.1')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'from issue 6, ghostmirror required the first mirror to be working in order to have a database similar to the one on your PC in order to perform the comparison. Given the developments this is no longer necessary and an alternative mirror will now be sought'
+  'dsc': 'permanently removed the use of local database. with systemd if it fails for 5 attempts it will stop and try again the following day'
 }
 
 if get_option('eveloper')

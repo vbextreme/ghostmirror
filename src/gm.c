@@ -463,6 +463,8 @@ int main(int argc, char** argv){
 	
 	if( opt[O_P].set ) opt[O_p].set = 1;
 	
+	if( opt[O_D].set && systemd_restart_count() > SYSTEMD_SERVICE_RETRY_MAX ) systemd_timer_set(1, opt);
+
 	if( opt[O_C].set ){
 		country_list(mirrorlist);
 		exit(0);
