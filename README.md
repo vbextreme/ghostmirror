@@ -98,7 +98,7 @@ $ systemctl --user list-timers
 ```
 force start ghostmirror before timer ellapsed
 ```bash
-$ systemctl --user ghostmirror.service
+$ systemctl --user start ghostmirror.service
 ```
 
 ### End
