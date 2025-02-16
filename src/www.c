@@ -132,10 +132,12 @@ void* www_download(const char* url, unsigned onlyheader, unsigned touts, char** 
 	return mem_borrowed(data);
 }
 
-void* www_download_retry(const char* url, unsigned onlyheader, unsigned touts, unsigned retry, unsigned retryms, char** realurl){
+void* www_download_retry(const char* url, unsigned onlyheader, unsigned touts, unsigned retry, unsigned retryms, char** realurl, unsigned* nretry){
+	if( nretry ) *nretry = 0;
 	void* ret = NULL;
 	delay_t retrytime = retryms;
 	while( retry-->0 && !(ret=www_download(url, onlyheader, touts, realurl)) ){
+		if( nretry ) ++*nretry;
 		dbg_warning("fail download %s tout: %u touts, retry: %u", url, touts, retry);
 		if( retry ){
 			delay_ms(retrytime);

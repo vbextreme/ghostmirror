@@ -10,7 +10,7 @@ unsigned www_http_error(unsigned error);
 const char* www_str_error(unsigned error);
 
 void* www_download(const char* url, unsigned onlyheader, unsigned touts, char** realurl);
-void* www_download_retry(const char* url, unsigned onlyheader, unsigned touts, unsigned retry, unsigned retryms, char** realurl);
+void* www_download_retry(const char* url, unsigned onlyheader, unsigned touts, unsigned retry, unsigned retryms, char** realurl, unsigned* nretry);
 long www_ping(const char* url);
 
 

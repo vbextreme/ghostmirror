@@ -496,7 +496,15 @@ int main(int argc, char** argv){
 	if( mirrors == NULL ) die("internal error, please report this issue, mirrors is not correctly created");
 	
 	mirrors_update(mirrors, opt[O_p].set, opt[O_d].value->ui, opt[O_O].value->ui);	
-	mirrors_cmp_db(mirrors, opt[O_p].set);
+	if( mirrors_cmp_db(mirrors, opt[O_p].set) ){
+		if( opt[O_i].set ){
+			investigate_mirrors(mirrors, &opt[O_i]);
+			die("no working mirrors");
+		}
+		else{
+			die("all mirror failed, try add '-i error' for show all possible error");
+		}
+	}
 	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set, cast_speed_type(opt[O_s].value->str));
 	mirrors_stability(mirrors);
 	

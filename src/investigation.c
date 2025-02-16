@@ -34,8 +34,9 @@ __private int test_check_redirect_url(const char* url, const char* arch){
 }
 
 __private void investigate_mirror(mirror_s* mirror, mirror_s* local, unsigned mode){
-	if( mirror->status != MIRROR_ERR && mirror->outofdate == 0 ) return;
-	
+	if( mirror->status != MIRROR_ERR && !(mode & INVESTIGATE_OUTOFDATE) ) return;
+	if( mirror->status == MIRROR_ERR && !(mode & INVESTIGATE_ERROR) ) return;
+
 	printf("server: '%s'\n", mirror->url);
 	if( (mode & INVESTIGATE_ERROR) && mirror->isproxy ){
 		printf("  redirect: '%s'\n", mirror->proxy);
@@ -83,7 +84,7 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local, unsigned mo
 		puts("  state: successfull");
 	}
 
-	if( (mode & INVESTIGATE_OUTOFDATE) && mirror->status != MIRROR_ERR && mirror->outofdate ){
+	if( (mode & INVESTIGATE_OUTOFDATE) && mirror->status != MIRROR_ERR && mirror->outofdate && local ){
 		const unsigned repocount = sizeof_vector(REPO);
 		for( unsigned ir = 0; ir < repocount; ++ir ){
 			unsigned const dbcount = mem_header(local->repo[ir].db)->len;
@@ -129,13 +130,21 @@ void investigate_mirrors(mirror_s* mirrors, option_s* oinv){
 	
 	mirror_s* local = NULL;
 	const unsigned count = mem_header(mirrors)->len;
+	dbg_info("investigate on %u mirrors", count);
 	for( unsigned i = 0; i < count; ++i ){
 		if( mirrors[i].status == MIRROR_COMPARE ){
 			local = &mirrors[i];	
 			break;
 		}
 	}
-	if( !local ) die("internal error, not find local mirror");
+
+	long ic = www_ping(IP_TEST_INTERNET_CONNECTION);
+	if( ic > 0 && ic < 2000000 ){
+		printf("internet connection: %.1fms\n", ic/1000.0 );
+	}else{
+		printf("internet connection: error\n");
+	}
+
 	for( unsigned i = 0; i < count; ++i ){
 		investigate_mirror(&mirrors[i], local, mode);
 	}

@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.10.2')
+project('ghostmirror', 'c', version: '0.10.3')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'removed sync field, is not portable and not have very good information, add more performance, change default timeout to 8s'
+  'dsc': 'investigate: add check internet connection, fix investigate not display all mirror, add ability do display investigate when all mirrors fail. fix retry is not updated'
 }
 
 if get_option('eveloper')

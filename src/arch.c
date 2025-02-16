@@ -214,15 +214,16 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 		__free char* url = str_printf("%s/%s/os/%s/%s.db", mirror->url, repo, mirror->arch, repo);
 		void* ret = NULL;
 		if( !mirror->wwwerror ){
-			ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, &mirror->proxy);
+			ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, &mirror->proxy, &mirror->retry);
 		}
 		else{
-			ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL);
+			ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL, NULL);
 		}
 		
 		if( mirror->proxy && strcmp(url, mirror->proxy) ) mirror->isproxy = 1;
 		
 		if( !ret ){
+			dbg_error("set error: %u", www_errno());
 			mirror->wwwerror = www_errno();
 		}
 		return ret;
@@ -308,7 +309,7 @@ void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownl
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){
-	char* buf = fname ? load_file(fname, 1) :  www_download_retry(MIRROR_LIST_URL, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL);
+	char* buf = fname ? load_file(fname, 1) :  www_download_retry(MIRROR_LIST_URL, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL, NULL);
 	if( !buf ) die("unable to load mirrorlist");
 	buf = mem_nullterm(buf);
 	return buf;
@@ -470,14 +471,14 @@ __private mirror_s* mirror_find_compare(mirror_s* mirrors, unsigned const count)
 			return &mirrors[i];
 		}
 	}
-	die("unable to find at least one working mirror, are you sure you have a good internet connection?");
 	return NULL;
 }
 
-void mirrors_cmp_db(mirror_s* mirrors, const int progress){
+int mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	dbg_info("");
 	const unsigned count = mem_header(mirrors)->len;
 	mirror_s* compare = mirror_find_compare(mirrors, count);
+	if( !compare ) return -1;
 	mirror_compare_ctor(compare);
 	
 	if( progress ) progress_begin("mirrors db compare");
@@ -487,6 +488,7 @@ void mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	}
 	if( progress ) progress_end("mirrors db compare");
 	dbg_info("end compare mirror database");
+	return 0;
 }
 
 __private int ping_cmp(long a, long b){
