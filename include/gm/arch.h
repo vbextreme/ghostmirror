@@ -13,11 +13,12 @@
 #define MIRROR_TYPE_HTTPS 0x2
 
 #define ERROR_GZIP          0x01
-#define ERROR_TAR_MAGIC     0x02
-#define ERROR_TAR_CHECKSUM  0x03
-#define ERROR_TAR_BLOCKEND  0x04
-#define ERROR_TAR_NOBLOCK   0x05
-#define ERROR_TAR_KV_ASSIGN 0x06
+#define ERROR_GZIP_DATA     0x02
+#define ERROR_TAR_MAGIC     0x03
+#define ERROR_TAR_CHECKSUM  0x04
+#define ERROR_TAR_BLOCKEND  0x05
+#define ERROR_TAR_NOBLOCK   0x06
+#define ERROR_TAR_KV_ASSIGN 0x07
 
 
 //TODO pacman mirrorlist is not a default path need to parse pacman config and get the include directory for each db

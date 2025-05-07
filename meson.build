@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.10.3')
+project('ghostmirror', 'c', version: '0.10.4')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,14 +10,14 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'investigate: add check internet connection, fix investigate not display all mirror, add ability do display investigate when all mirrors fail. fix retry is not updated'
+  'dsc': 'issue(13) fix systemd evnironment need to manually intervent, manual stop service, manually delete systemd user ghostmirror.service, recall step ghostmirror -D; fix zstream check error freeze decompression; add investigate malicius redirect from corrupted data and malformed url'
 }
 
 if get_option('eveloper')
   if run_command('grep', meson.project_name() + ' v' + version['str'], './README.md', check: false).returncode() > 0
     message('update README')
-    run_command('sed', '-i', '-r', '-e', 's/^' + meson.project_name() + '[ \\t]*v(.*)/' + meson.project_name() + ' v' + version['str'] + '/', './README.md', check: true)
     run_command('sed', '-i', '-r', '-e', '0,/^\* v.*/{s/\*(.*)/\* v' + version['str'] + ' ' + version['dsc'] + '\\n\*\\1/}' , './README.md', check: true).stdout().strip()
+    run_command('sed', '-i', '-r', '-e', 's/^' + meson.project_name() + '[ \\t]*v(.*)/' + meson.project_name() + ' v' + version['str'] + '/', './README.md', check: true)
     message('update PKGBUILD')
     run_command('sed', '-i', '-r', '-e', 's/^pkgver=\'([^\']+)\'/pkgver=\'' + version['str'] + '\'/', './distro/PKGBUILD', check: true)
     message('generating MANPAGES')

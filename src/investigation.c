@@ -51,6 +51,7 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local, unsigned mo
 		switch( mirror->error ){
 			case 0                  : break;
 			case ERROR_GZIP         : puts("  error: unable to gzip file, probably corrupted file"); break;
+			case ERROR_GZIP_DATA    : puts("  error: unable to gzip file, probably corrupted file or malicious redirection behavior"); break;
 			case ERROR_TAR_MAGIC    : puts("  error: wrong magic tar value, probably corrupted file"); break;
 			case ERROR_TAR_NOBLOCK  : puts("  error: tar aspected another block but not finding, probably connection interrupt download or corrupted file"); break;
 			case ERROR_TAR_BLOCKEND : puts("  error: tar aspected end block but not finding, probably connection interrupt download or corrupted file"); break;
@@ -77,7 +78,7 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local, unsigned mo
 			puts("  ping error: probably server is down"); 
 		}
 		else{
-			puts("  error: strange behaviours, how have set error if not able to find where error is setted?");
+			puts("  server not have connection problems.");
 		}
 	}
 	else{

@@ -1,4 +1,4 @@
-ghostmirror v0.10.3
+ghostmirror v0.10.4
 ==================
 Introduction:
 =============
@@ -216,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.10.4 issue(13) fix systemd evnironment need to manually intervent, manual stop service, manually delete systemd user ghostmirror.service, recall step ghostmirror -D; fix zstream check error freeze decompression; add investigate malicius redirect from corrupted data and malformed url
 * v0.10.3 investigate: add check internet connection, fix investigate not display all mirror, add ability do display investigate when all mirrors fail. fix retry is not updated
 * v0.10.2 removed sync field, is not portable and not have very good information, add more performance, change default timeout to 8s
 * v0.10.1 permanently removed the use of local database. with systemd if it fails for 5 attempts it will stop and try again the following day

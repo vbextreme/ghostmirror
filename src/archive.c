@@ -21,9 +21,17 @@ void* gzip_decompress(void* data) {
 	
 	int ret;
 	do{
-		if( (ret=inflate(&strm, Z_NO_FLUSH)) == Z_ERRNO ){
+		if( (ret=inflate(&strm, Z_NO_FLUSH)) != Z_OK && ret != Z_STREAM_END ){
+			switch( ret ){
+				case Z_DATA_ERROR:
+					errno = EBADMSG;
+				break;
+				default:
+					errno = EINVAL;
+				break;
+			}
 			mem_free(dec);
-			dbg_error("decompression failed");
+			dbg_error("decompression failed %d: %s", ret, zError(ret));
 			return NULL;
 		}
 		mem_header(dec)->len += framesize - strm.avail_out;

@@ -248,12 +248,19 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 			mirror->status = MIRROR_ERR;
 			return;
 		}
-		
+	
 		__free void* tarbuf = gzip_decompress(tarzstd);
 		if( !tarbuf ){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
-			mirror->error  = ERROR_GZIP;
+			switch( errno ){
+				case EBADMSG:
+					mirror->error  = ERROR_GZIP_DATA;
+				break;
+				default:
+					mirror->error  = ERROR_GZIP;
+				break;
+			}
 			return;
 		}
 		
@@ -270,7 +277,6 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 			mirror->status = MIRROR_ERR;
 			return;
 		}
-		
 		mem_qsort(mirror->repo[ir].db, pkgname_cmp);
 		mirror->total += mem_header(mirror->repo[ir].db)->len;
 		dbg_info("%u package", mirror->total);
