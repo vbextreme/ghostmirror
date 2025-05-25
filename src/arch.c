@@ -2,7 +2,6 @@
 #include <notstd/core.h>
 #include <notstd/str.h>
 #include <notstd/delay.h>
-#include <notstd/json.h>
 
 #include <gm/arch.h>
 #include <gm/archive.h>

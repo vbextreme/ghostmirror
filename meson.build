@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.10.5')
+project('ghostmirror', 'c', version: '0.10.6')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'default tout to 0 for less spurious value, try to download when server not reply to ping some server not reply to ping, compare only exists package'
+  'dsc': 'fix json.h, not realy used now'
 }
 
 if get_option('eveloper')
