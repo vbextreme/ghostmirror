@@ -15,7 +15,7 @@
 #include <pwd.h>
 
 #define DEFAULT_THREADS 4
-#define DEFAULT_TOUT    8
+#define DEFAULT_TOUT    0
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO

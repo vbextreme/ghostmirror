@@ -2,6 +2,7 @@
 #include <notstd/core.h>
 #include <notstd/str.h>
 #include <notstd/delay.h>
+#include <notstd/json.h>
 
 #include <gm/arch.h>
 #include <gm/archive.h>
@@ -104,7 +105,7 @@ __private void pkgdesc_parse(pkgdesc_s* out, const char* data, size_t len){
 	out->version[0]  = 0;
 	out->lastsync = 0;
 	
-	int nval = 3;	
+	int nval = 3;
 	while( nval && data < end ){
 		if( *skip_h(data, end) != '%' ){
 			data = next_line(data, end);
@@ -234,11 +235,7 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 	const unsigned repocount = sizeof_vector(REPO);
 	dbg_info("update %s", mirror->url);
 	mirror->ping = www_ping(mirror->url);
-	if( mirror->ping < 0 ){
-		dbg_warning("%s fail ping", mirror->url);
-		mirror->status = MIRROR_ERR;
-		return;
-	}
+	if( mirror->ping < 0 ) dbg_warning("%s fail ping", mirror->url);
 	
 	for( unsigned ir = 0; ir < repocount; ++ir ){
 		dbg_info("\t %s", REPO[ir]);
@@ -459,8 +456,8 @@ __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 			}
 		}
 	}
-
-	test->morerecent += test->total - (test->morerecent + test->uptodate + test->outofdate);
+	
+	//test->morerecent += test->total - (test->morerecent + test->uptodate + test->outofdate);
 }
 
 __private void mirror_compare_ctor(mirror_s* cmp){

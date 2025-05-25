@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.10.4')
+project('ghostmirror', 'c', version: '0.10.5')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'issue(13) fix systemd evnironment need to manually intervent, manual stop service, manually delete systemd user ghostmirror.service, recall step ghostmirror -D; fix zstream check error freeze decompression; add investigate malicius redirect from corrupted data and malformed url'
+  'dsc': 'default tout to 0 for less spurious value, try to download when server not reply to ping some server not reply to ping, compare only exists package'
 }
 
 if get_option('eveloper')
