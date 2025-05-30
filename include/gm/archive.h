@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+
 typedef enum { TAR_FILE, TAR_HARD_LINK, TAR_SYMBOLIC_LINK, TAR_CHAR_DEV, TAR_BLK_DEV, TAR_DIR, TAR_FIFO, TAR_CONTIGUOUS, TAR_GLOBAL, TAR_EXTEND, TAR_VENDOR } tartype_e;
 
 typedef struct tarent_s{
@@ -21,6 +22,7 @@ typedef struct tar_s{
 	int       err;
 }tar_s;
 
+void gzip_init(unsigned maxthr);
 void* gzip_decompress(void* data);
 
 void tar_mopen(tar_s* tar, void* data);

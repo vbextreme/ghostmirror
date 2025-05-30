@@ -1,27 +1,36 @@
 #include <notstd/core.h>
 #include <notstd/str.h>
 
+#include <omp.h>
 #include <gm/archive.h>
 
 #include <archive.h>
 #include <zlib.h>
 
-void* gzip_decompress(void* data) {
-	z_stream strm;
-	memset(&strm, 0, sizeof(strm));
-	if( inflateInit2(&strm, 16 + MAX_WBITS) != Z_OK ) die("Unable to initialize zlib");
+static z_stream* strm;
+
+void gzip_init(unsigned maxthr){
+	strm = MANY(z_stream, maxthr);
+	for( unsigned i = 0; i < maxthr; ++i ){
+		memset(&strm[i], 0, sizeof(z_stream));
+		if( inflateInit2(&strm[i], 16 + MAX_WBITS) != Z_OK ) die("Unable to initialize zlib");
+	}
+}
+
+void* gzip_decompress(void* data){
+	const unsigned tid = omp_get_thread_num();
 	size_t datasize = mem_header(data)->len;
 	size_t framesize = datasize * 2;
 	void* dec = MANY(char, framesize);
 	
-	strm.avail_in  = datasize;
-	strm.next_in   = (Bytef*)data;
-	strm.avail_out = framesize;
-	strm.next_out  = (Bytef*)dec;
+	strm[tid].avail_in  = datasize;
+	strm[tid].next_in   = (Bytef*)data;
+	strm[tid].avail_out = framesize;
+	strm[tid].next_out  = (Bytef*)dec;
 	
 	int ret;
 	do{
-		if( (ret=inflate(&strm, Z_NO_FLUSH)) != Z_OK && ret != Z_STREAM_END ){
+		if( (ret=inflate(&strm[tid], Z_NO_FLUSH)) != Z_OK && ret != Z_STREAM_END ){
 			switch( ret ){
 				case Z_DATA_ERROR:
 					errno = EBADMSG;
@@ -34,16 +43,17 @@ void* gzip_decompress(void* data) {
 			dbg_error("decompression failed %d: %s", ret, zError(ret));
 			return NULL;
 		}
-		mem_header(dec)->len += framesize - strm.avail_out;
-		if (strm.avail_out == 0) {
+		mem_header(dec)->len += framesize - strm[tid].avail_out;
+		if (strm[tid].avail_out == 0) {
 			dec = mem_upsize(dec, framesize);
 			framesize = mem_available(dec);
-			strm.avail_out = framesize;
+			strm[tid].avail_out = framesize;
 		}
-		strm.next_out  = (Bytef*)(mem_addressing(dec, mem_header(dec)->len));
+		strm[tid].next_out  = (Bytef*)(mem_addressing(dec, mem_header(dec)->len));
 	}while( ret != Z_STREAM_END );
 	
-	inflateEnd(&strm);
+	//inflateEnd(&strm[tid]);
+	inflateReset(&strm[tid]);
 	return dec;
 }
 

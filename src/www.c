@@ -9,7 +9,7 @@
 #define __wcc __cleanup(www_curl_cleanup)
 
 #define WWW_ERROR_HTTP 10000
-#define WWW_BUFFER_SIZE 1024
+#define WWW_BUFFER_SIZE (1024*1024*4)
 
 __thread unsigned wwwerrno;
 

@@ -8,6 +8,7 @@
 #include <gm/www.h>
 #include <gm/systemd.h>
 
+#include <omp.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <time.h>
@@ -24,7 +25,6 @@ __private const char* SORTNAME[] = {
 	"outofdate",
 	"uptodate",
 	"morerecent",
-	//"sync",
 	"retry",
 	"speed",
 	"ping",
@@ -231,6 +231,7 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 }
 
 __private void mirror_update(mirror_s* mirror, const unsigned tos){
+	//delay_t bench[2][3];
 	const unsigned repocount = sizeof_vector(REPO);
 	dbg_info("update %s", mirror->url);
 	mirror->ping = www_ping(mirror->url);
@@ -238,13 +239,16 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 	
 	for( unsigned ir = 0; ir < repocount; ++ir ){
 		dbg_info("\t %s", REPO[ir]);
+		//bench[ir][0] = time_cpu_us();
 		__free void* tarzstd = get_tar_zst(mirror, REPO[ir], tos);
 		if( !tarzstd ){
 			dbg_error("unable to get remote mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
 			return;
 		}
+		//bench[ir][0] = time_cpu_us() - bench[ir][0];
 	
+		//bench[ir][1] = time_cpu_us();
 		__free void* tarbuf = gzip_decompress(tarzstd);
 		if( !tarbuf ){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
@@ -259,7 +263,9 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 			}
 			return;
 		}
-		
+		//bench[ir][1] = time_cpu_us() - bench[ir][1];
+	
+		//bench[ir][2] = time_cpu_us();
 		if( !(mirror->repo[ir].db = generate_db(tarbuf)) ){
 			switch( errno ){
 				case ENOENT : mirror->error = ERROR_TAR_NOBLOCK; break;
@@ -274,9 +280,15 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 			return;
 		}
 		mem_qsort(mirror->repo[ir].db, pkgname_cmp);
+		//bench[ir][2] = time_cpu_us() - bench[ir][2];
+
 		mirror->total += mem_header(mirror->repo[ir].db)->len;
 		dbg_info("%u package", mirror->total);
 	}
+
+	//for( unsigned i = 0; i < repocount; ++i ){
+	//	dbg_info("bench repo[%u] download: %fs decompress: %fs unpack: %fs", i, bench[i][0]/1000000.0, bench[i][1]/1000000.0, bench[i][2]/1000000.0);
+	//}
 }
 
 __private void progress_begin(const char* desc){

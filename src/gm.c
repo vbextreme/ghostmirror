@@ -462,6 +462,7 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_L, ULONG_MAX);
 	
 	www_begin();
+	gzip_init(opt[O_d].value->ui);
 	__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_O].value->ui);
 	__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_O].value->ui) : str_dup(mirrorlist, 0);
 	
