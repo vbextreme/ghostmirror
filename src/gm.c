@@ -518,6 +518,40 @@ int main(int argc, char** argv){
 	
 	if( opt[O_o].set ) print_cmp_mirrors(mirrors, opt[O_P].set);
 	if( opt[O_l].set ) print_list(mirrors, opt[O_l].value->str, opt[O_L].value->ui);
+
+	// this is a manual test for check motivation than outofdate exists with morerecent
+	/*
+	mirror_s* local = NULL;
+	const unsigned count = mem_header(mirrors)->len;
+	for(unsigned i = 0; i < count; ++i ){
+		if( mirrors[i].status == MIRROR_COMPARE  ){
+			local = &mirrors[i];
+			break;
+		}
+	}
+	if( !local ) die("fail to find MIRROR_COMPARE");
+	for(unsigned im = 0; im < count; ++im ){
+		printf("%s\n", mirrors[im].url);
+		if( mirrors[im].status != MIRROR_UNKNOW ) continue;
+		if( mirrors[im].morerecent || mirrors[im].outofdate ){
+			for( unsigned ir = 0; ir < 2; ++ir ){
+				unsigned const dbcount = mem_header(local->repo[ir].db)->len;
+				for( unsigned i = 0; i < dbcount; ++i){
+					pkgdesc_s* tpk = mem_bsearch(mirrors[im].repo[ir].db, &local->repo[ir].db[i], pkgname_cmp);
+					if( tpk ){
+						int ret = pkg_vercmp(local->repo[ir].db[i].version, tpk->version);
+						switch( ret ){
+							case -1: printf("  # '%s' > '%s'\n", tpk->version, local->repo[ir].db[i].version); break;
+							case  1: printf("  !'%s' < '%s'\n", tpk->version, local->repo[ir].db[i].version); break;
+							case  0: break;
+							default: die("WTF");
+						}
+					}
+				}
+			}
+		}
+	}
+	*/
 	
 	if( opt[O_i].set ) investigate_mirrors(mirrors, &opt[O_i]);
 	

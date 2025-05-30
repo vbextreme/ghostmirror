@@ -1,4 +1,4 @@
-ghostmirror v0.11.0
+ghostmirror v0.11.1
 ==================
 Introduction:
 =============
@@ -216,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.11.1 fix vercmp, port last libalpm vercmp
 * v0.11.0 performance: gzip ctx for each thread, increase www buffer to 4MiB
 * v0.10.6 fix json.h, not realy used now
 * v0.10.5 default tout to 0 for less spurious value, try to download when server not reply to ping some server not reply to ping, compare only exists package

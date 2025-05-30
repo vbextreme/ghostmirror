@@ -135,7 +135,197 @@ __private void pkgdesc_parse(pkgdesc_s* out, const char* data, size_t len){
 	}
 }
 
+/**
+ * Split EVR into epoch, version, and release components.
+ * @param evr		[epoch:]version[-release] string
+ * @retval *ep		pointer to epoch
+ * @retval *vp		pointer to version
+ * @retval *rp		pointer to release
+ */
+__private void parse_evr(char *evr, const char **ep, const char **vp, const char **rp){
+	const char *epoch;
+	const char *version;
+	const char *release;
+	char *s, *se;
+	
+	s = evr;
+	/* s points to epoch terminator */
+	while( *s && isdigit(*s) ) ++s;
+	/* se points to version terminator */
+	se = strrchr(s, '-');
+	
+	if( *s == ':' ){
+		epoch = evr;
+		*s++ = '\0';
+		version = s;
+		if( !*epoch ) epoch = "0";
+	}
+	else{
+		/* different from RPM- always assume 0 epoch */
+		epoch = "0";
+		version = evr;
+	}
+
+	if( se ) *se++ = '\0';
+	release = se;
+
+	if( ep ) *ep = epoch;
+	if( vp ) *vp = version;
+	if( rp ) *rp = release;
+}
+
+/**
+ * Compare alpha and numeric segments of two versions.
+ * return 1: a is newer than b
+ *        0: a and b are the same version
+ *       -1: b is newer than a
+ */
+__private int rpmvercmp(const char *a, const char *b){
+	char oldch1, oldch2;
+	char str1[512], str2[512];
+	char *ptr1, *ptr2;
+	char *one, *two;
+	int rc;
+	int isnum;
+	int ret = 0;
+
+	/* easy comparison to see if versions are identical */
+	if( strcmp(a, b) == 0 ) return 0;
+	strcpy(str1, a);
+	strcpy(str2, b);
+	
+	one = ptr1 = str1;
+	two = ptr2 = str2;
+
+	/* loop through each version segment of str1 and str2 and compare them */
+	while( *one && *two ){
+		while( *one && !isalnum((int)*one) ) one++;
+		while( *two && !isalnum((int)*two) ) two++;
+		
+		/* If we ran to the end of either, we are finished with the loop */
+		if( !(*one && *two) ) break;
+		
+		/* If the separator lengths were different, we are also finished */
+		if( (one - ptr1) != (two - ptr2) ){
+			ret = (one - ptr1) < (two - ptr2) ? -1 : 1;
+			return ret;
+		}
+		
+		ptr1 = one;
+		ptr2 = two;
+		
+		/* grab first completely alpha or completely numeric segment */
+		/* leave one and two pointing to the start of the alpha or numeric */
+		/* segment and walk ptr1 and ptr2 to end of segment */
+		if( isdigit((int)*ptr1) ){
+			while( *ptr1 && isdigit((int)*ptr1) ) ptr1++;
+			while( *ptr2 && isdigit((int)*ptr2) ) ptr2++;
+			isnum = 1;
+		} 
+		else{
+			while (*ptr1 && isalpha((int)*ptr1)) ptr1++;
+			while (*ptr2 && isalpha((int)*ptr2)) ptr2++;
+			isnum = 0;
+		}
+		
+		/* save character at the end of the alpha or numeric segment */
+		/* so that they can be restored after the comparison */
+		oldch1 = *ptr1;
+		*ptr1 = '\0';
+		oldch2 = *ptr2;
+		*ptr2 = '\0';
+		
+		/* this cannot happen, as we previously tested to make sure that */
+		/* the first string has a non-null segment */
+		if( one == ptr1 ) return -1;
+		
+		/* take care of the case where the two version segments are */
+		/* different types: one numeric, the other alpha (i.e. empty) */
+		/* numeric segments are always newer than alpha segments */
+		/* XXX See patch #60884 (and details) from bugzilla #50977. */
+		if( two == ptr2 ) return isnum ? 1 : -1;
+
+		if( isnum ){
+			/* this used to be done by converting the digit segments */
+			/* to ints using atoi() - it's changed because long  */
+			/* digit segments can overflow an int - this should fix that. */
+			
+			/* throw away any leading zeros - it's a number, right? */
+			while( *one == '0' ) one++;
+			while( *two == '0' ) two++;
+			
+			/* whichever number has more digits wins */
+			if( strlen(one) > strlen(two) ) return 1;
+			if( strlen(two) > strlen(one) ) return -1;
+		}
+
+		/* strcmp will return which one is greater - even if the two */
+		/* segments are alpha or if they are numeric.  don't return  */
+		/* if they are equal because there might be more segments to */
+		/* compare */
+		rc = strcmp(one, two);
+		if( rc ) return rc < 1 ? -1 : 1;
+		/* restore character that was replaced by null above */
+		*ptr1 = oldch1;
+		one = ptr1;
+		*ptr2 = oldch2;
+		two = ptr2;
+	}
+	/* this catches the case where all numeric and alpha segments have */
+	/* compared identically but the segment separating characters were */
+	/* different */
+	if( (!*one) && (!*two) ) return 0;
+	/* the final showdown. we never want a remaining alpha string to
+	 * beat an empty string. the logic is a bit weird, but:
+	 * - if one is empty and two is not an alpha, two is newer.
+	 * - if one is an alpha, two is newer.
+	 * - otherwise one is newer.
+	 * */
+	return ( (!*one && !isalpha((int)*two)) || isalpha((int)*one) ) ? -1 : 1;
+}
+
+// 0 eq
+// 1 a > b
+//-1 a < b
 int pkg_vercmp(const char *a, const char *b){
+	char full1[512];
+	char full2[512];
+	const char *epoch1, *ver1, *rel1;
+	const char *epoch2, *ver2, *rel2;
+	int ret;
+
+	/* ensure our strings are not null */
+	if     ( !a ) return !b ? 0 : -1;
+	else if( !b ) return 1;
+	
+	const unsigned la = strlen(a);
+	const unsigned lb = strlen(b);
+	/* another quick shortcut- if full version specs are equal */
+	if( la == lb && !strcmp(a, b) ) return 0;
+	if( la > 500 || lb > 500 ) die("internal error, version to long");
+
+	/* Parse both versions into [epoch:]version[-release] triplets. We probably
+	 * don't need epoch and release to support all the same magic, but it is
+	 * easier to just run it all through the same code. */
+	memcpy(full1, a, la + 1);
+	memcpy(full2, b, lb + 1);
+	
+	/* parseEVR modifies passed in version, so have to dupe it first */
+	parse_evr(full1, &epoch1, &ver1, &rel1);
+	parse_evr(full2, &epoch2, &ver2, &rel2);
+	
+	ret = rpmvercmp(epoch1, epoch2);
+	if(ret == 0) {
+		ret = rpmvercmp(ver1, ver2);
+		if(ret == 0 && rel1 && rel2) {
+			ret = rpmvercmp(rel1, rel2);
+		}
+	}
+	return ret;
+}
+
+/*
+int pkg_vercmp_old(const char *a, const char *b){
 	const char *pa = a, *pb = b;
 	int r = 0;
 	
@@ -161,23 +351,23 @@ int pkg_vercmp(const char *a, const char *b){
 		}
 		else if (*pa && *pb && isalpha(*pa) && isalpha(*pb)) {
 			r = tolower((unsigned char)*pa) - tolower((unsigned char)*pb);
-			if (r != 0) return r;
+			if (r != 0) return *pa > *pb ? 1 : -1; //r
 			pa++;
 			pb++;
 		}
 		else{
-			char ca = *pa ? *pa : 0;
-			char cb = *pb ? *pb : 0;
-			
+			char ca = *pa;
+			char cb = *pb;
 			if (ca == '-' || ca == '_') ca = '.';
 			if (cb == '-' || cb == '_') cb = '.';
-			if (ca != cb) return ca - cb;
+			if (ca != cb) return ca == '.' ? 1 : -1; //return ca - cb;
 			if (ca) pa++;
 			if (cb) pb++;
 		}
 	}
 	return 0;
 }
+*/
 
 __private pkgdesc_s* generate_db(void* tarbuf){
 	tar_s tar;
@@ -235,7 +425,7 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 	const unsigned repocount = sizeof_vector(REPO);
 	dbg_info("update %s", mirror->url);
 	mirror->ping = www_ping(mirror->url);
-	if( mirror->ping < 0 ) dbg_warning("%s fail ping", mirror->url);
+	//if( mirror->ping < 0 ) dbg_warning("%s fail ping", mirror->url);
 	
 	for( unsigned ir = 0; ir < repocount; ++ir ){
 		dbg_info("\t %s", REPO[ir]);

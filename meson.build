@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.11.0')
+project('ghostmirror', 'c', version: '0.11.1')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'performance: gzip ctx for each thread, increase www buffer to 4MiB'
+  'dsc': 'fix vercmp, port last libalpm vercmp'
 }
 
 if get_option('eveloper')
