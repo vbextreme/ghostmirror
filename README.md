@@ -1,4 +1,4 @@
-ghostmirror v0.12
+ghostmirror v0.12.1
 ==================
 Introduction:
 =============
@@ -216,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.12.1 fix autoversion required M.m.r
 * v0.12 regression use local database for compare mirror in this mode fix issue 12, suspend service investigate outofdate
 * v0.11.1 fix vercmp, port last libalpm vercmp
 * v0.11.0 performance: gzip ctx for each thread, increase www buffer to 4MiB

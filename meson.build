@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.12')
+project('ghostmirror', 'c', version: '0.12.1')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'regression use local database for compare mirror in this mode fix issue 12, suspend service investigate outofdate'
+  'dsc': 'fix autoversion required M.m.r'
 }
 
 if get_option('eveloper')
