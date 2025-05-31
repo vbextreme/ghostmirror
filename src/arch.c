@@ -424,7 +424,7 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 	//delay_t bench[2][3];
 	const unsigned repocount = sizeof_vector(REPO);
 	dbg_info("update %s", mirror->url);
-	mirror->ping = www_ping(mirror->url);
+	if( mirror->url[0] != '/' ) mirror->ping = www_ping(mirror->url);
 	//if( mirror->ping < 0 ) dbg_warning("%s fail ping", mirror->url);
 	
 	for( unsigned ir = 0; ir < repocount; ++ir ){
@@ -497,19 +497,9 @@ __private void progress_end(const char* desc){
 	fflush(stderr);
 }
 
-void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownload, const unsigned tos){
-	dbg_info("");
-	const unsigned count = mem_header(mirrors)->len;
-	__atomic unsigned pvalue = 0;
-	
-	if( progress ) progress_begin("mirrors updates");
-	
-	__paralleft(ndownload)
-	for( unsigned i = 0; i < count; ++i){
-		mirror_update(&mirrors[i], tos);
-		if( progress ) progress_refresh("mirrors updates", ++pvalue, count);
-	}
-	if( progress ) progress_end("mirrors updates");
+void database_local(mirror_s* local, const char* arch){
+	mirror_ctor(local, PACMAN_LOCAL_DB, arch, LOCAL_COUNTRY);
+	mirror_update(local, 0);
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){
@@ -613,7 +603,7 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorpath, const char*
 		if( url ){
 			const unsigned id = mem_header(mirrors)->len++;
 			mirror_ctor(&mirrors[id], url, arch, server_find_country(url, safemirrorlist));
-			mirrors[id].status  = MIRROR_COMPARE;
+			//mirrors[id].status  = MIRROR_COMPARE;
 		}
 	}
 
@@ -661,6 +651,7 @@ __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 	//test->morerecent += test->total - (test->morerecent + test->uptodate + test->outofdate);
 }
 
+/*
 __private void mirror_compare_ctor(mirror_s* cmp){
 	cmp->uptodate = cmp->total;
 }
@@ -678,7 +669,7 @@ __private mirror_s* mirror_find_compare(mirror_s* mirrors, unsigned const count)
 	return NULL;
 }
 
-int mirrors_cmp_db(mirror_s* mirrors, const int progress){
+__private int mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	dbg_info("");
 	const unsigned count = mem_header(mirrors)->len;
 	mirror_s* compare = mirror_find_compare(mirrors, count);
@@ -693,6 +684,50 @@ int mirrors_cmp_db(mirror_s* mirrors, const int progress){
 	if( progress ) progress_end("mirrors db compare");
 	dbg_info("end compare mirror database");
 	return 0;
+}
+*/
+
+__private void mirror_store_speed_package(mirror_s* mirror, unsigned speedType){
+	static char* SPEED[] = {
+		SPEED_LIGHT,
+		SPEED_NORMAL,
+		SPEED_HEAVY
+	};
+	mirror->repo[1].speed = MANY(pkgdesc_s, sizeof_vector(SPEED));
+	mem_header(mirror->repo[1].speed)->len = speedType;
+	for( unsigned i = 0; i < sizeof_vector(SPEED) && i < speedType; ++i ){
+		pkgdesc_s  find;
+		strcpy(find.name, SPEED[i]);
+		pkgdesc_s* pk = mem_bsearch(mirror->repo[1].db, &find, pkgname_cmp);
+		if( !pk ){
+			die("unable to benchmark mirror, not find %s package", SPEED[i]);
+			return;
+		}
+		memcpy(&mirror->repo[1].speed[i], pk, sizeof(pkgdesc_s));
+	}
+}
+
+void mirrors_update(mirror_s* local, mirror_s* mirrors, const int progress, const unsigned ndownload, const unsigned tos, unsigned speedType){
+	dbg_info("");
+	const unsigned count = mem_header(mirrors)->len;
+	const unsigned repocount = sizeof_vector(REPO);
+	__atomic unsigned pvalue = 0;
+	
+	if( progress ) progress_begin("mirrors updates");
+	
+	__paralleft(ndownload)
+	for( unsigned i = 0; i < count; ++i){
+		mirror_update(&mirrors[i], tos);
+		if( mirrors[i].status == MIRROR_UNKNOW ){
+			mirror_cmp_db(local, &mirrors[i]);
+			mirror_store_speed_package(&mirrors[i], speedType);
+			for( unsigned r = 0; r < repocount; ++r ){
+				mem_free(mirrors[i].repo[r].db);
+			}
+		}
+		if( progress ) progress_refresh("mirrors updates", ++pvalue, count);
+	}
+	if( progress ) progress_end("mirrors updates");
 }
 
 __private int ping_cmp(long a, long b){
@@ -757,23 +792,9 @@ void mirrors_sort(mirror_s* mirrors){
 	mem_qsort(mirrors, sort_cmp);
 }
 
-__private void mirror_speed(mirror_s* mirror, const char* arch, unsigned type){
-	static char* testname[]= { 
-		SPEED_LIGHT,
-		SPEED_NORMAL,
-		SPEED_HEAVY
-	};
-	
-	for( unsigned i = 0; i < type+1; ++i ){
-		pkgdesc_s  find;
-		strcpy(find.name, testname[i]);
-
-		pkgdesc_s* pk = mem_bsearch(mirror->repo[1].db, &find, pkgname_cmp);
-		if( !pk ){
-			die("unable to benchmark mirror, not find %s package", testname[i]);
-			return;
-		}
-
+__private void mirror_speed(mirror_s* mirror, const char* arch){
+	mforeach(mirror->repo[1].speed, it){
+		pkgdesc_s* pk = &mirror->repo[1].speed[it];
 		__free char* url = str_printf("%s/extra/os/%s/%s", mirror->url, arch, pk->filename);
 		unsigned retry = DOWNLOAD_RETRY;
 		delay_t  retrytime = DOWNLOAD_WAIT;
@@ -794,15 +815,15 @@ __private void mirror_speed(mirror_s* mirror, const char* arch, unsigned type){
 			break;
 		}
 	}
-	mirror->speed /= type+1.0;
+	mirror->speed /= (double)mem_header(mirror->repo[1].speed)->len;
 }
 
-void mirrors_speed(mirror_s* mirrors, const char* arch, int progress, unsigned type){
+void mirrors_speed(mirror_s* mirrors, const char* arch, int progress){
 	const unsigned count = mem_header(mirrors)->len;
 	if( progress ) progress_begin("mirrors speed");
 	mforeach(mirrors, i){
 		if( mirrors[i].status != MIRROR_ERR ){
-			mirror_speed(&mirrors[i], arch, type );
+			mirror_speed(&mirrors[i], arch);
 		}
 		if( progress ) progress_refresh("mirrors speed", i, count);
 	}

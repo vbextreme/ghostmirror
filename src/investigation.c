@@ -33,7 +33,7 @@ __private int test_check_redirect_url(const char* url, const char* arch){
 	return 0;
 }
 
-__private void investigate_mirror(mirror_s* mirror, mirror_s* local, unsigned mode){
+__private void investigate_mirror(mirror_s* mirror, __unused mirror_s* local, unsigned mode){
 	if( mirror->status != MIRROR_ERR && !(mode & INVESTIGATE_OUTOFDATE) ) return;
 	if( mirror->status == MIRROR_ERR && !(mode & INVESTIGATE_ERROR) ) return;
 
@@ -85,6 +85,7 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local, unsigned mo
 		puts("  state: successfull");
 	}
 
+	/*
 	if( (mode & INVESTIGATE_OUTOFDATE) && mirror->status != MIRROR_ERR && mirror->outofdate && local ){
 		const unsigned repocount = sizeof_vector(REPO);
 		for( unsigned ir = 0; ir < repocount; ++ir ){
@@ -111,12 +112,16 @@ __private void investigate_mirror(mirror_s* mirror, mirror_s* local, unsigned mo
 			if( linelen ) putchar('\n');
 		}
 	}
+	*/
 	putchar('\n');
 }
 
 __private unsigned cast_mode(const char* mode){
+	//TODO add mode for investigate outofdate package, repo[].db now is free and can't use
+	if( !strcmp(mode, "outofdate") ) die("this is a todo feature, new version use less ram need to change code for reuse this options, please wait");
+
 	static char*    invname[] = { "error"          , "outofdate"          , "all"           };
-	static unsigned inval[]   = { INVESTIGATE_ERROR, INVESTIGATE_OUTOFDATE, INVESTIGATE_ALL };
+	static unsigned inval[]   = { INVESTIGATE_ERROR, INVESTIGATE_OUTOFDATE, INVESTIGATE_ERROR /*INVESTIGATE_ALL*/ };
 	for( unsigned i = 0; i < sizeof_vector(invname); ++i ){
 		if( !strcmp(invname[i], mode) ) return inval[i];
 	}

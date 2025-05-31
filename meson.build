@@ -1,7 +1,7 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.11.1')
+project('ghostmirror', 'c', version: '0.12')
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +10,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix vercmp, port last libalpm vercmp'
+  'dsc': 'regression use local database for compare mirror in this mode fix issue 12, suspend service investigate outofdate'
 }
 
 if get_option('eveloper')

@@ -33,6 +33,8 @@
 #define EXTIMATED_DAY_MAX 10
 #define EXTIMATED_DAY_MIN 1
 
+#define LOCAL_COUNTRY "local"
+
 typedef enum { MIRROR_UNKNOW, MIRROR_COMPARE, MIRROR_ERR } mirrorStatus_e;
 
 typedef struct pkgdesc{
@@ -44,6 +46,7 @@ typedef struct pkgdesc{
 
 typedef struct repo{
 	pkgdesc_s* db;
+	pkgdesc_s* speed;
 }repo_s;
 
 typedef struct mirror{
@@ -69,13 +72,14 @@ typedef struct mirror{
 
 char* mirror_loading(const char* fname, const unsigned tos);
 mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorpath, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type);
-void mirrors_update(mirror_s* mirrors, const int progress, const unsigned ndownload, const unsigned tos);
-int mirrors_cmp_db(mirror_s* mirrors, const int progress);
+void database_local(mirror_s* local, const char* arch);
+void mirrors_update(mirror_s* local, mirror_s* mirrors, const int progress, const unsigned ndownload, const unsigned tos, unsigned speedType);
+//int mirrors_cmp_db(mirror_s* mirrors, const int progress);
 void add_sort_mode(const char* mode);
 void mirrors_sort(mirror_s* mirrors);
 void mirrors_update_sync(mirror_s* mirrors, const char mode, const unsigned maxdownload, const unsigned touts, const int progress);
 void country_list(const char* mirrorlist);
-void mirrors_speed(mirror_s* mirrors, const char* arch, int progress, unsigned type);
+void mirrors_speed(mirror_s* mirrors, const char* arch, int progress);
 void mirrors_stability(mirror_s* mirrors);
 
 int pkg_vercmp(const char *a, const char *b);

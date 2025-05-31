@@ -18,6 +18,8 @@
 #define DEFAULT_TOUT    0
 #define DEFAULT_ARCH    "x86_64"
 
+//TODO INVESTIGATE remove outofdate, write documentation or rewrite investigate (download mirror and check) this feature realy need?
+
 //TODO
 //  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
 //  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
@@ -427,9 +429,10 @@ __private unsigned cast_mirror_type(unsigned type, const char* name){
 __private unsigned cast_speed_type(const char* name){
 	static const char* typename[] = { "light", "normal", "heavy" };
 	for( unsigned i = 0; i < sizeof_vector(typename); ++i ){
-		if( !strcmp(name, typename[i]) ) return i;
+		if( !strcmp(name, typename[i]) ) return i+1;
 	}
-	die("unknow type name: %s", name);
+	dbg_warning("no speed selected with option");
+	return 0;
 }
 
 __private char* merge_sort(optValue_u* value, const unsigned count){
@@ -460,6 +463,7 @@ int main(int argc, char** argv){
 	argv_default_str(OPT, O_S, NULL);
 	argv_default_str(OPT, O_T, "all");
 	argv_default_num(OPT, O_L, ULONG_MAX);
+	argv_default_str(OPT, O_s, "");
 	
 	www_begin();
 	gzip_init(opt[O_d].value->ui);
@@ -486,6 +490,10 @@ int main(int argc, char** argv){
 	}
 	
 	mirror_s* mirrors = NULL;
+	mirror_s local;
+	dbg_info("load local database");
+	database_local(&local, opt[O_a].value->str);
+
 	if( opt[O_c].set ){
 		mforeach(opt[O_c].value, i){
 			mirrors = mirrors_country(mirrors, opt[O_m].value->str, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
@@ -496,17 +504,10 @@ int main(int argc, char** argv){
 	}
 	if( mirrors == NULL ) die("internal error, please report this issue, mirrors is not correctly created");
 	
-	mirrors_update(mirrors, opt[O_p].set, opt[O_d].value->ui, opt[O_O].value->ui);	
-	if( mirrors_cmp_db(mirrors, opt[O_p].set) ){
-		if( opt[O_i].set ){
-			investigate_mirrors(mirrors, &opt[O_i]);
-			die("no working mirrors");
-		}
-		else{
-			die("all mirror failed, try add '-i error' for show all possible error");
-		}
-	}
-	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set, cast_speed_type(opt[O_s].value->str));
+	mirrors_update(&local, mirrors, opt[O_p].set, opt[O_d].value->ui, opt[O_O].value->ui, cast_speed_type(opt[O_s].value->str));
+	
+	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set);
+	
 	mirrors_stability(mirrors);
 	
 	if( opt[O_S].set ){
