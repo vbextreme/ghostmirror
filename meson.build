@@ -3,7 +3,7 @@
 ###########
 #
 #remember version: MAJ.MIN.REV
-project('ghostmirror', 'c', version: '0.13')
+project('ghostmirror', 'c', version: '0.13.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -13,7 +13,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix man page missing I before heavy in speed list, sad remove zlib ad use zlib-ng'
+  'dsc': 'wrong version set'
 }
 
 if get_option('eveloper')
