@@ -1,7 +1,10 @@
 ###########
 # project #
 ###########
-project('ghostmirror', 'c', version: '0.12.1')
+#
+#remember version: MAJ.MIN.REV
+project('ghostmirror', 'c', version: '0.13')
+
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
@@ -10,7 +13,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix autoversion required M.m.r'
+  'dsc': 'fix man page missing I before heavy in speed list, sad remove zlib ad use zlib-ng'
 }
 
 if get_option('eveloper')
@@ -157,7 +160,7 @@ add_global_arguments('-DVERSION_REV="' + version['mmr'][2] + '"', language: 'c')
 ##########################
 libDeps  = [ cc.find_library('m', required : true) ] # math
 libDeps += [ dependency('libcurl', required: true) ]
-libDeps += [ dependency('zlib', required: true) ]
+libDeps += [ dependency('zlib-ng', required: true) ]
 libDeps += [ dependency('libsystemd', required: true) ]
 
 #########################

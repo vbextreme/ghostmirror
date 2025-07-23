@@ -5,15 +5,16 @@
 #include <gm/archive.h>
 
 #include <archive.h>
-#include <zlib.h>
 
-static z_stream* strm;
+#include <zlib-ng.h>
+
+static zng_stream* strm;
 
 void gzip_init(unsigned maxthr){
-	strm = MANY(z_stream, maxthr);
-	for( unsigned i = 0; i < maxthr; ++i ){
-		memset(&strm[i], 0, sizeof(z_stream));
-		if( inflateInit2(&strm[i], 16 + MAX_WBITS) != Z_OK ) die("Unable to initialize zlib");
+	strm = MANY(zng_stream, maxthr);
+	for (unsigned i = 0; i < maxthr; ++i) {
+		memset(&strm[i], 0, sizeof(zng_stream));
+		if (zng_inflateInit2(&strm[i], 16 + MAX_WBITS) != Z_OK) die("Unable to initialize zlib-ng");
 	}
 }
 
@@ -23,37 +24,33 @@ void* gzip_decompress(void* data){
 	size_t framesize = datasize * 2;
 	void* dec = MANY(char, framesize);
 	
-	strm[tid].avail_in  = datasize;
-	strm[tid].next_in   = (Bytef*)data;
-	strm[tid].avail_out = framesize;
-	strm[tid].next_out  = (Bytef*)dec;
+	zng_stream* s = &strm[tid];
+	s->avail_in  = datasize;
+	s->next_in   = (uint8_t*)data;
+	s->avail_out = framesize;
+	s->next_out  = (uint8_t*)dec;
 	
 	int ret;
-	do{
-		if( (ret=inflate(&strm[tid], Z_NO_FLUSH)) != Z_OK && ret != Z_STREAM_END ){
-			switch( ret ){
-				case Z_DATA_ERROR:
-					errno = EBADMSG;
-				break;
-				default:
-					errno = EINVAL;
-				break;
+	do {
+		ret = zng_inflate(s, Z_NO_FLUSH);
+		if (ret != Z_OK && ret != Z_STREAM_END) {
+			switch (ret) {
+				case Z_DATA_ERROR: errno = EBADMSG; break;
+				default          : errno = EINVAL; break;
 			}
 			mem_free(dec);
-			dbg_error("decompression failed %d: %s", ret, zError(ret));
+			dbg_error("decompression failed %d", ret);
 			return NULL;
 		}
-		mem_header(dec)->len += framesize - strm[tid].avail_out;
-		if (strm[tid].avail_out == 0) {
+		mem_header(dec)->len += framesize - s->avail_out;
+		if (s->avail_out == 0) {
 			dec = mem_upsize(dec, framesize);
 			framesize = mem_available(dec);
-			strm[tid].avail_out = framesize;
+			s->avail_out = framesize;
 		}
-		strm[tid].next_out  = (Bytef*)(mem_addressing(dec, mem_header(dec)->len));
+		s->next_out = (uint8_t*)(mem_addressing(dec, mem_header(dec)->len));
 	}while( ret != Z_STREAM_END );
-	
-	//inflateEnd(&strm[tid]);
-	inflateReset(&strm[tid]);
+	zng_inflateReset(s);
 	return dec;
 }
 
