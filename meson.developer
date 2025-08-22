@@ -1,0 +1,129 @@
+#!/bin/perl -w
+
+use strict;
+use warnings;
+use JSON::PP;
+use Data::Dumper;
+use File::Find;
+
+my $BUILD_PATH='./build';
+my $BUILD_OPTIONS='';
+my $BRANCH='main';
+my $PRJPATH = git_path();
+my @EXTRAFILES = (
+	"${PRJPATH}/meson.build",
+	"${PRJPATH}/meson.options",
+	"${PRJPATH}/meson.developer",
+);
+
+sub uniq {
+	my %seen;
+	grep !$seen{$_}++, @_;
+}
+
+sub acheckstr{
+	my ($arr, $f) = @_;
+	for my $e (@$arr){
+		return 1 if $e eq $f;
+	}
+	return 0;
+}
+
+sub meson_introspect{
+	my ($build) = @_;
+	my $jsintrospect = `meson introspect $build -a`;
+	die "fail introspect" if $?;
+	return decode_json($jsintrospect);
+}
+
+sub meson_introspect_find_headers{
+	my ($mi) = @_;
+	my $para = $mi->{'targets'}->[0]->{'target_sources'}->[0]->{'parameters'};
+	my @ret;
+	for my $p (@$para){
+		if( $p =~ /^-I(.*)/ ){
+			find(
+				{
+					wanted => sub{
+						my $fname = $File::Find::name;
+					    push @ret, $fname if $fname =~ /\.h$/;
+					},
+					no_chdir =>1
+				},
+				$1
+			);
+		}
+	}
+	my @arr = uniq(@ret);
+	return \@arr;
+}
+
+sub git_path{
+	my $p=`git rev-parse --show-toplevel`;
+	die "fail git rev-parse --show-toplevel" if $?;
+	(my $r=$p) =~ s/\n//;
+	return $r;
+}
+
+sub git_lstree{
+	my ($branch) = @_;
+	my $p = git_path();
+	my $br = `git ls-tree -r --name-only $branch`;
+	die "fail git ls-tree" if $?;
+	my @relfiles = split /\n/, $br;
+	my @absfiles;
+	for my $f (@relfiles){
+		push @absfiles, "${p}/${f}";
+	}
+	return \@absfiles;
+}
+
+sub check_commit_projects_file{
+	my ($gitfiles, $src, $headers, $extra) = @_;
+	for my $s (@$src){
+		die "file $s in not add in git branch" unless acheckstr($gitfiles, $s);
+	}
+	for my $h (@$headers){
+		die "header $h in not add in git branch" unless acheckstr($gitfiles, $h);
+	}
+	for my $e (@$extra){
+		die "extra $e in not add in git branch" unless acheckstr($gitfiles, $e);
+	}
+}
+
+while( (my $arg = shift @ARGV) ){
+	if( $arg eq '-b' ){
+		$BUILD_PATH = shift @ARGV;
+	}
+	elsif( $arg eq '-o' ){
+		$BUILD_OPTIONS = shift @ARGV;
+	}
+	elsif( $arg eq '-B' ){
+		$BRANCH = shift @ARGV;
+	}
+	elsif( $arg eq '-e' ){
+		push @EXTRAFILES, shift @ARGV;
+	}
+}
+
+if( !(-d $BUILD_PATH) ){
+	die "fail to build project" if system("meson setup $BUILD_PATH $BUILD_OPTIONS");
+}
+
+my $mi = meson_introspect($BUILD_PATH);
+#print Dumper($mi);
+
+#print "<NAME>" . $mi->{'projectinfo'}->{'descriptive_name'} . "</NAME>\n";
+#print "<VERSION>" . $mi->{'projectinfo'}->{'version'} . "</VERSION>\n";
+#print "<DEPENDENCY>" . Dumper($mi->{'targets'}->[0]->{'dependencies'}) . "</DEPENDENCY>\n";
+
+my $sources = $mi->{'targets'}->[0]->{'target_sources'}->[0]->{'sources'};
+#print "<SOURCE>" . Dumper($sources}) . "</SOURCE>\n";
+my $headers = meson_introspect_find_headers($mi);
+#print "<HEADERS>" . Dumper($headers) . "</HEADERS>\n";
+my $files = git_lstree($BRANCH);
+#print "<FILES>" . Dumper($files) . "</FILES>\n";
+
+check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
+
+
