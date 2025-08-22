@@ -231,6 +231,7 @@ my $mi = meson_introspect($BUILD_PATH);
 
 my $prjname    = $mi->{'projectinfo'}->{'descriptive_name'};
 my $prjversion = $mi->{'projectinfo'}->{'version'};
+#die($prjversion);
 my $versionmd  = readme_version($PRJPATH, $prjname);
 
 if( $prjversion ne $versionmd ){

@@ -13,18 +13,9 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'update readme from developer suite'
+  'dsc': 'test'
 }
 
-if get_option('eveloper')
-  run_command('meson.developer', 
-    '-d', 'curl',
-    '-d', 'zlib-ng',
-    '-d', 'systemd-libs',
-    '-D', version['dsc'],
-    check: true
-  )
-endif
 ###########
 # include #
 ###########
@@ -212,17 +203,13 @@ else
   shared_library(meson.project_name(), src, include_directories: includeDir, dependencies: libDeps, install: true)
 endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+if get_option('eveloper')
+  run_command('meson.developer', 
+    '-d', 'curl',
+    '-d', 'zlib-ng',
+    '-d', 'systemd-libs',
+    '-D', version['dsc'],
+    check: true
+  )
+endif
 
