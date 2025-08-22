@@ -424,8 +424,16 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 	//delay_t bench[2][3];
 	const unsigned repocount = sizeof_vector(REPO);
 	dbg_info("update %s", mirror->url);
-	if( mirror->url[0] != '/' ) mirror->ping = www_ping(mirror->url);
-	//if( mirror->ping < 0 ) dbg_warning("%s fail ping", mirror->url);
+	{
+		__free char* rh = www_host_get(mirror->url);
+		if( rh ){
+			mirror->ping = www_ping(rh);
+			if( mirror->ping < 0 ) dbg_warning("%s fail ping %m", mirror->url);
+		}
+		else{
+			dbg_warning("fail get host: %s", mirror->url);
+		}
+	}
 	
 	for( unsigned ir = 0; ir < repocount; ++ir ){
 		dbg_info("\t %s", REPO[ir]);

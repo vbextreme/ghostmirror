@@ -3,7 +3,7 @@
 ###########
 #
 #remember version: MAJ.MIN.REV
-project('ghostmirror', 'c', version: '0.13.1')
+project('ghostmirror', 'c', version: '0.14.0')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -13,7 +13,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'wrong version set'
+  'dsc': 'change ping mode, switch from command ping to ping_group_range, i think arch have anable all user by default, change investigate error for show if ping have some error'
 }
 
 if get_option('eveloper')
@@ -57,6 +57,7 @@ src += [ 'notstd/opt.c' ]
 src += [ 'notstd/delay.c' ]
 
 src += [ 'src/www.c' ]
+src += [ 'src/ping.c' ]
 src += [ 'src/archive.c' ]
 src += [ 'src/gm.c' ]
 src += [ 'src/arch.c' ]

@@ -33,10 +33,14 @@ __private int test_check_redirect_url(const char* url, const char* arch){
 	return 0;
 }
 
-__private void investigate_mirror(mirror_s* mirror, __unused mirror_s* local, unsigned mode){
-	if( mirror->status != MIRROR_ERR && !(mode & INVESTIGATE_OUTOFDATE) ) return;
-	if( mirror->status == MIRROR_ERR && !(mode & INVESTIGATE_ERROR) ) return;
+__private int inv_mirror_iserr(mirror_s* mirror){
+	return mirror->status == MIRROR_ERR || mirror->ping < 0 ? 1: 0;
+}
 
+__private void investigate_mirror(mirror_s* mirror, __unused mirror_s* local, unsigned mode){
+	if( !inv_mirror_iserr(mirror) && !(mode & INVESTIGATE_OUTOFDATE) ) return;
+	if( !inv_mirror_iserr(mirror) && !(mode & INVESTIGATE_ERROR) ) return;
+	
 	printf("server: '%s'\n", mirror->url);
 	if( (mode & INVESTIGATE_ERROR) && mirror->isproxy ){
 		printf("  redirect: '%s'\n", mirror->proxy);
@@ -46,8 +50,7 @@ __private void investigate_mirror(mirror_s* mirror, __unused mirror_s* local, un
 			case  0: puts("  test url string: successfull"); break;
 		}
 	}
-	if( (mode & INVESTIGATE_ERROR) && mirror->status == MIRROR_ERR ){
-		puts("  state: error");
+	if( (mode & INVESTIGATE_ERROR) ){
 		switch( mirror->error ){
 			case 0                  : break;
 			case ERROR_GZIP         : puts("  error: unable to gzip file, probably corrupted file"); break;
@@ -65,24 +68,37 @@ __private void investigate_mirror(mirror_s* mirror, __unused mirror_s* local, un
 		if( errconnection ){
 			printf("  connection error %u: %s\n", errconnection, www_str_error(mirror->wwwerror)); 
 			if( mirror->isproxy ){
-				if( www_ping(mirror->proxy) < 0 )
-					puts("  ping proxy test: server is up but redirect server is down");
-				else
-					puts("  ping proxy test: server and redirect server is up");
+				__free char* rh = www_host_get(mirror->proxy);
+				if( rh ){
+					if( www_ping(rh) < 0 ){
+						printf("  ping proxy test: server is up but redirect server is down (%m)\n");
+					}
+					else{
+						puts("  ping proxy test: server and redirect server is up");
+					}
+				}
+				else{
+					printf("  ping proxy test: fail to get host proxy: %s\n", mirror->proxy);
+				}
 			}
 		}
-		else if( errhttp ){
+		if( errhttp ){
 			printf("  http error %u: %s\n", errhttp, www_str_error(mirror->wwwerror)); 
 		}
-		else if( mirror->ping < 0 ){
-			puts("  ping error: probably server is down"); 
+		if( mirror->ping < 0 ){
+			__free char* rh = www_host_get(mirror->url);
+			if( rh ){
+				if( www_ping(rh) < 0 ){
+					printf("  ping test: %m\n");
+				}
+				else{
+					puts("  ping test: now server is up");
+				}
+			}
+			else{
+				printf("  ping test: fail to get host from url: %s\n", mirror->url);
+			}
 		}
-		else{
-			puts("  server not have connection problems.");
-		}
-	}
-	else{
-		puts("  state: successfull");
 	}
 
 	/*

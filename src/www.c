@@ -147,7 +147,7 @@ void* www_download_retry(const char* url, unsigned onlyheader, unsigned touts, u
 	return ret;
 }
 
-long www_ping(const char* url){
+long www_ping_sh(const char* url){
 	//sorry for this but raw socket required a special privilege on Linux, probably I can add privilege in future
 	__free char* server = NULL;
 	unsigned proto = 0;
@@ -189,9 +189,32 @@ long www_ping(const char* url){
 	}
 	int es = pclose(f);
 	if( es == -1 ) return -1;
-	if( ping < 0 ) return -1;
+	if( ping < 0 ){
+		dbg_error("timeout");
+		errno = ETIME;
+		return -1;
+	}
 	if( !WIFEXITED(es) || WEXITSTATUS(es) != 0) return -1;
 	return ping;
 }
 
+char* www_host_get(const char* url){
+	__private const char* know[] = {
+		"http://",
+		"https://",
+		"ftp://",
+		"ftps://",
+	};
+	if( *url == '/' ) return NULL;
+	for( unsigned i = 0; i < sizeof_vector(know); ++i ){
+		if( !strncmp(url, know[i], strlen(know[i])) ){
+			url += strlen(know[i]);
+			break;
+		}
+	}
+	const char* starthost = url;
+	const char* endhost   = strchrnul(url,'/');
+	if( endhost - starthost < 3 ) return NULL;
+	return str_dup(starthost, endhost - starthost);
+}
 

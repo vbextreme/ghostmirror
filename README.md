@@ -1,4 +1,4 @@
-ghostmirror v0.13.1
+ghostmirror v0.14.0
 ==================
 Introduction:
 =============
@@ -216,6 +216,7 @@ $ meson configure -Developer=true
 
 State:
 ======
+* v0.14.0 change ping mode, switch from command ping to ping_group_range, i think arch have anable all user by default, change investigate error for show if ping have some error
 * v0.13.1 wrong version set
 * v0.13 fix man page missing I before heavy in speed list, sad remove zlib ad use zlib-ng
 * v0.12.1 fix autoversion required M.m.r
