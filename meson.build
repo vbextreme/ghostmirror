@@ -3,7 +3,7 @@
 ###########
 #
 #remember version: MAJ.MIN.REV
-project('ghostmirror', 'c', version: '0.14.0')
+project('ghostmirror', 'c', version: '0.14.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -13,7 +13,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'change ping mode, switch from command ping to ping_group_range, i think arch have anable all user by default, change investigate error for show if ping have some error'
+  'dsc': 'fix missing file ping.c'
 }
 
 if get_option('eveloper')
