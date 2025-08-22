@@ -428,7 +428,7 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 		__free char* rh = www_host_get(mirror->url);
 		if( rh ){
 			mirror->ping = www_ping(rh);
-			if( mirror->ping < 0 ) dbg_warning("%s fail ping %m", mirror->url);
+			//if( mirror->ping < 0 ) dbg_warning("%s fail ping %m", mirror->url);
 		}
 		else{
 			dbg_warning("fail get host: %s", mirror->url);

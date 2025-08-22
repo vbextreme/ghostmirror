@@ -3,7 +3,7 @@
 ###########
 #
 #remember version: MAJ.MIN.REV
-project('ghostmirror', 'c', version: '0.14.1')
+project('ghostmirror', 'c', version: '0.14.2', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -13,28 +13,17 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix missing file ping.c'
+  'dsc': 'new developer suite'
 }
 
 if get_option('eveloper')
-  if run_command('grep', meson.project_name() + ' v' + version['str'], './README.md', check: false).returncode() > 0
-    message('update README')
-    run_command('sed', '-i', '-r', '-e', '0,/^\* v.*/{s/\*(.*)/\* v' + version['str'] + ' ' + version['dsc'] + '\\n\*\\1/}' , './README.md', check: true).stdout().strip()
-    run_command('sed', '-i', '-r', '-e', 's/^' + meson.project_name() + '[ \\t]*v(.*)/' + meson.project_name() + ' v' + version['str'] + '/', './README.md', check: true)
-    message('update PKGBUILD')
-    run_command('sed', '-i', '-r', '-e', 's/^pkgver=\'([^\']+)\'/pkgver=\'' + version['str'] + '\'/', './distro/PKGBUILD', check: true)
-    message('generating MANPAGES')
-    run_command('bash', './man/gen-manpages.sh', env: {'CURRENT_VERSION': version['str']}, check: true)
-    message('update GIT')
-    run_command('git', 'commit', '-a', '-m', version['dsc'], check: true)
-    run_command('git', 'tag', '-a', 'v' + version['str'], '-m', version['dsc'], check: true)
-    run_command('git', 'push', '--follow-tags', check: true)
-    message('update AUR')
-    run_command('cp', './distro/PKGBUILD', './distro/ghostmirror/PKGBUILD', check: true)
-    run_command('bash', '-c', 'makepkg -D ./distro --printsrcinfo > ./distro/ghostmirror/.SRCINFO', check: true)
-    run_command('git', '-C', './distro/ghostmirror', 'commit', '-a', '-m', version['dsc'], check: true)
-    run_command('git', '-C', './distro/ghostmirror', 'push', check: true)
-  endif
+  run_command('meson.developer', 
+    '-d', 'curl',
+    '-d', 'zlib-ng',
+    '-d', 'systemd-libs',
+    '-D', version['dsc'],
+    check: true
+  )
 endif
 ###########
 # include #

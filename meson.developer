@@ -5,20 +5,38 @@ use warnings;
 use JSON::PP;
 use Data::Dumper;
 use File::Find;
+use POSIX qw(strftime);
 
-my $BUILD_PATH='./build';
-my $BUILD_OPTIONS='';
-my $BRANCH='main';
 my $PRJPATH = git_path();
+my $BUILD_PATH="${PRJPATH}/build";
+my $BUILD_OPTIONS='';
+my $DESC='';
+my $BRANCH='main';
 my @EXTRAFILES = (
 	"${PRJPATH}/meson.build",
 	"${PRJPATH}/meson.options",
 	"${PRJPATH}/meson.developer",
 );
+my @MAKEDEPENDS = (
+	"meson",
+	"perl",
+	"ninja"
+);
+my @DEPENDS = ();
 
 sub uniq {
 	my %seen;
 	grep !$seen{$_}++, @_;
+}
+
+sub merge_basharray{
+	my( $r ) = @_;
+	my $ret = '(';
+	for my $e (@$r){
+		$ret .= "'$e' ";
+	}
+	chop $ret if scalar @$r;
+	return $ret . ")";
 }
 
 sub acheckstr{
@@ -78,6 +96,55 @@ sub git_lstree{
 	return \@absfiles;
 }
 
+sub git_push_newversion{
+	my ($desc,$ver) = @_;
+	die "fail git commit" if system("git commit -a -m '$desc'");
+	die "fail git tag" if system("git tag -a v$ver -m 'v$ver'");
+	die "fail git push" if system("git push --follow-tags");
+}
+
+sub git_aur{
+	my ($path, $prjname, $desc) = @_;
+	die "fail git commit" if system("git -C $path/distro/$prjname commit -a -m '$desc'");
+	die "fail git push" if system("git -C $path/distro/$prjname push");
+}
+
+sub readme_version{
+	my ($path, $prjname) = @_;
+	open my $f, "${path}/README.md" or die("Could not open README.md");
+	while( my $l = <$f>){
+		return $1 if $l =~ /^$prjname v([0-9.]+)/;
+	}
+	return "";
+}
+
+sub update_manpage{
+	my ($path, $newversion) = @_;
+	(my $ver = $newversion) =~ s/\./&\./g;
+	my $curdate = strftime "%d %b %Y", localtime;
+	$path .= '/man';
+	find(
+		{
+			wanted => sub{
+				my $fname = $File::Find::name;
+				if( $fname =~ /\.[0-9]+\.skel$/ ){
+					open my $fh, '<', $fname or die("Could not open $fname");
+					my $skel = do { local $/; <$fh> };
+					close $fh;
+					(my $rep0 = $skel) =~ s/:CURRENT_DATE:/$curdate/;
+					(my $rep1 = $rep0) =~ s/:CURRENT_VERSION:/$ver/;
+					(my $fout = $fname)=~ s/\.skel$//;
+					open my $fo, '>', $fout or die("Could not open $fout");
+					print $fo $rep1;
+					close $fo;
+				}
+			},
+			no_chdir =>1
+		},
+		$path
+	);
+}
+
 sub check_commit_projects_file{
 	my ($gitfiles, $src, $headers, $extra) = @_;
 	for my $s (@$src){
@@ -89,6 +156,34 @@ sub check_commit_projects_file{
 	for my $e (@$extra){
 		die "extra $e in not add in git branch" unless acheckstr($gitfiles, $e);
 	}
+}
+
+sub update_pkgbuild{
+	my ($path,  $newversion, $mkdep, $dep) = @_;
+	my $fname = "$path/distro/PKGBUILD";
+	return if !(-e $fname);
+	open my $fh, '<', $fname or die("Could not open $fname");
+	my $pkgbuild = do { local $/; <$fh> };
+	close $fh;
+	my $strmkdeps = merge_basharray($mkdep);
+	my $strdeps   = merge_basharray($dep);
+	(my $rep0 = $pkgbuild) =~ s/^pkgver=.*/pkgver='$newversion'/m;
+	(my $rep1 = $rep0) =~ s/^makedepends\=.*/makedepends=$strmkdeps/m;
+	(my $rep2 = $rep1) =~ s/^depends\=.*/depends=$strdeps/m;
+	open my $fo, '>', $fname or die("Could not open $fname");
+	print $fo $rep2;
+	close $fo;
+}
+
+sub make_pkgbuild{
+	my ($path, $prjname, $desc) = @_;
+	my $fname = "$path/distro/PKGBUILD";
+	return if !(-e $fname);
+	my $rppath = "$path/distro/$prjname/PKGBUILD";
+	return if !(-e $rppath);
+	die "fail copy PKGBUILD" if system("cp $fname $rppath");
+	die "fail makepkg" if system("cd $path/distro && makepkg --printsrcinfo > ./$prjname/.SRCINFO");
+	git_aur($path, $prjname, $desc);
 }
 
 while( (my $arg = shift @ARGV) ){
@@ -104,7 +199,17 @@ while( (my $arg = shift @ARGV) ){
 	elsif( $arg eq '-e' ){
 		push @EXTRAFILES, shift @ARGV;
 	}
+	elsif( $arg eq '-m' ){
+		push @MAKEDEPENDS, shift @ARGV;
+	}
+	elsif( $arg eq '-d' ){
+		push @DEPENDS, shift @ARGV;
+	}
+	elsif( $arg eq '-D' ){
+		$DESC = shift @ARGV;
+	}
 }
+die "missing desctiption" if $DESC eq '';
 
 if( !(-d $BUILD_PATH) ){
 	die "fail to build project" if system("meson setup $BUILD_PATH $BUILD_OPTIONS");
@@ -113,17 +218,22 @@ if( !(-d $BUILD_PATH) ){
 my $mi = meson_introspect($BUILD_PATH);
 #print Dumper($mi);
 
-#print "<NAME>" . $mi->{'projectinfo'}->{'descriptive_name'} . "</NAME>\n";
-#print "<VERSION>" . $mi->{'projectinfo'}->{'version'} . "</VERSION>\n";
-#print "<DEPENDENCY>" . Dumper($mi->{'targets'}->[0]->{'dependencies'}) . "</DEPENDENCY>\n";
+my $prjname    = $mi->{'projectinfo'}->{'descriptive_name'};
+my $prjversion = $mi->{'projectinfo'}->{'version'};
+my $versionmd  = readme_version($PRJPATH, $prjname);
 
-my $sources = $mi->{'targets'}->[0]->{'target_sources'}->[0]->{'sources'};
-#print "<SOURCE>" . Dumper($sources}) . "</SOURCE>\n";
-my $headers = meson_introspect_find_headers($mi);
-#print "<HEADERS>" . Dumper($headers) . "</HEADERS>\n";
-my $files = git_lstree($BRANCH);
-#print "<FILES>" . Dumper($files) . "</FILES>\n";
-
-check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
-
-
+if( $prjversion ne $versionmd ){
+	my $sources = $mi->{'targets'}->[0]->{'target_sources'}->[0]->{'sources'};
+	my $headers = meson_introspect_find_headers($mi);
+	my $files = git_lstree($BRANCH);
+	check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
+	update_manpage($PRJPATH, $prjversion);
+	update_pkgbuild($PRJPATH, $prjversion, \@MAKEDEPENDS, \@DEPENDS);
+	git_push_newversion($DESC, $prjversion);
+	make_pkgbuild($PRJPATH, $prjname, $DESC);
+	print "meson.developer: update successfull\n";
+}
+else{
+	print "meson.developer: not need update\n";
+}
+return 0;
