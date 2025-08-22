@@ -3,7 +3,8 @@
 ###########
 #
 #remember version: MAJ.MIN.REV
-project('ghostmirror', 'c', version: '0.14.3', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.14.4', meson_version: '>= 1.1')
+
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -13,7 +14,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'test'
+  'dsc': 'meson message'
 }
 
 ###########
@@ -203,7 +204,9 @@ else
   shared_library(meson.project_name(), src, include_directories: includeDir, dependencies: libDeps, install: true)
 endif
 
+
 if get_option('eveloper')
+  message('release new version if need')
   run_command('meson.developer', 
     '-d', 'curl',
     '-d', 'zlib-ng',
