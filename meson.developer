@@ -111,11 +111,22 @@ sub git_aur{
 
 sub readme_version{
 	my ($path, $prjname) = @_;
-	open my $f, "${path}/README.md" or die("Could not open README.md");
+	open my $f, '<', "${path}/README.md" or die("Could not open README.md");
 	while( my $l = <$f>){
 		return $1 if $l =~ /^$prjname v([0-9.]+)/;
 	}
 	return "";
+}
+
+sub readme_update_version{
+	my ($path, $prjname, $prjversion) = @_;
+	open my $fh, "${path}/README.md" or die("Could not open README.md");
+	my $md = do { local $/; <$fh> };
+	close $fh;
+	(my $rep0 = $md) =~ s/^\Q$prjname\E v[0-9.]+/$prjname v$prjversion/;
+	open my $fo, '>', "${path}/README.md" or die("Could not open README.md");
+	print $fo $rep0;
+	close $fo;
 }
 
 sub update_manpage{
@@ -229,6 +240,7 @@ if( $prjversion ne $versionmd ){
 	check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
 	update_manpage($PRJPATH, $prjversion);
 	update_pkgbuild($PRJPATH, $prjversion, \@MAKEDEPENDS, \@DEPENDS);
+	readme_update_version($PRJPATH, $prjname, $prjversion);
 	git_push_newversion($DESC, $prjversion);
 	make_pkgbuild($PRJPATH, $prjname, $DESC);
 	print "meson.developer: update successfull\n";
@@ -236,4 +248,4 @@ if( $prjversion ne $versionmd ){
 else{
 	print "meson.developer: not need update\n";
 }
-return 0;
+exit 0;

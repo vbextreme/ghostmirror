@@ -3,7 +3,7 @@
 ###########
 #
 #remember version: MAJ.MIN.REV
-project('ghostmirror', 'c', version: '0.14.2', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.14.3', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -13,7 +13,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'new developer suite'
+  'dsc': 'update readme from developer suite'
 }
 
 if get_option('eveloper')
