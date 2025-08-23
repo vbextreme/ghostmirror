@@ -2,7 +2,7 @@
 # project #
 ###########
 #
-project('ghostmirror', 'c', version: '0.14.5', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.14.6', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'meson.developer correct path and -C git'
+  'dsc': 'meson.developer remove debug output'
 }
 
 if get_option('eveloper')

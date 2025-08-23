@@ -94,7 +94,6 @@ sub git_lstree{
 	my ($branch, $path) = @_;
 	my $br = `git -C $path ls-tree -r --name-only $branch`;
 	die "fail git ls-tree" if $?;
-	print "lstree $branch = $br\n";
 	my @relfiles = split /\n/, $br;
 	my @absfiles;
 	for my $f (@relfiles){
@@ -249,7 +248,7 @@ if( $prjversion ne $versionmd ){
 	my $sources = $mi->{'targets'}->[0]->{'target_sources'}->[0]->{'sources'};
 	my $headers = meson_introspect_find_headers($mi);
 	my $files = git_lstree($BRANCH, $PRJPATH);
-	print Dumper($files);
+	#print Dumper($files);
 	git_coommit($PRJPATH, $DESC);
 	check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
 	update_manpage($PRJPATH, $prjversion);
