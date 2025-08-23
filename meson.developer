@@ -24,8 +24,6 @@ my @MAKEDEPENDS = (
 );
 my @DEPENDS = ();
 
-print $PRJPATH . "\n";
-
 sub uniq {
 	my %seen;
 	grep !$seen{$_}++, @_;
@@ -44,6 +42,14 @@ sub merge_basharray{
 sub acheckstr{
 	my ($arr, $f) = @_;
 	for my $e (@$arr){
+		print "'$e' ";
+		if( $e eq $f ){
+			print '=';
+		}
+		else {
+			print '!=';
+		}
+		print " 'f'\n";
 		return 1 if $e eq $f;
 	}
 	return 0;
