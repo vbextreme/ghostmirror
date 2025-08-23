@@ -2,9 +2,7 @@
 # project #
 ###########
 #
-#remember version: MAJ.MIN.REV
-project('ghostmirror', 'c', version: '0.14.4', meson_version: '>= 1.1')
-
+project('ghostmirror', 'c', version: '0.14.5', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -14,8 +12,20 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'meson message'
+  'dsc': 'switch to run_target, think is better'
 }
+
+if get_option('eveloper')
+  run_target('release',
+    command: [
+      'meson.developer',
+      '-d', 'curl',
+      '-d', 'zlib-ng',
+      '-d', 'systemd-libs',
+      '-D', version['dsc'],
+    ],
+  )
+endif
 
 ###########
 # include #
@@ -205,14 +215,4 @@ else
 endif
 
 
-if get_option('eveloper')
-  message('release new version if need')
-  run_command('meson.developer', 
-    '-d', 'curl',
-    '-d', 'zlib-ng',
-    '-d', 'systemd-libs',
-    '-D', version['dsc'],
-    check: true
-  )
-endif
 

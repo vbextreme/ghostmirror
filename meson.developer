@@ -96,9 +96,13 @@ sub git_lstree{
 	return \@absfiles;
 }
 
-sub git_push_newversion{
-	my ($desc,$ver) = @_;
+sub git_coommit{
+	my ($desc) = @_;
 	die "fail git commit" if system("git commit -a -m '$desc'");
+}
+
+sub git_push_newversion{
+	my ($ver) = @_;
 	die "fail git tag" if system("git tag -a v$ver -m 'v$ver'");
 	die "fail git push" if system("git push --follow-tags");
 }
@@ -238,11 +242,12 @@ if( $prjversion ne $versionmd ){
 	my $sources = $mi->{'targets'}->[0]->{'target_sources'}->[0]->{'sources'};
 	my $headers = meson_introspect_find_headers($mi);
 	my $files = git_lstree($BRANCH);
+	git_coommit($DESC);
 	check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
 	update_manpage($PRJPATH, $prjversion);
 	update_pkgbuild($PRJPATH, $prjversion, \@MAKEDEPENDS, \@DEPENDS);
 	readme_update_version($PRJPATH, $prjname, $prjversion);
-	git_push_newversion($DESC, $prjversion);
+	git_push_newversion($prjversion);
 	make_pkgbuild($PRJPATH, $prjname, $DESC);
 	print "meson.developer: update successfull\n";
 }
