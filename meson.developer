@@ -24,6 +24,8 @@ my @MAKEDEPENDS = (
 );
 my @DEPENDS = ();
 
+print $PRJPATH . "\n";
+
 sub uniq {
 	my %seen;
 	grep !$seen{$_}++, @_;
@@ -84,14 +86,13 @@ sub git_path{
 }
 
 sub git_lstree{
-	my ($branch) = @_;
-	my $p = git_path();
+	my ($branch, $path) = @_;
 	my $br = `git ls-tree -r --name-only $branch`;
 	die "fail git ls-tree" if $?;
 	my @relfiles = split /\n/, $br;
 	my @absfiles;
 	for my $f (@relfiles){
-		push @absfiles, "${p}/${f}";
+		push @absfiles, "${path}/${f}";
 	}
 	return \@absfiles;
 }
@@ -241,7 +242,7 @@ my $versionmd  = readme_version($PRJPATH, $prjname);
 if( $prjversion ne $versionmd ){
 	my $sources = $mi->{'targets'}->[0]->{'target_sources'}->[0]->{'sources'};
 	my $headers = meson_introspect_find_headers($mi);
-	my $files = git_lstree($BRANCH);
+	my $files = git_lstree($BRANCH, $PRJPATH);
 	git_coommit($DESC);
 	check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
 	update_manpage($PRJPATH, $prjversion);
