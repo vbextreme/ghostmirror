@@ -7,7 +7,14 @@ use Data::Dumper;
 use File::Find;
 use POSIX qw(strftime);
 
-my $PRJPATH = git_path();
+my $PRJPATH = "";
+if( defined $ENV{MESON_SOURCE_ROOT} ){
+	$PRJPATH = $ENV{MESON_SOURCE_ROOT};
+}
+else{
+	$PRJPATH = git_path();
+}
+
 my $BUILD_PATH="${PRJPATH}/build";
 my $BUILD_OPTIONS='';
 my $DESC='';
@@ -42,14 +49,6 @@ sub merge_basharray{
 sub acheckstr{
 	my ($arr, $f) = @_;
 	for my $e (@$arr){
-		print "'$e' ";
-		if( $e eq $f ){
-			print '=';
-		}
-		else {
-			print '!=';
-		}
-		print " 'f'\n";
 		return 1 if $e eq $f;
 	}
 	return 0;
@@ -93,8 +92,9 @@ sub git_path{
 
 sub git_lstree{
 	my ($branch, $path) = @_;
-	my $br = `git ls-tree -r --name-only $branch`;
+	my $br = `git -C $path ls-tree -r --name-only $branch`;
 	die "fail git ls-tree" if $?;
+	print "lstree $branch = $br\n";
 	my @relfiles = split /\n/, $br;
 	my @absfiles;
 	for my $f (@relfiles){
@@ -104,14 +104,14 @@ sub git_lstree{
 }
 
 sub git_coommit{
-	my ($desc) = @_;
-	die "fail git commit" if system("git commit -a -m '$desc'");
+	my ($path, $desc) = @_;
+	die "fail git commit" if system("git -C $path commit -a -m '$desc'");
 }
 
 sub git_push_newversion{
-	my ($ver) = @_;
-	die "fail git tag" if system("git tag -a v$ver -m 'v$ver'");
-	die "fail git push" if system("git push --follow-tags");
+	my ($path, $ver) = @_;
+	die "fail git tag" if system("git -C $path tag -a v$ver -m 'v$ver'");
+	die "fail git push" if system("git -C $path push --follow-tags");
 }
 
 sub git_aur{
@@ -249,12 +249,13 @@ if( $prjversion ne $versionmd ){
 	my $sources = $mi->{'targets'}->[0]->{'target_sources'}->[0]->{'sources'};
 	my $headers = meson_introspect_find_headers($mi);
 	my $files = git_lstree($BRANCH, $PRJPATH);
-	git_coommit($DESC);
+	print Dumper($files);
+	git_coommit($PRJPATH, $DESC);
 	check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
 	update_manpage($PRJPATH, $prjversion);
 	update_pkgbuild($PRJPATH, $prjversion, \@MAKEDEPENDS, \@DEPENDS);
 	readme_update_version($PRJPATH, $prjname, $prjversion);
-	git_push_newversion($prjversion);
+	git_push_newversion($PRJPATH, $prjversion);
 	make_pkgbuild($PRJPATH, $prjname, $DESC);
 	print "meson.developer: update successfull\n";
 }

@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'switch to run_target, think is better'
+  'dsc': 'meson.developer correct path and -C git'
 }
 
 if get_option('eveloper')
