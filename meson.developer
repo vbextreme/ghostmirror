@@ -179,6 +179,23 @@ sub check_commit_projects_file{
 	}
 }
 
+sub update_pkgbuild_sha{
+	my ($path) = @_;
+	my $fname = "$path/distro/PKGBUILD";
+	return if !(-e $fname);
+	open my $fh, '<', $fname or die("Could not open $fname");
+	my $pkgbuild = do { local $/; <$fh> };
+	close $fh;
+	my $sha = `cd $path/distro && makepkg -g 2>/dev/null`;
+	chomp $sha;
+	print "SHA='$sha'\n";
+	system("rm $path/distro/*.tar.gz");
+	(my $rep0 = $pkgbuild) =~ s/^sha256sums=.*/$sha/m;
+	open my $fo, '>', $fname or die("Could not open $fname");
+	print $fo $rep0;
+	close $fo;
+}
+
 sub update_pkgbuild{
 	my ($path,  $newversion, $mkdep, $dep) = @_;
 	my $fname = "$path/distro/PKGBUILD";
@@ -194,6 +211,7 @@ sub update_pkgbuild{
 	open my $fo, '>', $fname or die("Could not open $fname");
 	print $fo $rep2;
 	close $fo;
+	update_pkgbuild_sha($path);
 }
 
 sub make_pkgbuild{
@@ -252,9 +270,9 @@ if( $prjversion ne $versionmd ){
 	git_coommit($PRJPATH, $DESC);
 	check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
 	update_manpage($PRJPATH, $prjversion);
-	update_pkgbuild($PRJPATH, $prjversion, \@MAKEDEPENDS, \@DEPENDS);
 	readme_update_version($PRJPATH, $prjname, $prjversion);
 	git_push_newversion($PRJPATH, $prjversion);
+	update_pkgbuild($PRJPATH, $prjversion, \@MAKEDEPENDS, \@DEPENDS);
 	make_pkgbuild($PRJPATH, $prjname, $DESC);
 	print "meson.developer: update successfull\n";
 }

@@ -2,7 +2,7 @@
 # project #
 ###########
 #
-project('ghostmirror', 'c', version: '0.14.6', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.14.7', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'meson.developer remove debug output'
+  'dsc': 'meson.developer add support for sha256'
 }
 
 if get_option('eveloper')
