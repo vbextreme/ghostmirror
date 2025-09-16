@@ -67,7 +67,7 @@ const char* www_str_error(unsigned error){
 __private size_t www_curl_buffer_recv(void* ptr, size_t size, size_t nmemb, void* userctx){
 	void* ctx = *(void**)userctx;
 	const size_t sizein = size * nmemb;
-	if( sizein > mem_available(ctx) ) dbg_error("required resize buffer");
+	//if( sizein > mem_available(ctx) ) dbg_error("required resize buffer");
 	uint8_t* data = mem_upsize(ctx, sizein);
 	memcpy(data + mem_header(data)->len, ptr, sizein);
 	mem_header(data)->len += sizein;

@@ -2,7 +2,7 @@
 # project #
 ###########
 #
-project('ghostmirror', 'c', version: '0.15.0', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.15.1', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'switch from auto release to manual target xrelease, switch to CONNECTTIMEOUT instead of global TIMEOUT, better output, better numbers of default parallel, fix argv not correct set default value, clean some code, add more documentation'
+  'dsc': 'remove debug info on www and disable bench.'
 }
 
 if get_option('eveloper')

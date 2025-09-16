@@ -421,8 +421,7 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 	}
 }
 
-#define IBENCH
-
+//#define IBENCH
 __private void mirror_update(mirror_s* mirror, const unsigned tos){
 #ifdef IBENCH
 	delay_t bench[2][3];
