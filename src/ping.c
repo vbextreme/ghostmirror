@@ -17,7 +17,6 @@ long www_ping(const char* host){
 	}
 	struct sockaddr* addr = res->ai_addr;
 	size_t addrsize = 0;
-
 	//inet_pton(AF_INET, host, &addr.sin_addr);
 	//char packet[sizeof(struct icmphdr)] = {0};
 	char packet[64] = {0};
@@ -46,6 +45,7 @@ long www_ping(const char* host){
 	}
 	else{
 		dbg_error("wrong family");
+		errno = EPROTONOSUPPORT;
 		return -1;
 	}
 	struct timeval tv = {

@@ -68,6 +68,9 @@ now you can copy to apply modify to pacman
  # cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
  # cp ./mirrorlist.new /etc/pacman.d/mirrorlist
 
+=== Direct replace mirrorlist ===
+Instead of running the command as a user, you can execute it as root to work directly on the /etc/pacman.d/mirrorlist
+
 == Automation ==
 
 The process I previously referred to as "Sort Mirror" can be automated using systemd timers, specifically, use the {{ic|linger}} functionality for automation.<br>

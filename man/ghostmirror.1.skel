@@ -50,7 +50,7 @@ if you abuse the download could fail, \fI1\fR, \fI4\fR, \fI8\fR, \fI16\fR are go
 .PP
 \fB\-O, \-\-timeout\fR
 .RS 4
-set timeout in seconds for not replying mirrors, default 5s
+set connection timeout in seconds for not replying mirrors
 .RE
 .PP
 \fB\-p, \-\-progress\fR

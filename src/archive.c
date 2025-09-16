@@ -12,6 +12,7 @@ static zng_stream* strm;
 
 void gzip_init(unsigned maxthr){
 	strm = MANY(zng_stream, maxthr);
+	mem_header(strm)->len = maxthr;
 	for (unsigned i = 0; i < maxthr; ++i) {
 		memset(&strm[i], 0, sizeof(zng_stream));
 		if (zng_inflateInit2(&strm[i], 16 + MAX_WBITS) != Z_OK) die("Unable to initialize zlib-ng");
@@ -20,8 +21,9 @@ void gzip_init(unsigned maxthr){
 
 void* gzip_decompress(void* data){
 	const unsigned tid = omp_get_thread_num();
+	if( tid >= mem_header(strm)->len ) die("internal error, tid %u >= %u", tid, mem_header(strm)->len);
 	size_t datasize = mem_header(data)->len;
-	size_t framesize = datasize * 2;
+	size_t framesize = datasize * 4;
 	void* dec = MANY(char, framesize);
 	
 	zng_stream* s = &strm[tid];

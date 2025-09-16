@@ -8,29 +8,20 @@
 #include <gm/investigation.h>
 #include <gm/systemd.h>
 #include <gm/gm.h>
+#include <gm/inutility.h>
 
 #include <unistd.h>
 #include <fcntl.h>
 #include <math.h>
-#include <pwd.h>
 
 #define DEFAULT_THREADS 4
-#define DEFAULT_TOUT    0
+#define DEFAULT_TOUT    3
 #define DEFAULT_ARCH    "x86_64"
 
-//TODO INVESTIGATE remove outofdate, write documentation or rewrite investigate (download mirror and check) this feature realy need?
-
 //TODO
-//  sync=0 when morerecent>0, because ls is based on filename, if mirror is more recent the package have different version and can't find.
-//  many mirror are proxy and move you request in other mirror, some time append than link to url is broken in main mirror (generally motivation for 404)
-//  if it use intensive works, local mirror can fail download database but error is raised only when all mirror are checked.
-//
-//  1.0.0 first release?
-//  x.x.x move all text in separate location, better way for simple translation
-//  x.x.x better colormap
-//  x.x.x change local with compare, now can remove retry from systemd?
-//  x.x.x how many test can add to investigate?
-//
+//	creating lock for protect
+//	bug inutility.c
+//	
 //  systemd: false
 //    step1: ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
 //    step2: ghostmirror -PmuolsS  ./mirrorlist.new ./mirrorlist.new light state,outofdate,morerecent,extimated,speed
@@ -98,38 +89,6 @@ option_s OPT[] = {
 	{'f', "--fixed-time"     , "use fixed OnCalenda, systemd-analyzer calendar ..., for test valid" , OPT_STR, 0, 0},
 	{'h', "--help"           , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
-
-char* path_home(char* path){
-	char *hd;
-	if( (hd = getenv("HOME")) == NULL ){
-		struct passwd* spwd = getpwuid(getuid());
-		if( !spwd ) die("impossible to get home directory");
-        strcpy(path, spwd->pw_dir);
-	}   
-	else{
-		strcpy(path, hd);
-    }
-	return path;
-}
-
-char* path_explode(const char* path){
-	if( path[0] == '~' && path[1] == '/' ){
-		char home[PATH_MAX];
-		return str_printf("%s%s", path_home(home), &path[1]);
-	}
-	else if( path[0] == '.' && path[1] == '/' ){
-		char cwd[PATH_MAX];
-		return str_printf("%s%s", getcwd(cwd, PATH_MAX), &path[1]);
-	}
-	else if( path[0] == '.' && path[1] == '.' && path[2] == '/' ){
-		char cwd[PATH_MAX];
-		getcwd(cwd, PATH_MAX);
-		const char* bk = strrchr(cwd, '/');
-		iassert( bk );
-		return str_printf("%.*s%s", (int)(bk-cwd), cwd, &path[2]);
-	}
-	return str_dup(path, 0);
-}
 
 __private void colorfg_set(unsigned color){
 	if( !color ){
@@ -394,9 +353,16 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 }
 
 __private void print_list(mirror_s* mirrors, const char* where, unsigned max){
-	__free char* dwhere = path_explode(where);
-	FILE* out = strcmp(dwhere, "stdout") ? fopen(dwhere, "w") : stdout;
-	if( !out ) die("on open file: '%s' with error: %s", dwhere, strerror(errno));
+	__free char* dwhere = NULL;
+	__free char* tmp = NULL;
+	
+	FILE* out = stdout;
+	if( strcmp(where, "stdout") ){
+		dwhere = path_explode(where);
+		tmp = str_printf("%s.gm.bak", dwhere);
+		out = fopen(tmp, "w");
+	}
+	if( !out ) die("on open file: '%s' with error: %s", tmp, strerror(errno));
 	
 	time_t expired = time(NULL);
 	struct tm* sexpired = gmtime(&expired);
@@ -414,7 +380,10 @@ __private void print_list(mirror_s* mirrors, const char* where, unsigned max){
 		fprintf(out, " %f\n", mirrors[i].stability);
 		fprintf(out, "Server=%s/$repo/os/$arch\n", mirrors[i].url);
 	}
-	if( strcmp(dwhere, "stdout") ) fclose(out);
+	if( strcmp(where, "stdout") ){
+		fclose(out);
+		rename(tmp, dwhere);
+	}
 }
 
 __private unsigned cast_mirror_type(unsigned type, const char* name){
@@ -450,13 +419,16 @@ __private char* merge_sort(optValue_u* value, const unsigned count){
 	return out;
 }
 
+
+#include <notstd/delay.h>
 int main(int argc, char** argv){
 	notstd_begin();
+	
 	__argv option_s* opt = argv_parse(OPT, argc, argv);
 	if( opt[O_h].set ) argv_usage(opt, argv[0]);
 	
 	argv_default_str(OPT, O_a, DEFAULT_ARCH);
-	argv_default_num(OPT, O_d, DEFAULT_THREADS);
+	argv_default_num(OPT, O_d, cpu_cores());
 	argv_default_num(OPT, O_O, DEFAULT_TOUT);
 	argv_default_str(OPT, O_m, NULL);
 	argv_default_str(OPT, O_S, NULL);
@@ -472,43 +444,35 @@ int main(int argc, char** argv){
 	if( opt[O_P].set ) opt[O_p].set = 1;
 	
 	if( opt[O_D].set && systemd_restart_count() > SYSTEMD_SERVICE_RETRY_MAX ) systemd_timer_set(1, opt);
-
+	
 	if( opt[O_C].set ){
 		country_list(mirrorlist);
 		exit(0);
 	}
 	
 	unsigned mirrorType = 0;
-	if( opt[O_T].set ){
-		for( unsigned i = 0; i < opt[O_T].set; ++i ){
-			mirrorType = cast_mirror_type(mirrorType, opt[O_T].value[i].str);
-		}
-	}
-	else{
-		mirrorType = cast_mirror_type(mirrorType, opt[O_T].value->str);
+	mforeach(opt[O_T].value, i){
+		mirrorType = cast_mirror_type(mirrorType, opt[O_T].value[i].str);
 	}
 	
-	mirror_s* mirrors = NULL;
+	mirror_s* mirrors = MANY(mirror_s, 10);
 	mirror_s local;
 	dbg_info("load local database");
 	database_local(&local, opt[O_a].value->str);
-
-	if( opt[O_c].set ){
-		mforeach(opt[O_c].value, i){
-			mirrors = mirrors_country(mirrors, opt[O_m].value->str, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
-		}
+	mforeach(opt[O_c].value, i){
+		mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
 	}
-	else{
-		mirrors = mirrors_country(mirrors, opt[O_m].value->str,  mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
+	if( mem_header(mirrors)->len < 1 ) die("not find any valid mirrors");
+	
+	if( opt[O_p].set ){
+		progress_enable(1+opt[O_P].set);
+		term_status_line_begin();
 	}
-	if( mirrors == NULL ) die("internal error, please report this issue, mirrors is not correctly created");
-	
-	mirrors_update(&local, mirrors, opt[O_p].set, opt[O_d].value->ui, opt[O_O].value->ui, cast_speed_type(opt[O_s].value->str));
-	
-	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str, opt[O_p].set);
+	mirrors_update(&local, mirrors, opt[O_d].value->ui, opt[O_O].value->ui, cast_speed_type(opt[O_s].value->str));
+	if( opt[O_s].set ) mirrors_speed(mirrors, opt[O_a].value->str);
+	term_status_line_end();
 	
 	mirrors_stability(mirrors);
-	
 	if( opt[O_S].set ){
 		for( unsigned i = 0; i < opt[O_S].set; ++i ){
 			add_sort_mode(opt[O_S].value[i].str);

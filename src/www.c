@@ -9,7 +9,7 @@
 #define __wcc __cleanup(www_curl_cleanup)
 
 #define WWW_ERROR_HTTP 10000
-#define WWW_BUFFER_SIZE (1024*1024*4)
+#define WWW_BUFFER_SIZE (MiB*4)
 
 __thread unsigned wwwerrno;
 
@@ -67,7 +67,7 @@ const char* www_str_error(unsigned error){
 __private size_t www_curl_buffer_recv(void* ptr, size_t size, size_t nmemb, void* userctx){
 	void* ctx = *(void**)userctx;
 	const size_t sizein = size * nmemb;
-	//dbg_info("in: %lu, buf.len: %u, buf.size: %lu ", sizein, mem_header(ctx)->len, mem_lenght(ctx));
+	if( sizein > mem_available(ctx) ) dbg_error("required resize buffer");
 	uint8_t* data = mem_upsize(ctx, sizein);
 	memcpy(data + mem_header(data)->len, ptr, sizein);
 	mem_header(data)->len += sizein;
@@ -127,7 +127,7 @@ void* www_download(const char* url, unsigned onlyheader, unsigned touts, char** 
 		curl_easy_setopt(ch, CURLOPT_HEADER, 1L);
 		curl_easy_setopt(ch, CURLOPT_NOBODY, 1L);
 	}
-	if( touts ) curl_easy_setopt(ch, CURLOPT_TIMEOUT, touts);
+	if( touts ) curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, touts);
 	if( www_curl_perform(ch, realurl) ) return NULL;
 	return mem_borrowed(data);
 }
@@ -138,7 +138,7 @@ void* www_download_retry(const char* url, unsigned onlyheader, unsigned touts, u
 	delay_t retrytime = retryms;
 	while( retry-->0 && !(ret=www_download(url, onlyheader, touts, realurl)) ){
 		if( nretry ) ++*nretry;
-		dbg_warning("fail download %s tout: %u touts, retry: %u", url, touts, retry);
+		dbg_warning("retry download %s tout: %u touts, retry: %u", url, touts, retry);
 		if( retry ){
 			delay_ms(retrytime);
 			retrytime *= 2;
@@ -147,6 +147,7 @@ void* www_download_retry(const char* url, unsigned onlyheader, unsigned touts, u
 	return ret;
 }
 
+/*
 long www_ping_sh(const char* url){
 	//sorry for this but raw socket required a special privilege on Linux, probably I can add privilege in future
 	__free char* server = NULL;
@@ -197,7 +198,7 @@ long www_ping_sh(const char* url){
 	if( !WIFEXITED(es) || WEXITSTATUS(es) != 0) return -1;
 	return ping;
 }
-
+*/
 char* www_host_get(const char* url){
 	__private const char* know[] = {
 		"http://",

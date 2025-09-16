@@ -2,7 +2,7 @@
 # project #
 ###########
 #
-project('ghostmirror', 'c', version: '0.14.7', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.15.0', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,11 +12,13 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'meson.developer add support for sha256'
+  'dsc': 'switch from auto release to manual target xrelease, switch to CONNECTTIMEOUT instead of global TIMEOUT, better output, better numbers of default parallel, fix argv not correct set default value, clean some code, add more documentation'
 }
 
 if get_option('eveloper')
-  run_target('release',
+  custom_target('xrelease',
+    build_by_default: false,
+    build_always_stale: true,
     command: [
       'meson.developer',
       '-d', 'curl',
@@ -24,6 +26,7 @@ if get_option('eveloper')
       '-d', 'systemd-libs',
       '-D', version['dsc'],
     ],
+    output: 'xrelease'
   )
 endif
 
@@ -47,6 +50,7 @@ src += [ 'notstd/str.c' ]
 src += [ 'notstd/opt.c' ]
 src += [ 'notstd/delay.c' ]
 
+src += [ 'src/inutility.c' ]
 src += [ 'src/www.c' ]
 src += [ 'src/ping.c' ]
 src += [ 'src/archive.c' ]

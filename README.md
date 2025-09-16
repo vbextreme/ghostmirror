@@ -1,4 +1,4 @@
-ghostmirror v0.14.6
+ghostmirror v0.14.7
 ==================
 Introduction:
 =============
@@ -60,8 +60,19 @@ now you save your old mirrorlist
 # cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
 ```
 now save new mirrorlist
-```
+```bash
 # cp ./mirrorlist.new /etc/pacman.d/mirrorlist
+```
+### Direct replace mirrorlist
+If you don't want to create a temporary file and prefer to modify the mirrorlist directly, you can run ghostmirror with sudo on the mirrorlist itself.<br>
+the first and second step are same but with sudo and different mirror file<br>
+only first time, for generate personal mirrorlist
+```bash
+$ sudo ghostmirror -PoclLS Italy,Germany,France /etc/pacman.d/mirrorlist 30 state,outofdate,morerecent,ping
+```
+every time you need refresh
+```bash
+$ sudo ghostmirror -PmuolsS  /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist light state,outofdate,morerecent,extimated,speed
 ```
 
 ## Automatically
@@ -139,7 +150,7 @@ with -m is simple to check local mirrolist  -mu /etc/pacman.d/mirrorlist.
 set numbers of parallel download, default '4'.<br>
 if you abuse the download is more simple to fail, 1,4,8,16 is good value, >16 you can try but is not very affidable
 ### -O --timeout <required unsigned integer>
-set timeout in seconds for not reply mirror, default 5s
+set connection timeout in seconds for not reply mirror
 ### -p --progress <not required argument>
 show progress, default false
 ### -P --progress-colors <not required argument>

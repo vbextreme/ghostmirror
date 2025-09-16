@@ -7,6 +7,7 @@
 #include <gm/archive.h>
 #include <gm/www.h>
 #include <gm/systemd.h>
+#include <gm/inutility.h>
 
 #include <omp.h>
 #include <ctype.h>
@@ -420,8 +421,12 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 	}
 }
 
+#define IBENCH
+
 __private void mirror_update(mirror_s* mirror, const unsigned tos){
-	//delay_t bench[2][3];
+#ifdef IBENCH
+	delay_t bench[2][3];
+#endif
 	const unsigned repocount = sizeof_vector(REPO);
 	dbg_info("update %s", mirror->url);
 	{
@@ -437,16 +442,19 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 	
 	for( unsigned ir = 0; ir < repocount; ++ir ){
 		dbg_info("\t %s", REPO[ir]);
-		//bench[ir][0] = time_cpu_us();
+#ifdef IBENCH
+		bench[ir][0] = time_cpu_us();
+#endif
 		__free void* tarzstd = get_tar_zst(mirror, REPO[ir], tos);
 		if( !tarzstd ){
 			dbg_error("unable to get remote mirror: %s", mirror->url);
 			mirror->status = MIRROR_ERR;
 			return;
 		}
-		//bench[ir][0] = time_cpu_us() - bench[ir][0];
-	
-		//bench[ir][1] = time_cpu_us();
+#ifdef IBENCH
+		bench[ir][0] = time_cpu_us() - bench[ir][0];
+		bench[ir][1] = time_cpu_us();
+#endif
 		__free void* tarbuf = gzip_decompress(tarzstd);
 		if( !tarbuf ){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
@@ -461,9 +469,10 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 			}
 			return;
 		}
-		//bench[ir][1] = time_cpu_us() - bench[ir][1];
-	
-		//bench[ir][2] = time_cpu_us();
+#ifdef IBENCH
+		bench[ir][1] = time_cpu_us() - bench[ir][1];
+		bench[ir][2] = time_cpu_us();
+#endif
 		if( !(mirror->repo[ir].db = generate_db(tarbuf)) ){
 			switch( errno ){
 				case ENOENT : mirror->error = ERROR_TAR_NOBLOCK; break;
@@ -478,17 +487,19 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 			return;
 		}
 		mem_qsort(mirror->repo[ir].db, pkgname_cmp);
-		//bench[ir][2] = time_cpu_us() - bench[ir][2];
-
+#ifdef IBENCH
+		bench[ir][2] = time_cpu_us() - bench[ir][2];
+#endif
 		mirror->total += mem_header(mirror->repo[ir].db)->len;
 		dbg_info("%u package", mirror->total);
 	}
-
-	//for( unsigned i = 0; i < repocount; ++i ){
-	//	dbg_info("bench repo[%u] download: %fs decompress: %fs unpack: %fs", i, bench[i][0]/1000000.0, bench[i][1]/1000000.0, bench[i][2]/1000000.0);
-	//}
+#ifdef IBENCH
+	for( unsigned i = 0; i < repocount; ++i ){
+		dbg_info("bench repo[%u] download: %fs decompress: %fs unpack: %fs", i, bench[i][0]/1000000.0, bench[i][1]/1000000.0, bench[i][2]/1000000.0);
+	}
+#endif
 }
-
+/*
 __private void progress_begin(const char* desc){
 	fprintf(stderr, "[%5.1f%%] %s", 0.0, desc);
 	fflush(stderr);
@@ -504,7 +515,7 @@ __private void progress_end(const char* desc){
 	fprintf(stderr, "\r[100.0%%] %s\n", desc);
 	fflush(stderr);
 }
-
+*/
 void database_local(mirror_s* local, const char* arch){
 	mirror_ctor(local, PACMAN_LOCAL_DB, arch, LOCAL_COUNTRY);
 	mirror_update(local, 0);
@@ -597,24 +608,10 @@ __private int server_unique(mirror_s* mirrors, const char* url){
 	return 1;
 }
 
-mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorpath, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type){
+mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type){
 	char* url;
 	const char* fromcountry = country ? find_country(mirrorlist, country) : mirrorlist;
 	
-	if( !mirrors ){
-		mirrors = MANY(mirror_s, 10);
-		if( !mirrorpath ) mirrorpath = PACMAN_MIRRORLIST; 
-		__free char* localmirror = load_file(mirrorpath, 1);
-		localmirror = mem_nullterm(localmirror);
-		
-		url = server_url((const char**)&localmirror, 1, 0, type);
-		if( url ){
-			const unsigned id = mem_header(mirrors)->len++;
-			mirror_ctor(&mirrors[id], url, arch, server_find_country(url, safemirrorlist));
-			//mirrors[id].status  = MIRROR_COMPARE;
-		}
-	}
-
 	while( (url=server_url(&fromcountry, uncommented, country ? 1 : 0, type)) ){
 		if( server_unique(mirrors, url) ){
 			mirrors = mem_upsize(mirrors, 1);
@@ -659,42 +656,6 @@ __private void mirror_cmp_db(mirror_s* local, mirror_s* test){
 	//test->morerecent += test->total - (test->morerecent + test->uptodate + test->outofdate);
 }
 
-/*
-__private void mirror_compare_ctor(mirror_s* cmp){
-	cmp->uptodate = cmp->total;
-}
-
-__private mirror_s* mirror_find_compare(mirror_s* mirrors, unsigned const count){
-	for( unsigned i = 0; i < count; ++i ){
-		if( mirrors[i].status == MIRROR_COMPARE ) return &mirrors[i];
-	}
-	for( unsigned i = 0; i < count; ++i ){
-		if( mirrors[i].status == MIRROR_UNKNOW ){
-			mirrors[i].status = MIRROR_COMPARE;
-			return &mirrors[i];
-		}
-	}
-	return NULL;
-}
-
-__private int mirrors_cmp_db(mirror_s* mirrors, const int progress){
-	dbg_info("");
-	const unsigned count = mem_header(mirrors)->len;
-	mirror_s* compare = mirror_find_compare(mirrors, count);
-	if( !compare ) return -1;
-	mirror_compare_ctor(compare);
-	
-	if( progress ) progress_begin("mirrors db compare");
-	for( unsigned i = 0; i < count; ++i ){
-		if( mirrors[i].status == MIRROR_UNKNOW ) mirror_cmp_db(compare, &mirrors[i]);
-		if( progress ) progress_refresh("mirrors db compare", i, count);
-	}
-	if( progress ) progress_end("mirrors db compare");
-	dbg_info("end compare mirror database");
-	return 0;
-}
-*/
-
 __private void mirror_store_speed_package(mirror_s* mirror, unsigned speedType){
 	static char* SPEED[] = {
 		SPEED_LIGHT,
@@ -715,14 +676,12 @@ __private void mirror_store_speed_package(mirror_s* mirror, unsigned speedType){
 	}
 }
 
-void mirrors_update(mirror_s* local, mirror_s* mirrors, const int progress, const unsigned ndownload, const unsigned tos, unsigned speedType){
+void mirrors_update(mirror_s* local, mirror_s* mirrors, const unsigned ndownload, const unsigned tos, unsigned speedType){
 	dbg_info("");
 	const unsigned count = mem_header(mirrors)->len;
 	const unsigned repocount = sizeof_vector(REPO);
 	__atomic unsigned pvalue = 0;
-	
-	if( progress ) progress_begin("mirrors updates");
-	
+	progress_begin("mirrors updates");
 	__paralleft(ndownload)
 	for( unsigned i = 0; i < count; ++i){
 		mirror_update(&mirrors[i], tos);
@@ -733,9 +692,14 @@ void mirrors_update(mirror_s* local, mirror_s* mirrors, const int progress, cons
 				mem_free(mirrors[i].repo[r].db);
 			}
 		}
-		if( progress ) progress_refresh("mirrors updates", ++pvalue, count);
+		progress_status_refresh(
+			mirrors[i].status == MIRROR_ERR ? "fail": "pass",
+			mirrors[i].status == MIRROR_ERR ? COLOR_ERR: COLOR_OK,
+			mirrors[i].url,
+			++pvalue, count
+		);
 	}
-	if( progress ) progress_end("mirrors updates");
+	progress_end();
 }
 
 __private int ping_cmp(long a, long b){
@@ -826,16 +790,22 @@ __private void mirror_speed(mirror_s* mirror, const char* arch){
 	mirror->speed /= (double)mem_header(mirror->repo[1].speed)->len;
 }
 
-void mirrors_speed(mirror_s* mirrors, const char* arch, int progress){
+void mirrors_speed(mirror_s* mirrors, const char* arch){
 	const unsigned count = mem_header(mirrors)->len;
-	if( progress ) progress_begin("mirrors speed");
+	__atomic unsigned pvalue = 0;
+	progress_begin("mirrors speed");
 	mforeach(mirrors, i){
 		if( mirrors[i].status != MIRROR_ERR ){
 			mirror_speed(&mirrors[i], arch);
+			char tmp[128];
+			sprintf(tmp, "%5.1fMiB/s", mirrors[i].speed);
+			progress_status_refresh(tmp, COLOR_OK, mirrors[i].url, ++pvalue, count);
 		}
-		if( progress ) progress_refresh("mirrors speed", i, count);
+		else{
+			progress_status_refresh("     error", COLOR_ERR, mirrors[i].url, ++pvalue, count);
+		}
 	}
-	if( progress ) progress_end("mirrors speed");
+	progress_end();
 }
 
 __private double std_dev_speed(mirror_s* mirrors, const double avg){

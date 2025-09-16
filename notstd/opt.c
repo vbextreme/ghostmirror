@@ -324,21 +324,25 @@ void argv_usage(option_s* opt, const char* argv0){
 }
 
 void argv_default_str(option_s* opt, unsigned id, const char* str){
+	if( opt[id].set ) return;
 	opt[id].value = mem_upsize(opt[id].value, 1);
 	opt[id].value[mem_header(opt[id].value)->len++].str = str;
 }
 
 void argv_default_num(option_s* opt, unsigned id, unsigned long ui){
+	if( opt[id].set ) return;
 	opt[id].value = mem_upsize(opt[id].value, 1);
 	opt[id].value[mem_header(opt[id].value)->len++].ui = ui;
 }
 
 void argv_default_inum(option_s* opt, unsigned id, long i){
+	if( opt[id].set ) return;
 	opt[id].value = mem_upsize(opt[id].value, 1);
 	opt[id].value[mem_header(opt[id].value)->len++].ui = i;
 }
 
 void argv_default_fnum(option_s* opt, unsigned id, double f){
+	if( opt[id].set ) return;
 	opt[id].value = mem_upsize(opt[id].value, 1);
 	opt[id].value[mem_header(opt[id].value)->len++].f = f;
 }

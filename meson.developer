@@ -188,7 +188,6 @@ sub update_pkgbuild_sha{
 	close $fh;
 	my $sha = `cd $path/distro && makepkg -g 2>/dev/null`;
 	chomp $sha;
-	print "SHA='$sha'\n";
 	system("rm $path/distro/*.tar.gz");
 	(my $rep0 = $pkgbuild) =~ s/^sha256sums=.*/$sha/m;
 	open my $fo, '>', $fname or die("Could not open $fname");
