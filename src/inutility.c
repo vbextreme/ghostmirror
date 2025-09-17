@@ -101,7 +101,11 @@ void sigint_handler(int sig) {
 
 void sigwinch_handler(int sig) {
 	if( sig == SIGWINCH ){
+		unsigned old = TERM_H;
 		term_wh(NULL, &TERM_H);
+		if( TERM_H != old ){
+			term_scroll_region(1, TERM_H-1);
+		}
 	}
 }
 
@@ -160,16 +164,32 @@ void progress_refresh(const char* msg, unsigned value, unsigned count){
 }
 
 void progress_status_refresh(const char* status, unsigned color, const char* msg, unsigned value, unsigned count){
+	__private const char* ADV[] = {
+		"▏",
+		"▎",
+		"▍",
+		"▌",
+		"▋",
+		"▊",
+		"▉",
+		"█"
+	};
+	
+	unsigned iadv = sizeof_vector(ADV) * value / count;
+	if( iadv > 0 ) --iadv;
+	
 	switch( PROGRESS_ENABLE ){
 		case 1:
 			dprintf(STDOUT_FILENO,
 				FORMAT_CURSOR_STORE
 				FORMAT_GOTO_YX
 				FORMAT_CLS_LINE
-				"[ %5.1f%% ] %s"
+				"%5.1f%% %s %s"
 				FORMAT_CURSOR_LOAD
 				"[ %s ] %s\n"
-				,TERM_H, 1, (double)value*100.0/(double)count, PROGRESS_DESC, status, msg
+				,TERM_H, 1,
+				(double)value*100.0/(double)count, ADV[iadv], PROGRESS_DESC,
+				status, msg
 			);
 		break;
 
@@ -178,10 +198,12 @@ void progress_status_refresh(const char* status, unsigned color, const char* msg
 				FORMAT_CURSOR_STORE
 				FORMAT_GOTO_YX
 				FORMAT_CLS_LINE
-				"[ %5.1f%% ] %s"
+				"%5.1f%% " FORMAT_FG FORMAT_BG "%s" FORMAT_RESET " %s "
 				FORMAT_CURSOR_LOAD
 				"[ " FORMAT_FG "%s" FORMAT_RESET " ] %s\n"
-				,TERM_H, 1, (double)value*100.0/(double)count, PROGRESS_DESC, color, status, msg
+				,TERM_H, 1, 
+				(double)value*100.0/(double)count,  COLOR_BAR_FG, COLOR_BAR_BG, ADV[iadv], PROGRESS_DESC,
+				color, status, msg
 			);
 		break;
 	}

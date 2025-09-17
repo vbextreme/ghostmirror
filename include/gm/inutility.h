@@ -18,6 +18,8 @@
 
 #define COLOR_ERR 9
 #define COLOR_OK  46
+#define COLOR_BAR_FG 44
+#define COLOR_BAR_BG 240
 
 char* path_home(char* path);
 char* path_explode(const char* path);

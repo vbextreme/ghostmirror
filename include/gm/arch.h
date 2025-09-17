@@ -75,6 +75,7 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 void database_local(mirror_s* local, const char* arch);
 void mirrors_update(mirror_s* local, mirror_s* mirrors, const unsigned ndownload, const unsigned tos, unsigned speedType);
 //int mirrors_cmp_db(mirror_s* mirrors, const int progress);
+void mirrors_sort_reset(void);
 void add_sort_mode(const char* mode);
 void mirrors_sort(mirror_s* mirrors);
 void mirrors_update_sync(mirror_s* mirrors, const char mode, const unsigned maxdownload, const unsigned touts, const int progress);

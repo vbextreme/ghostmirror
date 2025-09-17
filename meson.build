@@ -2,7 +2,7 @@
 # project #
 ###########
 #
-project('ghostmirror', 'c', version: '0.15.1', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.15.2', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'remove debug info on www and disable bench.'
+  'dsc': 'fix mirrorlist with not country is not loaded, better mirrorlist output reorder by country, fix status when resize term, small bar'
 }
 
 if get_option('eveloper')

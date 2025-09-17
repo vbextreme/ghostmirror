@@ -1,4 +1,4 @@
-ghostmirror v0.15.0
+ghostmirror v0.15.1
 ==================
 Introduction:
 =============

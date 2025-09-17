@@ -753,6 +753,10 @@ __private unsigned sort_name_to_id(const char* name){
 	die("unknow sort mode: %s", name);
 }
 
+void mirrors_sort_reset(void){
+	SORTCOUNT = 0;
+}
+
 void add_sort_mode(const char* mode){
 	if( SORTCOUNT >= SORT_MAX ) die("to much sort mode");
 	SORTMODE[SORTCOUNT++] = sort_name_to_id(mode);

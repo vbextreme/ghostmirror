@@ -367,17 +367,13 @@ __private void print_list(mirror_s* mirrors, const char* where, unsigned max){
 	time_t expired = time(NULL);
 	struct tm* sexpired = gmtime(&expired);
 	fprintf(out, "# lastsync<dd.mm.yyyy> %02u.%02u.%u\n", sexpired->tm_mday, sexpired->tm_mon+1, sexpired->tm_year + 1900);
-	fprintf(out, "# country outofdate uptodate morerecent total speed stability\n");
-
+	const char* lastCountry = "";
 	const unsigned count = mem_header(mirrors)->len;
 	for(unsigned i = 0; i < count && i < max; ++i ){
-		fprintf(out, "#* '%s'", mirrors[i].country);
-		fprintf(out, " %u", mirrors[i].outofdate);
-		fprintf(out, " %u", mirrors[i].uptodate);
-		fprintf(out, " %u", mirrors[i].morerecent);
-		fprintf(out, " %u", mirrors[i].total);
-		fprintf(out, " %f", mirrors[i].speed);
-		fprintf(out, " %f\n", mirrors[i].stability);
+		if( strcmp(mirrors[i].country, lastCountry) ){
+			lastCountry = mirrors[i].country;
+			fprintf(out, "## %s\n", mirrors[i].country);
+		}
 		fprintf(out, "Server=%s/$repo/os/$arch\n", mirrors[i].url);
 	}
 	if( strcmp(where, "stdout") ){
@@ -459,8 +455,13 @@ int main(int argc, char** argv){
 	mirror_s local;
 	dbg_info("load local database");
 	database_local(&local, opt[O_a].value->str);
-	mforeach(opt[O_c].value, i){
-		mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
+	if( mem_header(opt[O_c].value)->len < 1 ) {
+		mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
+	}
+	else{
+		mforeach(opt[O_c].value, i){
+			mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
+		}
 	}
 	if( mem_header(mirrors)->len < 1 ) die("not find any valid mirrors");
 	
@@ -473,15 +474,24 @@ int main(int argc, char** argv){
 	term_status_line_end();
 	
 	mirrors_stability(mirrors);
-	if( opt[O_S].set ){
-		for( unsigned i = 0; i < opt[O_S].set; ++i ){
-			add_sort_mode(opt[O_S].value[i].str);
+
+	if( opt[O_o].set ){
+		mirrors_sort_reset();
+		if( opt[O_S].set ){
+			for( unsigned i = 0; i < opt[O_S].set; ++i ){
+				add_sort_mode(opt[O_S].value[i].str);
+			}
+			mirrors_sort(mirrors);
 		}
-		mirrors_sort(mirrors);
+		print_cmp_mirrors(mirrors, opt[O_P].set);
 	}
-	
-	if( opt[O_o].set ) print_cmp_mirrors(mirrors, opt[O_P].set);
-	if( opt[O_l].set ) print_list(mirrors, opt[O_l].value->str, opt[O_L].value->ui);
+
+	if( opt[O_l].set ){
+		mirrors_sort_reset();
+		add_sort_mode("country");
+		mirrors_sort(mirrors);
+		print_list(mirrors, opt[O_l].value->str, opt[O_L].value->ui);
+	}
 
 	// this is a manual test for check motivation than outofdate exists with morerecent
 	/*
