@@ -21,6 +21,9 @@ If you don't have time to update the mirror list manually, by adding a single co
 ![Alt text](screenshot/simple_progress.png?raw=true "GhostMirrorProgress")
 ![Alt text](screenshot/simple_output.png?raw=true "GhostMirrorOutput")
 
+ghostmirror v0.15.2
+==================
+
 Install:
 ========
 You can use your favorite AUR helper to install it.
@@ -230,8 +233,5 @@ $ meson configure -Developer=true
 Bug:
 ====
 try to writing many
-
-ghostmirror v0.15.2
-==================
 
 
