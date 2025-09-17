@@ -2,9 +2,6 @@
   <img src="screenshot/logo640.jpg" alt="ghostmirror logo" width="160">
 </p>
 
-ghostmirror v0.15.2
-==================
-
 Introduction:
 =============
 We've all experienced moments when there seemed to be no packages to update, only to realize days later that the issue was an out-of-sync mirror.<br>
@@ -233,5 +230,8 @@ $ meson configure -Developer=true
 Bug:
 ====
 try to writing many
+
+ghostmirror v0.15.2
+==================
 
 
