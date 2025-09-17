@@ -1,5 +1,9 @@
-ghostmirror v0.15.1
+ghostmirror v0.15.2
 ==================
+<p align="center">
+  <img src="screenshot/logo640.png" alt="ghostmirror logo" width="160">
+</p>
+
 Introduction:
 =============
 We've all experienced moments when there seemed to be no packages to update, only to realize days later that the issue was an out-of-sync mirror.<br>
@@ -16,7 +20,8 @@ It can analyze the mirrors and display in-depth errors or the names of packages 
 Thanks to the custom sorting mode, it can create a list of mirrors based on each user's needs.<br>
 If you don't have time to update the mirror list manually, by adding a single command-line argument, the systemd service will be automatically activated. Feel free to forget about the mirrors.<br>
 
-![Alt text](screenshot/simple_output.png?raw=true "GhostMirror")
+![Alt text](screenshot/simple_progress.png?raw=true "GhostMirrorProgress")
+![Alt text](screenshot/simple_output.png?raw=true "GhostMirrorOutput")
 
 Install:
 ========
