@@ -1,7 +1,7 @@
 ghostmirror v0.15.2
 ==================
 <p align="center">
-  <img src="screenshot/logo640.png" alt="ghostmirror logo" width="160">
+  <img src="screenshot/logo640.jpg" alt="ghostmirror logo" width="160">
 </p>
 
 Introduction:
