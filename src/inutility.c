@@ -8,8 +8,6 @@
 #include <pwd.h>
 #include <limits.h>
 
-//TODO bug if resize term and write at last line is impossible to restore status line, can resize term in sig?
-
 char* path_home(char* path){
 	char *hd;
 	if( (hd = getenv("HOME")) == NULL ){

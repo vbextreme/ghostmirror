@@ -19,9 +19,13 @@
 #define DEFAULT_ARCH    "x86_64"
 
 //TODO
+//  create generic term table 
 //	creating lock for protect
-//	bug inutility.c
-//	
+//  try per thread curl
+//  try streaming curl and archive in one time (remove intermedie buffer)
+//  try --estimated-history
+//
+//
 //  systemd: false
 //    step1: ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
 //    step2: ghostmirror -PmuolsS  ./mirrorlist.new ./mirrorlist.new light state,outofdate,morerecent,extimated,speed
@@ -202,6 +206,7 @@ __private void print_double_field(double val, mirrorStatus_e status, unsigned si
 	fputs("│", stdout);
 }
 
+/*
 __private void print_unsigned_field(unsigned val, mirrorStatus_e status, unsigned size, int colormode){
 	const unsigned left  = (size - 2) / 2;
 	const unsigned right = size - (left+2);
@@ -216,7 +221,7 @@ __private void print_unsigned_field(unsigned val, mirrorStatus_e status, unsigne
 	if( colormode >= 0 ) colorfg_set(0);
 	fputs("│", stdout);
 }
-
+*/
 __private void print_status(mirrorStatus_e status, unsigned size, int color){
 	static const char* mstate[] = {"success", "compare", "error"};
 	if( color >= 0 ){
@@ -328,9 +333,9 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 	}
 
 	colors = colors ? 0 : -1000;
-	char* tblname[]    = { "country", "mirror",  "proxy",  "state", "outofdate", "uptodate", "morerecent",  "retry",  "speed",    "ping", "estimated" };
-	unsigned tblsize[] = { mlCountry,    mlUrl,        5,        9,           9,          9,           10,        7,       12,         9,           9 };
-	unsigned tblcolor[]= {  colors+0, colors+0, colors+1, colors+0,    colors+1,   colors+0,     colors+3, colors+4, colors+5,  colors+7,    colors+6 };
+	char* tblname[]    = { "country", "mirror",  "proxy",  "state", "outofdate", "uptodate", "morerecent",  "speed",    "ping", "estimated" };
+	unsigned tblsize[] = { mlCountry,    mlUrl,        5,        9,           9,          9,           10,       12,         9,           9 };
+	unsigned tblcolor[]= {  colors+0, colors+0, colors+1, colors+0,    colors+1,   colors+0,     colors+3, colors+5,  colors+7,    colors+6 };
 	print_table_header(tblname, tblsize, sizeof_vector(tblsize), colors);
 	
 	mforeach(mirrors, i){
@@ -342,10 +347,10 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 		print_double_field(mirrors[i].outofdate  * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[4], tblcolor[4]);
 		print_double_field(mirrors[i].uptodate   * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[5], tblcolor[5]);
 		print_double_field(mirrors[i].morerecent * 100.0 / mirrors[i].total, mirrors[i].status, tblsize[6], tblcolor[6]);
-		print_unsigned_field(mirrors[i].retry, mirrors[i].status, tblsize[7], tblcolor[7]);
-		print_speed(mirrors[i].speed, mirrors[i].status, tblsize[8], tblcolor[8]);
-		print_ping(mirrors[i].ping, mirrors[i].status, tblsize[9], tblcolor[9]);
-		print_stability(mirrors[i].estimated, mirrors[i].status, tblsize[10], tblcolor[10]);
+		//print_unsigned_field(mirrors[i].retry, mirrors[i].status, tblsize[7], tblcolor[7]);
+		print_speed(mirrors[i].speed, mirrors[i].status, tblsize[7], tblcolor[7]);
+		print_ping(mirrors[i].ping, mirrors[i].status, tblsize[8], tblcolor[8]);
+		print_stability(mirrors[i].estimated, mirrors[i].status, tblsize[9], tblcolor[9]);
 		fputc('\n', stdout);
 	}
 
@@ -541,9 +546,6 @@ int main(int argc, char** argv){
 	www_end();
 	return 0;
 }
-
-
-
 
 
 

@@ -325,51 +325,6 @@ int pkg_vercmp(const char *a, const char *b){
 	return ret;
 }
 
-/*
-int pkg_vercmp_old(const char *a, const char *b){
-	const char *pa = a, *pb = b;
-	int r = 0;
-	
-	while (*pa || *pb) {
-		if (isdigit(*pa) || isdigit(*pb)) {
-			long la = 0, lb = 0;
-			while (*pa == '0') pa++;
-			while (*pb == '0') pb++;
-			while (isdigit(*pa)) {
-				la = la * 10 + (*pa - '0');
-				pa++;
-			}
-			while (isdigit(*pb)) {
-				lb = lb * 10 + (*pb - '0');
-				pb++;
-			}
-			if (la < lb) {
-				return -1;
-			}
-			else if (la > lb) {
-				return 1;
-			}
-		}
-		else if (*pa && *pb && isalpha(*pa) && isalpha(*pb)) {
-			r = tolower((unsigned char)*pa) - tolower((unsigned char)*pb);
-			if (r != 0) return *pa > *pb ? 1 : -1; //r
-			pa++;
-			pb++;
-		}
-		else{
-			char ca = *pa;
-			char cb = *pb;
-			if (ca == '-' || ca == '_') ca = '.';
-			if (cb == '-' || cb == '_') cb = '.';
-			if (ca != cb) return ca == '.' ? 1 : -1; //return ca - cb;
-			if (ca) pa++;
-			if (cb) pb++;
-		}
-	}
-	return 0;
-}
-*/
-
 __private pkgdesc_s* generate_db(void* tarbuf){
 	tar_s tar;
 	tar_mopen(&tar, tarbuf);
@@ -405,10 +360,10 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 		__free char* url = str_printf("%s/%s/os/%s/%s.db", mirror->url, repo, mirror->arch, repo);
 		void* ret = NULL;
 		if( !mirror->wwwerror ){
-			ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, &mirror->proxy, &mirror->retry);
+			ret = www_download(url, 0, tos, &mirror->proxy);
 		}
 		else{
-			ret = www_download_retry(url, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL, NULL);
+			ret = www_download(url, 0, tos, NULL);
 		}
 		
 		if( mirror->proxy && strcmp(url, mirror->proxy) ) mirror->isproxy = 1;
@@ -521,7 +476,7 @@ void database_local(mirror_s* local, const char* arch){
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){
-	char* buf = fname ? load_file(fname, 1) :  www_download_retry(MIRROR_LIST_URL, 0, tos, DOWNLOAD_RETRY, DOWNLOAD_WAIT, NULL, NULL);
+	char* buf = fname ? load_file(fname, 1) :  www_download(MIRROR_LIST_URL, 0, tos, NULL);
 	if( !buf ) die("unable to load mirrorlist");
 	buf = mem_nullterm(buf);
 	return buf;
@@ -728,10 +683,10 @@ __private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const unsigned
 		case  4: return a->outofdate - b->outofdate;
 		case  5: return b->uptodate - a->uptodate;
 		case  6: return b->morerecent - a->morerecent;
-		case  7: return a->retry - b->retry;
-		case  8: return a->speed > b->speed ? -1 : a->speed < b->speed ? 1 : 0;
-		case  9: return ping_cmp(a->ping, b->ping);
-		case 10: return b->estimated - a->estimated;
+		//case  7: return a->retry - b->retry;
+		case  7: return a->speed > b->speed ? -1 : a->speed < b->speed ? 1 : 0;
+		case  8: return ping_cmp(a->ping, b->ping);
+		case  9: return b->estimated - a->estimated;
 		default: die("internal error, sort set wrong field");
 	}
 }
@@ -771,24 +726,11 @@ __private void mirror_speed(mirror_s* mirror, const char* arch){
 	mforeach(mirror->repo[1].speed, it){
 		pkgdesc_s* pk = &mirror->repo[1].speed[it];
 		__free char* url = str_printf("%s/extra/os/%s/%s", mirror->url, arch, pk->filename);
-		unsigned retry = DOWNLOAD_RETRY;
-		delay_t  retrytime = DOWNLOAD_WAIT;
-		while( retry-->0 ){
-			double start = time_sec();
-			__free void* buf = www_download(url, 0, 0, NULL);
-			double stop  = time_sec();
-			if( !buf ){
-				++mirror->retry;
-				if( retry ){
-					delay_ms(retrytime);
-					retrytime *= 2;
-				}
-				continue;
-			}
-			unsigned size = mem_header(buf)->len;
-			mirror->speed += (size / (1024.0*1024.0)) / (stop-start);
-			break;
-		}
+		double start = time_sec();
+		__free void* buf = www_download(url, 0, 0, NULL);
+		double stop  = time_sec();
+		unsigned size = mem_header(buf)->len;
+		mirror->speed += (size / (1024.0*1024.0)) / (stop-start);
 	}
 	mirror->speed /= (double)mem_header(mirror->repo[1].speed)->len;
 }
@@ -869,6 +811,5 @@ void mirrors_stability(mirror_s* mirrors){
 		mirrors[i].estimated = EXTIMATED_DAY_MIN + (EXTIMATED_DAY_MAX - EXTIMATED_DAY_MIN) * mirrors[i].stability + 0.5;
 	}
 }
-
 
 

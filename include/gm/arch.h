@@ -66,7 +66,6 @@ typedef struct mirror{
 	unsigned       outofdate;
 	unsigned       uptodate;
 	unsigned       morerecent;
-	unsigned       retry;
 	unsigned       total;
 }mirror_s;
 
