@@ -33,5 +33,10 @@ void progress_begin(const char* desc);
 void progress_end(void);
 void progress_refresh(const char* msg, unsigned value, unsigned count);
 void progress_status_refresh(const char* status, unsigned color, const char* msg, unsigned value, unsigned count);
+void term_fg(unsigned color);
+void term_bg(unsigned color);
+void term_bold(void);
+void print_repeats(unsigned count, const char* ch);
+void print_repeat(unsigned count, const char ch);
 
 #endif

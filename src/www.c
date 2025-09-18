@@ -2,24 +2,19 @@
 #include <notstd/delay.h>
 #include <notstd/str.h>
 
+#include <omp.h>
 #include <curl/curl.h>
 #include <string.h>
 #include <sys/wait.h>
 
 #define __wcc __cleanup(www_curl_cleanup)
 
-#define WWW_ERROR_HTTP 10000
-#define WWW_BUFFER_SIZE (MiB*4)
+#define WWW_ERROR_HTTP       10000
+#define WWW_CURL_BUFFER_SIZE (MiB*4)
+#define WWW_BUFFER_SIZE      (WWW_CURL_BUFFER_SIZE*2)
 
 __thread unsigned wwwerrno;
-
-void www_begin(void){
-	curl_global_init(CURL_GLOBAL_DEFAULT);
-}
-
-void www_end(void){
-	curl_global_cleanup();
-}
+__private CURL** tlcurl;
 
 __private const char* www_errno_http(long resCode) {
 	switch (resCode) {
@@ -79,17 +74,26 @@ __private void www_curl_cleanup(void* ch){
 	curl_easy_cleanup(*(void**)ch);
 }
 
-__private CURL* www_curl_new(const char* url){
-	CURL* ch = curl_easy_init();
-	if( !ch ) die("curl init(%d): %s", errno, curl_easy_strerror(errno));
+__private void www_curl_url(CURL* ch, const char* url){
 	curl_easy_setopt(ch, CURLOPT_URL, url);
 	if( !strncmp(url, "https", 5) )
 		curl_easy_setopt(ch, CURLOPT_SSL_VERIFYPEER, 1L);
 	else
 		curl_easy_setopt(ch, CURLOPT_SSL_VERIFYPEER, 0L);
+}
+
+__private CURL* www_curl_new(void){
+	CURL* ch = curl_easy_init();
+	if( !ch ) die("curl init(%d): %s", errno, curl_easy_strerror(errno));
 	curl_easy_setopt(ch, CURLOPT_NOSIGNAL, 1L);
 	curl_easy_setopt(ch, CURLOPT_VERBOSE, 0L);
 	return ch;
+}
+
+__private void www_curl_common_download_file(CURL* ch){
+	curl_easy_setopt(ch, CURLOPT_FOLLOWLOCATION, 1L);
+	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);
+	curl_easy_setopt(ch, CURLOPT_BUFFERSIZE, WWW_CURL_BUFFER_SIZE);
 }
 
 __private int www_curl_perform(CURL* ch, char** realurl){
@@ -116,12 +120,30 @@ __private int www_curl_perform(CURL* ch, char** realurl){
 	return 0;
 }
 
+void www_begin(unsigned maxthr){
+	curl_global_init(CURL_GLOBAL_DEFAULT);
+	tlcurl = MANY(CURL*, maxthr);
+	mem_header(tlcurl)->len = maxthr;
+	for( unsigned i = 0; i < maxthr; ++i ){
+		tlcurl[i] = www_curl_new();
+		www_curl_common_download_file(tlcurl[i]);
+	}
+}
+
+void www_end(void){
+	mforeach(tlcurl, i){
+		www_curl_cleanup(tlcurl[i]);
+	}
+	mem_free(tlcurl);
+	curl_global_cleanup();
+}
+
 void* www_download(const char* url, unsigned onlyheader, unsigned touts, char** realurl){
 	dbg_info("'%s'", url);
-	__wcc CURL* ch = www_curl_new(url);
+	const unsigned tid = omp_get_thread_num();
+	CURL* ch = tlcurl[tid];
+	www_curl_url(ch, url);
 	__free uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
-	curl_easy_setopt(ch, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);
 	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &data);
 	if( onlyheader ){
 		curl_easy_setopt(ch, CURLOPT_HEADER, 1L);

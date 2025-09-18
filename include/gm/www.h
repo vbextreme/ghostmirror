@@ -1,7 +1,7 @@
 #ifndef __WWW_H__
 #define __WWW_H__
 
-void www_begin(void);
+void www_begin(unsigned maxthr);
 void www_end(void);
 const char* www_errno_str(void);
 unsigned www_errno(void);

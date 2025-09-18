@@ -21,9 +21,12 @@
 //TODO
 //  create generic term table 
 //	creating lock for protect
-//  try per thread curl
 //  try streaming curl and archive in one time (remove intermedie buffer)
 //  try --estimated-history
+//
+//	time:
+//	before 15.4 with retry TIMEOUT bug 12/13s
+//	without retry 6/8s
 //
 //
 //  systemd: false
@@ -94,42 +97,10 @@ option_s OPT[] = {
 	{'h', "--help"           , "display this"                                                       , OPT_END | OPT_NOARG, 0, 0}
 };
 
-__private void colorfg_set(unsigned color){
-	if( !color ){
-		fputs("\033[0m", stdout);
-	}
-	else{
-		printf("\033[38;5;%um", color);
-	}
-}
-
-__private void colorbg_set(unsigned color){
-	if( !color ){
-		fputs("\033[0m", stdout);
-	}
-	else{
-		printf("\033[48;5;%um", color);
-	}
-}
-
-__private void bold_set(void){
-	fputs("\033[1m", stdout);
-}
-
-__private void print_repeats(unsigned count, const char* ch){
-	if( !count ) return;
-	while( count --> 0 ) fputs(ch, stdout);
-}
-
-__private void print_repeat(unsigned count, const char ch){
-	if( !count ) return;
-	while( count --> 0 ) fputc(ch, stdout);
-}
-
 __private void print_ifcompare_color(mirrorStatus_e status){
 	if( status == MIRROR_COMPARE ){
-		colorbg_set(CBG);
-		bold_set();
+		term_bg(CBG);
+		term_bold();
 	}
 }
 
@@ -149,11 +120,11 @@ __private void print_table_header(char** colname, unsigned* colsize, unsigned co
 		const unsigned right = colsize[i] > left+len ? colsize[i] - (left+len): 0;
 		print_repeat(left, ' ');
 		if( color >= 0 ){
-			colorfg_set(208);
-			bold_set();
+			term_fg(208);
+			term_bold();
 		}
 		printf("%s", colname[i]);
-		if( color >= 0 ) colorfg_set(0);
+		if( color >= 0 ) term_fg(0);
 		print_repeat(right, ' ');
 		fputs("│", stdout);
 	}
@@ -191,7 +162,7 @@ __private void print_double_field(double val, mirrorStatus_e status, unsigned si
 
 	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
-		colorfg_set(colormode);
+		term_fg(colormode);
 		print_ifcompare_color(status);
 	}
 	print_repeat(left, ' ');
@@ -202,7 +173,7 @@ __private void print_double_field(double val, mirrorStatus_e status, unsigned si
 		printf("%6.2f%%",val);
 	}
 	print_repeat(right, ' ');
-	if( colormode >= 0 ) colorfg_set(0);
+	if( colormode >= 0 ) term_fg(0);
 	fputs("│", stdout);
 }
 
@@ -225,22 +196,22 @@ __private void print_unsigned_field(unsigned val, mirrorStatus_e status, unsigne
 __private void print_status(mirrorStatus_e status, unsigned size, int color){
 	static const char* mstate[] = {"success", "compare", "error"};
 	if( color >= 0 ){
-		colorfg_set(CSTATUS[status]);
+		term_fg(CSTATUS[status]);
 		print_ifcompare_color(status);
 	}
 	printf("%-*s", size, mstate[status]);
-	if( color >= 0 ) colorfg_set(0);
+	if( color >= 0 ) term_fg(0);
 	fputs("│", stdout);
 }
 
 __private void print_str(const char* str, mirrorStatus_e status, unsigned size, int color){
 	if( !str || *str == 0 ) str = "unknow";
 	if( color >= 0 ){
-		colorfg_set(CSTATUS[status]);
+		term_fg(CSTATUS[status]);
 		print_ifcompare_color(status);
 	}
 	printf("%-*s", size, str);
-	if( color >= 0 ) colorfg_set(0);
+	if( color >= 0 ) term_fg(0);
 	fputs("│", stdout);
 }
 
@@ -249,13 +220,13 @@ __private void print_speed(double val, mirrorStatus_e status, unsigned size, int
 	const unsigned right = size - (left+10);
 	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
-		colorfg_set(colormode);
+		term_fg(colormode);
 		print_ifcompare_color(status);
 	}
 	print_repeat(left, ' ');
 	printf("%5.1fMiB/s",val);
 	print_repeat(right, ' ');
-	if( colormode >= 0 ) colorfg_set(0);
+	if( colormode >= 0 ) term_fg(0);
 	fputs("│", stdout);
 }
 
@@ -265,11 +236,11 @@ __private void print_ping(long val, mirrorStatus_e status, unsigned size, int co
 	const unsigned right = size - (left+len);
 	if( colormode >= 0 ){
 		if( val < 0 ){
-			colorfg_set(CERR);
+			term_fg(CERR);
 		}
 		else{
 			colormode = double_color_map(val / 1000.0, colormode);
-			colorfg_set(colormode);
+			term_fg(colormode);
 		}
 		print_ifcompare_color(status);
 	}
@@ -281,7 +252,7 @@ __private void print_ping(long val, mirrorStatus_e status, unsigned size, int co
 		printf("%6.1fms",val / 1000.0);
 	}
 	print_repeat(right, ' ');
-	if( colormode >= 0 ) colorfg_set(0);
+	if( colormode >= 0 ) term_fg(0);
 	fputs("│", stdout);
 }
 
@@ -290,13 +261,13 @@ __private void print_stability(unsigned val, mirrorStatus_e status, unsigned siz
 	const unsigned right = size - (left+4);
 	if( colormode >= 0 ){
 		colormode = double_color_map(val, colormode);
-		colorfg_set(colormode);
+		term_fg(colormode);
 		print_ifcompare_color(status);
 	}
 	print_repeat(left, ' ');
 	printf("%2dgg", val);
 	print_repeat(right, ' ');
-	if( colormode >= 0 ) colorfg_set(0);
+	if( colormode >= 0 ) term_fg(0);
 	fputs("│", stdout);
 }
 
@@ -305,16 +276,16 @@ __private void print_bool(int value, mirrorStatus_e status, unsigned size, int c
 	const unsigned left  = (size - len) / 2;
 	const unsigned right = size - (left+len);
 	if( color >= 0 ){
-		colorfg_set( value && color ? CERR : CSTATUS[0]);
+		term_fg( value && color ? CERR : CSTATUS[0]);
 		if( status == MIRROR_COMPARE ){
-			colorbg_set(CBG);
-			bold_set();
+			term_bg(CBG);
+			term_bold();
 		}
 	}
 	print_repeat(left, ' ');
 	printf("%s", value ? "true": "false");
 	print_repeat(right, ' ');
-	if( color >= 0 ) colorfg_set(0);
+	if( color >= 0 ) term_fg(0);
 	fputs("│", stdout);
 }
 
@@ -437,7 +408,7 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_L, ULONG_MAX);
 	argv_default_str(OPT, O_s, "");
 	
-	www_begin();
+	www_begin(opt[O_d].value->ui);
 	gzip_init(opt[O_d].value->ui);
 	__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_O].value->ui);
 	__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_O].value->ui) : str_dup(mirrorlist, 0);

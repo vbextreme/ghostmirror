@@ -2,7 +2,7 @@
 # project #
 ###########
 #
-project('ghostmirror', 'c', version: '0.15.4', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.16.0', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'removed retry, is useless after fixing issue 16'
+  'dsc': 'move generic gm function to inutility, thread local curl and increase download size'
 }
 
 if get_option('eveloper')

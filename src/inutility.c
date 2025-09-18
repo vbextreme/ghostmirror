@@ -207,4 +207,56 @@ void progress_status_refresh(const char* status, unsigned color, const char* msg
 	}
 }
 
+void term_fg(unsigned color){
+	if( !color ){
+		fputs("\033[0m", stdout);
+	}
+	else{
+		printf("\033[38;5;%um", color);
+	}
+}
+
+void term_bg(unsigned color){
+	if( !color ){
+		fputs("\033[0m", stdout);
+	}
+	else{
+		printf("\033[48;5;%um", color);
+	}
+}
+
+void term_bold(void){
+	fputs("\033[1m", stdout);
+}
+
+void print_repeats(unsigned count, const char* ch){
+	if( !count ) return;
+	while( count --> 0 ) fputs(ch, stdout);
+}
+
+void print_repeat(unsigned count, const char ch){
+	if( !count ) return;
+	while( count --> 0 ) fputc(ch, stdout);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
