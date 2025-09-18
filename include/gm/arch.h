@@ -62,7 +62,7 @@ typedef struct mirror{
 	double         speed;
 	long           ping;
 	double         stability;
-	unsigned       extimated;
+	unsigned       estimated;
 	unsigned       outofdate;
 	unsigned       uptodate;
 	unsigned       morerecent;

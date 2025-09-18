@@ -56,9 +56,9 @@ While the first step will be performed only once or rarely, this step will be th
 -P -o -l is same the previous step<br>
 -m tell software to use a local mirror list, and -u for use only uncommented mirror<br>
 -s for apply a real test for mirror speed<br>
--S change a sort mode, remove ping, add extimated for get more stable mirror and speed for reorder speed
+-S change a sort mode, remove ping, add estimated for get more stable mirror and speed for reorder speed
 ```bash
-$ ghostmirror -PmuolsS  ./mirrorlist.new ./mirrorlist.new light state,outofdate,morerecent,extimated,speed
+$ ghostmirror -PmuolsS  ./mirrorlist.new ./mirrorlist.new light state,outofdate,morerecent,estimated,speed
 ```
 ### Last step
 now you save your old mirrorlist
@@ -78,7 +78,7 @@ $ sudo ghostmirror -PoclLS Italy,Germany,France /etc/pacman.d/mirrorlist 30 stat
 ```
 every time you need refresh
 ```bash
-$ sudo ghostmirror -PmuolsS  /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist light state,outofdate,morerecent,extimated,speed
+$ sudo ghostmirror -PmuolsS  /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist light state,outofdate,morerecent,estimated,speed
 ```
 
 ## Automatically
@@ -106,7 +106,7 @@ $ ghostmirror -PoclLS Italy,Germany,France ~/.config/ghostmirror/mirrorlist 30 s
 the arguments,lsS, you pass to ghostmirror at this point it's saved for auto reuse it in service.<br>
 so, the only difference with manually second step is -D option, this enable ghostmirror.timer and loginctl linger<br>
 ```bash
-$ ghostmirror -PoDumlsS  ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist light state,outofdate,morerecent,extimated,speed
+$ ghostmirror -PoDumlsS  ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist light state,outofdate,morerecent,estimated,speed
 ```
 ### Use of systemd
 show the timer
@@ -174,7 +174,7 @@ country and mirror is sorted by name<br>
 proxy first false, last true<br>
 state first success last error<br>
 outofdate, retry and ping, display first less value<br>
-uptodate, morerecent, sync, speed and extimated, display first great value<br>
+uptodate, morerecent, sync, speed and estimated, display first great value<br>
 ### -l --list <required string>
 save new mirrorlist in file passed as argument.<br>
 special name, stdout, can be used for write to stdout file.
@@ -193,15 +193,15 @@ auto manager systemd.timer.<br>
 when you pass this option the software activate login linger if not ebabled.<br>
 auto create ghostmirror.service and ghostmirror.timer<br>
 the config.service start ghostmirror in the same mode you haved executed it, with only differences that need -l.<br>
-for exaples if you execute: -DmuldsS <mirrorlist> <mirrorlist> 16 light extimated,speed<br>
-the service is always start with <mirrorlist> 16 parallel downloads, speed light and extimated,speed sort.<br>
+for exaples if you execute: -DmuldsS <mirrorlist> <mirrorlist> 16 light estimated,speed<br>
+the service is always start with <mirrorlist> 16 parallel downloads, speed light and estimated,speed sort.<br>
 for change you can simple repeat a command.<br>
 the expire timer is the first element in table and is dinamic, can change every time.<br>
 ### -t --time <required string>
 in systemd timer whend extimate date is ellapsed can set a time. Set specific hh:mm:ss when start service, default 00:00:00.<br>
 validate input with systemd-analyzer calendar hh:mm:ss before use
 ### -f --fixed-time <required string>
-in systemd timer use fixed time instead of extimated time.<br>
+in systemd timer use fixed time instead of estimated time.<br>
 validate input with systemd-analyzer calendar hh:mm:ss before use
 ### -h --help <not required argument>
 display this

@@ -61,7 +61,7 @@ Let's keep the options {{ic|-Pol}} of previous command.<br>
 {{ic|-s}} apply test for mirror speed.<br>
 We need to change the sorting method. While we were previously looking for the closest mirrors, now we will focus on finding the most stable and fastest ones.
 
- $ ghostmirror -Po -mu ./mirrorlist.new -l ./mirrorlist.new -s light -S state,outofdate,morerecent,extimated,speed
+ $ ghostmirror -Po -mu ./mirrorlist.new -l ./mirrorlist.new -s light -S state,outofdate,morerecent,estimated,speed
 
 now you can copy to apply modify to pacman
 
@@ -96,7 +96,7 @@ edit file /etc/pacman.conf, search and replace this line and change <username> w
 create a mirrorlist in {{ic|~/.config/ghostmirror}} in the same mode "Best Mirror" or simple copy from {{ic|/etc/pacman.d/mirrorlist}}<br>
 The command we will run will with {{ic|-D}} enable linger if it's not already enabled, create a new mirrorlist, start the timer, and use the command for subsequent automatic mirror checks.
 
- $ ghostmirror -DPo -mul ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist -s light -S state,outofdate,morerecent,extimated,speed
+ $ ghostmirror -DPo -mul ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist -s light -S state,outofdate,morerecent,estimated,speed
 
 By default, it uses the first element of the estimated time to determine when the service should run again.<br>
 You can choose to add a time in the format {{ic|-t hh:mm:ss}}, default {{ic|00:00:00}}.<br>

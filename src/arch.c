@@ -29,7 +29,7 @@ __private const char* SORTNAME[] = {
 	"retry",
 	"speed",
 	"ping",
-	"extimated"
+	"estimated"
 };
 __private unsigned SORTMODE[SORT_MAX];
 __private unsigned SORTCOUNT;
@@ -731,7 +731,7 @@ __private int sort_real_cmp(const mirror_s* a, const mirror_s* b, const unsigned
 		case  7: return a->retry - b->retry;
 		case  8: return a->speed > b->speed ? -1 : a->speed < b->speed ? 1 : 0;
 		case  9: return ping_cmp(a->ping, b->ping);
-		case 10: return b->extimated - a->extimated;
+		case 10: return b->estimated - a->estimated;
 		default: die("internal error, sort set wrong field");
 	}
 }
@@ -866,8 +866,9 @@ void mirrors_stability(mirror_s* mirrors){
 	for( unsigned i = 0; i < count; ++i ){
 		dbg_info("%s", mirrors[i].url);
 		mirrors[i].stability = mirror_weight(&mirrors[i], avgSpeed, sddSpeed, avgOutofdate, avgMorerecent);
-		mirrors[i].extimated = EXTIMATED_DAY_MIN + (EXTIMATED_DAY_MAX - EXTIMATED_DAY_MIN) * mirrors[i].stability + 0.5;
+		mirrors[i].estimated = EXTIMATED_DAY_MIN + (EXTIMATED_DAY_MAX - EXTIMATED_DAY_MIN) * mirrors[i].stability + 0.5;
 	}
 }
+
 
 

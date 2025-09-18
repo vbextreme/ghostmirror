@@ -38,7 +38,7 @@
 //	         Include = /home/vbextreme/.config/ghostmirror/mirrorlist
 //	         
 //    step1: ghostmirror -PoclLS Italy,Germany,France ~/.config/ghostmirror/mirrorlist 30 state,outofdate,morerecent,ping
-//    step2: ghostmirror -PoDumlsS  ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist light state,outofdate,morerecent,extimated,speed
+//    step2: ghostmirror -PoDumlsS  ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist light state,outofdate,morerecent,estimated,speed
 //    step3: forget about the mirrors.
 
 
@@ -328,7 +328,7 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 	}
 
 	colors = colors ? 0 : -1000;
-	char* tblname[]    = { "country", "mirror",  "proxy",  "state", "outofdate", "uptodate", "morerecent",  "retry",  "speed",    "ping", "extimated" };
+	char* tblname[]    = { "country", "mirror",  "proxy",  "state", "outofdate", "uptodate", "morerecent",  "retry",  "speed",    "ping", "estimated" };
 	unsigned tblsize[] = { mlCountry,    mlUrl,        5,        9,           9,          9,           10,        7,       12,         9,           9 };
 	unsigned tblcolor[]= {  colors+0, colors+0, colors+1, colors+0,    colors+1,   colors+0,     colors+3, colors+4, colors+5,  colors+7,    colors+6 };
 	print_table_header(tblname, tblsize, sizeof_vector(tblsize), colors);
@@ -345,7 +345,7 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 		print_unsigned_field(mirrors[i].retry, mirrors[i].status, tblsize[7], tblcolor[7]);
 		print_speed(mirrors[i].speed, mirrors[i].status, tblsize[8], tblcolor[8]);
 		print_ping(mirrors[i].ping, mirrors[i].status, tblsize[9], tblcolor[9]);
-		print_stability(mirrors[i].extimated, mirrors[i].status, tblsize[10], tblcolor[10]);
+		print_stability(mirrors[i].estimated, mirrors[i].status, tblsize[10], tblcolor[10]);
 		fputc('\n', stdout);
 	}
 
@@ -535,7 +535,7 @@ int main(int argc, char** argv){
 		if( !opt[O_S].set ) die("required any tipe of sort, --sort");
 		__free char* where = path_explode(opt[O_l].value->str);
 		__free char* sorta = merge_sort(opt[O_S].value, opt[O_S].set);
-		systemd_timer_set(mirrors[0].extimated, opt);
+		systemd_timer_set(mirrors[0].estimated, opt);
 	}
 	
 	www_end();
