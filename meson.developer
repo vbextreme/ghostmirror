@@ -225,6 +225,7 @@ sub make_pkgbuild{
 	return if !(-e $rppath);
 	die "fail copy PKGBUILD" if system("cp $fname $rppath");
 	update_pkgbuild_sha($path, $prjname);
+	die("CHECK");
 	die "fail makepkg" if system("cd $path/distro/$prjname && makepkg --printsrcinfo > ./.SRCINFO");
 	git_aur($path, $prjname, $desc);
 }
