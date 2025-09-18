@@ -2,7 +2,7 @@
 # project #
 ###########
 #
-project('ghostmirror', 'c', version: '0.16.0', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.16.1', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'move generic gm function to inutility, thread local curl and increase download size'
+  'dsc': 'XY on meson.developer for generate sha, removed from distro/PKGBUIL and keep only in aur repository'
 }
 
 if get_option('eveloper')

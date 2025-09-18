@@ -113,6 +113,11 @@ sub git_push_newversion{
 	die "fail git push" if system("git -C $path push --follow-tags");
 }
 
+sub git_push{
+	my ($path, $ver) = @_;
+	die "fail git push" if system("git -C $path push");
+}
+
 sub git_aur{
 	my ($path, $prjname, $desc) = @_;
 	die "fail git commit" if system("git -C $path/distro/$prjname commit -a -m '$desc'");
@@ -180,15 +185,15 @@ sub check_commit_projects_file{
 }
 
 sub update_pkgbuild_sha{
-	my ($path) = @_;
-	my $fname = "$path/distro/PKGBUILD";
+	my ($path, $prjname) = @_;
+	my $fname = "$path/distro/$prjname/PKGBUILD";
 	return if !(-e $fname);
 	open my $fh, '<', $fname or die("Could not open $fname");
 	my $pkgbuild = do { local $/; <$fh> };
 	close $fh;
-	my $sha = `cd $path/distro && makepkg -g 2>/dev/null`;
+	my $sha = `cd $path/distro/$prjname && makepkg -g 2>/dev/null`;
 	chomp $sha;
-	system("rm $path/distro/*.tar.gz");
+	system("rm $path/distro/$prjname/*.tar.gz");
 	(my $rep0 = $pkgbuild) =~ s/^sha256sums=.*/$sha/m;
 	open my $fo, '>', $fname or die("Could not open $fname");
 	print $fo $rep0;
@@ -210,7 +215,6 @@ sub update_pkgbuild{
 	open my $fo, '>', $fname or die("Could not open $fname");
 	print $fo $rep2;
 	close $fo;
-	update_pkgbuild_sha($path);
 }
 
 sub make_pkgbuild{
@@ -220,7 +224,8 @@ sub make_pkgbuild{
 	my $rppath = "$path/distro/$prjname/PKGBUILD";
 	return if !(-e $rppath);
 	die "fail copy PKGBUILD" if system("cp $fname $rppath");
-	die "fail makepkg" if system("cd $path/distro && makepkg --printsrcinfo > ./$prjname/.SRCINFO");
+	update_pkgbuild_sha($path, $prjname);
+	die "fail makepkg" if system("cd $path/distro/$prjname && makepkg --printsrcinfo > ./.SRCINFO");
 	git_aur($path, $prjname, $desc);
 }
 
@@ -266,9 +271,9 @@ if( $prjversion ne $versionmd ){
 	my $headers = meson_introspect_find_headers($mi);
 	my $files = git_lstree($BRANCH, $PRJPATH);
 	#print Dumper($files);
-	update_pkgbuild($PRJPATH, $prjversion, \@MAKEDEPENDS, \@DEPENDS);
 	update_manpage($PRJPATH, $prjversion);
 	readme_update_version($PRJPATH, $prjname, $prjversion);
+	update_pkgbuild($PRJPATH, $prjversion, \@MAKEDEPENDS, \@DEPENDS);
 	git_coommit($PRJPATH, $DESC);
 	check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
 	git_push_newversion($PRJPATH, $prjversion);
