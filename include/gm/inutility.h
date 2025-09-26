@@ -24,6 +24,7 @@
 char* path_home(char* path);
 char* path_explode(const char* path);
 unsigned cpu_cores(void);
+char* load_file(const char* fname, int txt, int exists);
 void term_wh(unsigned* w, unsigned* h);
 void term_scroll_region(unsigned y1, unsigned y2);
 __dtor_priority(1000) void term_status_line_end(void);

@@ -8,9 +8,9 @@
 #define DOWNLOAD_RETRY    3
 #define DOWNLOAD_WAIT     1000
 
-#define MIRROR_LIST_URL    "https://archlinux.org/mirrorlist/all/"
-#define MIRROR_TYPE_HTTP   0x1
-#define MIRROR_TYPE_HTTPS  0x2
+//#define MIRROR_LIST_URL    "https://archlinux.org/mirrorlist/all/"
+//#define MIRROR_TYPE_HTTP   0x1
+//#define MIRROR_TYPE_HTTPS  0x2
 
 #define ERROR_GZIP          0x01
 #define ERROR_GZIP_DATA     0x02

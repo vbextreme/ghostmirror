@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <pwd.h>
 #include <limits.h>
+#include <fcntl.h>
 
 char* path_home(char* path){
 	char *hd;
@@ -46,9 +47,27 @@ char* path_explode(const char* path){
 	}
 }
 
-
 unsigned cpu_cores(void){
 	return sysconf(_SC_NPROCESSORS_ONLN);
+}
+
+char* load_file(const char* fname, int txt, int exists){
+	dbg_info("loading %s", fname);
+	int fd = open(fname, O_RDONLY);
+	if( fd < 0 ){
+		if( exists ) die("unable to open file: %s, error: %m", fname);
+		return NULL;
+	}
+	char* buf = MANY(char, 4096);
+	ssize_t nr;
+	while( (nr=read(fd, &buf[mem_header(buf)->len], mem_available(buf))) > 0 ){
+		mem_header(buf)->len += nr;
+		buf = mem_upsize(buf, 4096);
+	}
+	close(fd);
+	if( nr < 0 ) die("unable to read file: %s, error: %m", fname);
+	if( txt ) mem_nullterm(buf);
+	return buf;
 }
 
 __private int statusEnable;

@@ -5,6 +5,7 @@
 #include <gm/www.h>
 #include <gm/archive.h>
 #include <gm/arch.h>
+#include <gm/mirrorlist.h>
 #include <gm/investigation.h>
 #include <gm/systemd.h>
 #include <gm/gm.h>
@@ -47,7 +48,10 @@
 //    step1: ghostmirror -PoclLS Italy,Germany,France ~/.config/ghostmirror/mirrorlist 30 state,outofdate,morerecent,ping
 //    step2: ghostmirror -PoDumlsS  ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist light state,outofdate,morerecent,estimated,speed
 //    step3: forget about the mirrors.
-
+//
+//
+//1m27s
+//9.6s
 
 __private unsigned COLORS[][6] = { 
 	{   1, 196, 226, 190,  48,  46 }, // red to green
@@ -514,6 +518,7 @@ int main(int argc, char** argv){
 		systemd_timer_set(mirrors[0].estimated, opt);
 	}
 	
+	gzip_end();
 	www_end();
 	return 0;
 }

@@ -19,6 +19,58 @@ void gzip_init(unsigned maxthr){
 	}
 }
 
+void gzip_end(void){
+	mforeach(strm, i){
+		zng_inflateEnd(&strm[i]);
+	}
+	mem_free(strm);
+}
+
+int gzip_decompress_stream(void* ptrdec, void* data, size_t size){
+	const unsigned tid = omp_get_thread_num();
+	if( tid >= mem_header(strm)->len ) die("internal error, tid %u >= %u", tid, mem_header(strm)->len);
+	uint8_t* dec = *(void**)ptrdec;
+	size_t framesize = size * 8;
+	dec = mem_upsize(dec, framesize);
+	zng_stream* s = &strm[tid];
+	s->avail_in  = size;
+	s->next_in   = (uint8_t*)data;
+	s->avail_out = framesize;
+	s->next_out  = (uint8_t*)(mem_addressing(dec, mem_header(dec)->len));
+	
+	while( 1 ){
+		//dbg_info("inflate %lu -> %lu", size, framesize);
+		int ret = zng_inflate(s, Z_NO_FLUSH);
+		mem_header(dec)->len += framesize - s->avail_out;
+		*((void**)ptrdec) = dec;
+		switch( ret ){
+			case Z_BUF_ERROR:
+			case Z_OK:
+				if( s->avail_in == 0 ){
+					//dbg_info("end buffer in");
+					return 0;
+				}
+				if( s->avail_out == 0 ){
+					//dbg_info("need more output data: framesize %lu", framesize);
+					dec = mem_upsize(dec, framesize);
+					framesize = mem_available(dec);
+					//dbg_info("available %lu", framesize);
+					s->avail_out = framesize;
+				}
+				//dbg_info("decompressed len: %u", mem_header(dec)->len);
+				s->next_out = (uint8_t*)(mem_addressing(dec, mem_header(dec)->len));
+			break;
+			
+			case Z_STREAM_END  : dbg_info("stream end");    zng_inflateReset(s); return 1;
+			case Z_DATA_ERROR  : dbg_error("data error");   zng_inflateReset(s); errno = EBADMSG; return -1;
+			case Z_STREAM_ERROR: dbg_error("stream error"); zng_inflateReset(s); errno = ENOSTR;  return -1;
+			case Z_MEM_ERROR   : dbg_error("out of mem");   zng_inflateReset(s); errno = ENOMEM;  return -1;
+			default            : dbg_error("unknow");       zng_inflateReset(s); errno = EINVAL;  return -1;
+		}
+	}
+}
+
+
 void* gzip_decompress(void* data){
 	const unsigned tid = omp_get_thread_num();
 	if( tid >= mem_header(strm)->len ) die("internal error, tid %u >= %u", tid, mem_header(strm)->len);

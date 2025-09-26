@@ -23,6 +23,8 @@ typedef struct tar_s{
 }tar_s;
 
 void gzip_init(unsigned maxthr);
+void gzip_end(void);
+int gzip_decompress_stream(void* dec, void* data, size_t size);
 void* gzip_decompress(void* data);
 
 void tar_mopen(tar_s* tar, void* data);

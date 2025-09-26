@@ -2,6 +2,8 @@
 #include <notstd/delay.h>
 #include <notstd/str.h>
 
+#include <gm/archive.h>
+
 #include <omp.h>
 #include <curl/curl.h>
 #include <string.h>
@@ -9,12 +11,14 @@
 
 #define __wcc __cleanup(www_curl_cleanup)
 
+#define WWW_PREVENT_LONG_WAIT_SLOW_SERVER 20
 #define WWW_ERROR_HTTP       10000
 #define WWW_CURL_BUFFER_SIZE (MiB*4)
 #define WWW_BUFFER_SIZE      (WWW_CURL_BUFFER_SIZE*2)
 
 __thread unsigned wwwerrno;
 __private CURL** tlcurl;
+__private __thread int wwwgzstate;
 
 __private const char* www_errno_http(long resCode) {
 	switch (resCode) {
@@ -59,10 +63,13 @@ const char* www_str_error(unsigned error){
 	return curl_easy_strerror(error);
 }
 
+unsigned www_gzstate(void){
+	return wwwgzstate;
+}
+
 __private size_t www_curl_buffer_recv(void* ptr, size_t size, size_t nmemb, void* userctx){
 	void* ctx = *(void**)userctx;
 	const size_t sizein = size * nmemb;
-	//if( sizein > mem_available(ctx) ) dbg_error("required resize buffer");
 	uint8_t* data = mem_upsize(ctx, sizein);
 	memcpy(data + mem_header(data)->len, ptr, sizein);
 	mem_header(data)->len += sizein;
@@ -70,9 +77,36 @@ __private size_t www_curl_buffer_recv(void* ptr, size_t size, size_t nmemb, void
 	return sizein;
 }
 
-__private void www_curl_cleanup(void* ch){
-	curl_easy_cleanup(*(void**)ch);
+__private size_t www_curl_buffer_recv_decompress(void* ptr, size_t size, size_t nmemb, void* userctx){
+	const size_t sizein = size * nmemb;
+	if( wwwgzstate != 0 ){
+		dbg_error("wrong internal state");
+		if( wwwgzstate == -1 ){
+			dbg_error("downloaded data but file it has already been decompressed");
+			wwwgzstate = EBADE;
+			errno = EBADE;
+		}
+		return 0;
+	}
+	switch( gzip_decompress_stream(userctx, ptr, sizein) ){
+		default:
+		case -1:
+			wwwgzstate = errno;
+			dbg_error("decompression fail: %m"); 
+		return 0;
+		case  0:
+			//dbg_info("partial download %lu", sizein);
+			return sizein;
+		case  1:
+			wwwgzstate = -1;
+			dbg_info("download end");
+		return sizein;
+	}
 }
+
+//__private void www_curl_cleanup(void* ch){
+//	curl_easy_cleanup(*(void**)ch);
+//}
 
 __private void www_curl_url(CURL* ch, const char* url){
 	curl_easy_setopt(ch, CURLOPT_URL, url);
@@ -92,8 +126,7 @@ __private CURL* www_curl_new(void){
 
 __private void www_curl_common_download_file(CURL* ch){
 	curl_easy_setopt(ch, CURLOPT_FOLLOWLOCATION, 1L);
-	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);
-	curl_easy_setopt(ch, CURLOPT_BUFFERSIZE, WWW_CURL_BUFFER_SIZE);
+	//curl_easy_setopt(ch, CURLOPT_BUFFERSIZE, WWW_CURL_BUFFER_SIZE);
 }
 
 __private int www_curl_perform(CURL* ch, char** realurl){
@@ -132,7 +165,7 @@ void www_begin(unsigned maxthr){
 
 void www_end(void){
 	mforeach(tlcurl, i){
-		www_curl_cleanup(tlcurl[i]);
+		curl_easy_cleanup(tlcurl[i]);
 	}
 	mem_free(tlcurl);
 	curl_global_cleanup();
@@ -145,11 +178,36 @@ void* www_download(const char* url, unsigned onlyheader, unsigned touts, char** 
 	www_curl_url(ch, url);
 	__free uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
 	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &data);
+	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);
 	if( onlyheader ){
 		curl_easy_setopt(ch, CURLOPT_HEADER, 1L);
 		curl_easy_setopt(ch, CURLOPT_NOBODY, 1L);
 	}
 	if( touts ) curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, touts);
+	if( www_curl_perform(ch, realurl) ){
+		dbg_error("curl perform");
+		return NULL;
+	}
+	dbg_info("download and decompress successfull");
+	return mem_borrowed(data);
+}
+
+void* www_download_gz(const char* url, unsigned onlyheader, unsigned touts, char** realurl){
+	dbg_info("'%s'", url);
+	const unsigned tid = omp_get_thread_num();
+	wwwgzstate = 0;
+	CURL* ch = tlcurl[tid];
+	www_curl_url(ch, url);
+	__free uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
+	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &data);
+	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv_decompress);
+	if( onlyheader ){
+		curl_easy_setopt(ch, CURLOPT_HEADER, 1L);
+		curl_easy_setopt(ch, CURLOPT_NOBODY, 1L);
+	}
+	if( touts ) curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, touts);
+	curl_easy_setopt(ch, CURLOPT_TIMEOUT, WWW_PREVENT_LONG_WAIT_SLOW_SERVER);
+	dbg_info("start download");
 	if( www_curl_perform(ch, realurl) ) return NULL;
 	return mem_borrowed(data);
 }

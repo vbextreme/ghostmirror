@@ -8,6 +8,7 @@
 #include <gm/www.h>
 #include <gm/systemd.h>
 #include <gm/inutility.h>
+#include <gm/mirrorlist.h>
 
 #include <omp.h>
 #include <ctype.h>
@@ -47,23 +48,26 @@ __private mirror_s* mirror_ctor(mirror_s* mirror, char* url, const char* arch, c
 	return mirror;
 }
 
-__private char* load_file(const char* fname, int exists){
+__private char* load_file_gz(const char* fname, int exists){
 	dbg_info("loading %s", fname);
 	int fd = open(fname, O_RDONLY);
 	if( fd < 0 ){
 		if( exists ) die("unable to open file: %s, error: %m", fname);
 		return NULL;
 	}
-	char* buf = MANY(char, 4096);
+	__free char* buf = MANY(char, MiB*4);
+	char* out = MANY(char, MiB*16);
 	ssize_t nr;
-	while( (nr=read(fd, &buf[mem_header(buf)->len], mem_available(buf))) > 0 ){
-		mem_header(buf)->len += nr;
-		buf = mem_upsize(buf, 4096);
+	int state = 0;
+	while( (nr=read(fd, buf, mem_available(buf))) > 0 ){
+		if( state != 0 ) die("unable to decompress file: %m");
+		state = gzip_decompress_stream(&out, buf, nr);
 	}
 	close(fd);
+	if( state != 1 ) die("unable to decompress file: %m");
 	if( nr < 0 ) die("unable to read file: %s, error: %m", fname);
-	buf = mem_fit(buf);
-	return buf;
+	out = mem_fit(out);
+	return out;
 }
 
 __private const char* skip_h(const char* data, const char* end){
@@ -354,16 +358,19 @@ int pkgname_cmp(const void* a, const void* b){
 __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned tos){
 	if( mirror->url[0] == '/' ){
 		__free char* url = str_printf("%s/%s.db", mirror->url, repo);
-		return load_file(url, 1);
+//		return load_file(url, 1);
+		return load_file_gz(url, 1);
 	}
 	else{
 		__free char* url = str_printf("%s/%s/os/%s/%s.db", mirror->url, repo, mirror->arch, repo);
 		void* ret = NULL;
 		if( !mirror->wwwerror ){
-			ret = www_download(url, 0, tos, &mirror->proxy);
+			//ret = www_download(url, 0, tos, &mirror->proxy);
+			ret = www_download_gz(url, 0, tos, &mirror->proxy);
 		}
 		else{
-			ret = www_download(url, 0, tos, NULL);
+			//ret = www_download(url, 0, tos, NULL);
+			ret = www_download_gz(url, 0, tos, NULL);
 		}
 		
 		if( mirror->proxy && strcmp(url, mirror->proxy) ) mirror->isproxy = 1;
@@ -371,6 +378,15 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 		if( !ret ){
 			dbg_error("set error: %u", www_errno());
 			mirror->wwwerror = www_errno();
+			unsigned wgzs = www_gzstate();
+			if( wgzs > 0 ){
+				if( wgzs == EBADMSG ){
+					mirror->error  = ERROR_GZIP_DATA;
+				}
+				else{
+					mirror->error  = ERROR_GZIP;
+				}
+			}
 		}
 		return ret;
 	}
@@ -395,7 +411,7 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 	}
 	
 	for( unsigned ir = 0; ir < repocount; ++ir ){
-		dbg_info("\t %s", REPO[ir]);
+		dbg_info("download repo: '%s'", REPO[ir]);
 #ifdef IBENCH
 		bench[ir][0] = time_cpu_us();
 #endif
@@ -409,6 +425,7 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 		bench[ir][0] = time_cpu_us() - bench[ir][0];
 		bench[ir][1] = time_cpu_us();
 #endif
+		/*
 		__free void* tarbuf = gzip_decompress(tarzstd);
 		if( !tarbuf ){
 			dbg_error("decompress zstd archive from mirror: %s", mirror->url);
@@ -423,6 +440,8 @@ __private void mirror_update(mirror_s* mirror, const unsigned tos){
 			}
 			return;
 		}
+		*/
+		void* tarbuf = tarzstd;
 #ifdef IBENCH
 		bench[ir][1] = time_cpu_us() - bench[ir][1];
 		bench[ir][2] = time_cpu_us();
@@ -476,7 +495,7 @@ void database_local(mirror_s* local, const char* arch){
 }
 
 char* mirror_loading(const char* fname, const unsigned tos){
-	char* buf = fname ? load_file(fname, 1) :  www_download(MIRROR_LIST_URL, 0, tos, NULL);
+	char* buf = fname ? load_file(fname, 1, 1) :  www_download(MIRROR_LIST_URL, 0, tos, NULL);
 	if( !buf ) die("unable to load mirrorlist");
 	buf = mem_nullterm(buf);
 	return buf;
@@ -577,10 +596,61 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 			mem_free(url);
 		}
 	}
-
+	
 	return mirrors;
 }
+/*
+mirror_s* mirror_add(mirror_s* mirrors, const char* mirrorlist, const char* country, const char* arch, int uncommented, unsigned type){
+	const char* parse = mirrorlist;
+	unsigned count = 0;
+	while( *parse ){
+		if( country ){
+			parse = mirrorlist_find_country(parse, country);
+		}
+		else{
+			parse = mirrorlist_country_next(parse);
+		}
+		char* url;
+		while( (url=mirrorlist_server_next(&parse, uncommented, type)) ){
+			if( server_unique(mirrors, url) ){
+				mirrors = mem_upsize(mirrors, 1);
+				const unsigned id = mem_header(mirrors)->len++;
+				mirror_ctor(&mirrors[id], url, arch, str_dup(country, 0));
+			}
+			else{
+				mem_free(url);
+			}
+		}
+		
+	}
+	if( !count ){
+		if( country ) die("country '%s' not exists", country);
+		die("not find any valid mirror in mirrorlist");
+	}
+	return mirrors;
+}
+*/
 
+/*
+void mirrors_country_check(mirror_s* mirrors, const char* remotemirrorlist){
+	mforeach(mirrors, i){
+		const char* country = mirrorlist_find_country_byurl(remotemirrorlist, mirrors[i].url);
+		if( !country ){
+			printf("mirror 'Server = %s' is not in upstream mirrorlist\n", mirrors[i].url);
+			mirrors[i].country = str_dup("Used Defined", 0);
+		}
+		else if( !mirrors[i].country ){
+			mirrors[i].country = mirrorlist_country_dup(country);
+		}
+		else if( strcmp(mirrors[i].country, &country[3]) ){
+			char* newcountry = mirrorlist_country_dup(country);
+			printf("mirror 'Server = %s' switch from country '%s' to country '%s'\n", mirrors[i].url, mirrors[i].country, newcountry);
+			mem_free(mirrors[i].country);
+			mirrors[i].country = newcountry;
+		}
+	}
+}
+*/
 void country_list(const char* mirrorlist){
 	while( (mirrorlist=strstr(mirrorlist, "## ")) ){
 		mirrorlist += 3;
@@ -652,6 +722,7 @@ void mirrors_update(mirror_s* local, mirror_s* mirrors, const unsigned ndownload
 			mirrors[i].url,
 			++pvalue, count
 		);
+		
 	}
 	progress_end();
 }
