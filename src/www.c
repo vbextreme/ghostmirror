@@ -11,7 +11,7 @@
 
 #define __wcc __cleanup(www_curl_cleanup)
 
-#define WWW_PREVENT_LONG_WAIT_SLOW_SERVER 20
+#define WWW_PREVENT_LONG_WAIT_SLOW_SERVER 30
 #define WWW_ERROR_HTTP       10000
 #define WWW_CURL_BUFFER_SIZE (MiB*4)
 #define WWW_BUFFER_SIZE      (WWW_CURL_BUFFER_SIZE*2)
@@ -206,7 +206,7 @@ void* www_download_gz(const char* url, unsigned onlyheader, unsigned touts, char
 		curl_easy_setopt(ch, CURLOPT_NOBODY, 1L);
 	}
 	if( touts ) curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, touts);
-	curl_easy_setopt(ch, CURLOPT_TIMEOUT, WWW_PREVENT_LONG_WAIT_SLOW_SERVER);
+	if( WWW_PREVENT_LONG_WAIT_SLOW_SERVER > 0 ) curl_easy_setopt(ch, CURLOPT_TIMEOUT, WWW_PREVENT_LONG_WAIT_SLOW_SERVER);
 	dbg_info("start download");
 	if( www_curl_perform(ch, realurl) ) return NULL;
 	return mem_borrowed(data);

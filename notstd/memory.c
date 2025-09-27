@@ -304,7 +304,7 @@ void* mem_index(void* mem, long index){
 }
 
 void* mem_borrowed(void* mem){
-	++givehm(mem)->refs;
+	if( mem ) ++givehm(mem)->refs;
 	return mem;
 }
 

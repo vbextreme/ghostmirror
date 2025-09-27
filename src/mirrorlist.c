@@ -49,56 +49,65 @@ const char* mirrorlist_country_next(const char* str){
 	return str;
 }
 
-char* mirrorlist_server_next(const char** pline, int uncommented, unsigned type){
-	const char* line = *pline;
-	
+char* mirrorlist_server_next(const char** pline, int uncommented, int breakcountry, unsigned type){
+	const char* line = *pline;	
 	while( *line ){
-		while( *line && *line == ' ' ) ++line;
+		line = str_skip_hn(line);
 		if( !*line ) return NULL;
-		if( *line == '\n' ){ ++line; continue; }
-		if( line[0] == '#' && line[1] == '#' ) break;
+		if( breakcountry && line[0] == '#' && line[1] == '#' ) break;
 		if( *line == '#' && uncommented ){
+			dbg_info("line is commented but required only uncommented, can skip");
 			line = str_next_line(line);
 			continue;
 		}
 		char comment = *line;
 		if( *line == '#' ) ++line;
 		
-		while( *line && *line == ' ' ) ++line;
+		line = str_skip_h(line);
 		if( strncmp(line, "Server", 6) ){
 			if( comment == '#' ){
+				dbg_info("line is commented can skip is not server");
 				line = str_next_line(line);
 				continue;
 			}
 			die("malformed mirrorlist, aspected 'Server = <URL>'");
 		}
-		line += 6;
-		while( *line && *line == ' ' ) ++line;
+		line = str_skip_h(line+6);
 		if( *line != '=' ){
 			if( comment == '#' ){
+				dbg_info("line is commented can skip is not server");
 				line = str_next_line(line);
 				continue;
 			}
 			die("malformed mirrorlist, aspected 'Server = <URL>'");
 		}
-		++line;
-		while( *line && *line == ' ' ) ++line;
+		line = str_skip_h(line+1);
 		const char* url = line;
 		const char* endurl = strpbrk(url, "$\n");
-		if( !endurl ){ line = str_next_line(line); continue; }
+		if( !endurl ){
+			if( comment == '#' ){
+				dbg_info("line is commented can skip is not server");
+				line = str_next_line(line);
+				continue;
+			}
+			die("malformed mirrorlist, aspected 'Server = <URL>'");
+		}
 		if( *endurl == '\n' ){
 			if( comment == '#' ){
-				++line;
+				dbg_info("line is commented can skip is not server");
+				line = endurl+1;
 				continue;
 			}
 			die("malformed mirrorlist, aspected 'Server = <URL>' and url end with $");
 		}
-		--endurl;
 		*pline = str_next_line(endurl);
+		--endurl;
 		if( !check_type(url, type) ){
+			dbg_info("not accepted this url type, skip");
 			line = str_next_line(endurl);
 			continue;
 		}
+		dbg_info("find url: %.*s", (int)(endurl-url), url);
 		return str_dup(url, endurl - url);
 	}
 	return NULL;

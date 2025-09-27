@@ -11,7 +11,7 @@ char* mirrorlist_load(const char* fname);
 char* mirrorlist_download(const unsigned tos);
 const char* mirrorlist_find_country(const char* str, const char* country);
 const char* mirrorlist_country_next(const char* str);
-char* mirrorlist_server_next(const char** pline, int uncommented, unsigned type);
+char* mirrorlist_server_next(const char** pline, int uncommented, int breakcountry, unsigned type);
 char* mirrorlist_country_dup(const char* p);
 const char* mirrorlist_find_country_byurl(const char* mirrorlist, const char* url);
 

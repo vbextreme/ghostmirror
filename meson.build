@@ -2,7 +2,7 @@
 # project #
 ###########
 
-project('ghostmirror', 'c', version: '0.16.4', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.16.99', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'begin new mirrorlist read, push previuos fix segfault on free before exit from main, add timeout for very long download time, single instance curl for each thread'
+  'dsc': 'more sofisticated read mirror, more sofisticated check mirror now can show if mirror exists on remote or have change country, beta version if no issue for one week can clean and push v0.17'
 }
 
 if get_option('eveloper')
@@ -56,7 +56,7 @@ src += [ 'src/ping.c' ]
 src += [ 'src/archive.c' ]
 src += [ 'src/gm.c' ]
 src += [ 'src/arch.c' ]
-#src += [ 'src/mirrorlist.c' ]
+src += [ 'src/mirrorlist.c' ]
 src += [ 'src/investigation.c' ]
 src += [ 'src/systemd.c' ]
 

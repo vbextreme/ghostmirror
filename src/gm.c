@@ -412,17 +412,18 @@ int main(int argc, char** argv){
 	argv_default_num(OPT, O_L, ULONG_MAX);
 	argv_default_str(OPT, O_s, "");
 	
-	www_begin(opt[O_d].value->ui);
-	gzip_init(opt[O_d].value->ui);
-	__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_O].value->ui);
-	__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_O].value->ui) : str_dup(mirrorlist, 0);
-	
 	if( opt[O_P].set ) opt[O_p].set = 1;
-	
 	if( opt[O_D].set && systemd_restart_count() > SYSTEMD_SERVICE_RETRY_MAX ) systemd_timer_set(1, opt);
 	
+	www_begin(opt[O_d].value->ui);
+	gzip_init(opt[O_d].value->ui);
+	//__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_O].value->ui);
+	//__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_O].value->ui) : str_dup(mirrorlist, 0);
+	__free char* remotemirrorlist = mirrorlist_download(opt[O_O].value->ui);
+	__free char* mirrorlist       = opt[O_m].set ? mirrorlist_load(opt[O_m].value->str): str_dup(remotemirrorlist, 0);
+	
 	if( opt[O_C].set ){
-		country_list(mirrorlist);
+		country_list(remotemirrorlist);
 		exit(0);
 	}
 	
@@ -435,6 +436,19 @@ int main(int argc, char** argv){
 	mirror_s local;
 	dbg_info("load local database");
 	database_local(&local, opt[O_a].value->str);
+	
+	if( mem_header(opt[O_c].value)->len < 1 ) {
+		if( !opt[O_u].set ) die("you try to check all mirror in mirrorlist, this is not have much sense and required to much time, please select country or uncommented");
+		mirrors = mirror_add(mirrors, mirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
+	}
+	else{
+		mforeach(opt[O_c].value, i){
+			mirrors = mirror_add(mirrors, mirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
+		}
+	}
+	if( mem_header(mirrors)->len < 1 ) die("not find any valid mirrors");
+	mirrors_country_check(mirrors, remotemirrorlist);
+	/*
 	if( mem_header(opt[O_c].value)->len < 1 ) {
 		mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
 	}
@@ -443,7 +457,7 @@ int main(int argc, char** argv){
 			mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
 		}
 	}
-	if( mem_header(mirrors)->len < 1 ) die("not find any valid mirrors");
+	*/
 	
 	if( opt[O_p].set ){
 		progress_enable(1+opt[O_P].set);

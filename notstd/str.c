@@ -3,6 +3,7 @@
 #include <ctype.h>
 
 char* str_dup(const char* src, size_t len){
+	if( !src ) src = "";
 	if( !len ) len=strlen(src);
 	char* str = MANY(char, len + 1);
 	memcpy(str, src, len);

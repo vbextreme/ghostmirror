@@ -494,13 +494,15 @@ void database_local(mirror_s* local, const char* arch){
 	mirror_update(local, 0);
 }
 
+/*
 char* mirror_loading(const char* fname, const unsigned tos){
 	char* buf = fname ? load_file(fname, 1, 1) :  www_download(MIRROR_LIST_URL, 0, tos, NULL);
 	if( !buf ) die("unable to load mirrorlist");
 	buf = mem_nullterm(buf);
 	return buf;
 }
-
+*/
+/*
 __private const char* find_country(const char* str, const char* country){
 	const size_t len = strlen(country);
 	while( (str=strstr(str, "## ")) ){
@@ -519,7 +521,8 @@ __private int check_type(const char* url, unsigned type){
 	if( (type & MIRROR_TYPE_HTTPS) && !strncmp(url, "https:", 5) ) return MIRROR_TYPE_HTTPS;
 	return 0;
 }
-
+*/
+/*
 __private char* server_url(const char** pline, int uncommented, int restrictcountry, unsigned type){
 	const char* line = *pline;
 	
@@ -567,12 +570,14 @@ __private char* back_start_country_mark(const char* from, const char* begin){
 	}
 	return "UserDefined";
 }
-
+*/
+/*
 __private char* server_find_country(const char* url, const char* mirrorlist){
 	const char* loc = strstr(mirrorlist, url);
 	if( !loc ) return "UserDefined";
 	return back_start_country_mark(loc, mirrorlist);
 }
+*/
 
 __private int server_unique(mirror_s* mirrors, const char* url){
 	mforeach(mirrors, i){
@@ -580,7 +585,7 @@ __private int server_unique(mirror_s* mirrors, const char* url){
 	}
 	return 1;
 }
-
+/*
 mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type){
 	char* url;
 	const char* fromcountry = country ? find_country(mirrorlist, country) : mirrorlist;
@@ -599,29 +604,30 @@ mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char*
 	
 	return mirrors;
 }
-/*
+*/
 mirror_s* mirror_add(mirror_s* mirrors, const char* mirrorlist, const char* country, const char* arch, int uncommented, unsigned type){
 	const char* parse = mirrorlist;
 	unsigned count = 0;
+	int breakcountry = country ? 1: 0;
+	char* cpcountry = country? str_dup(country, 0): NULL;
 	while( *parse ){
 		if( country ){
+			dbg_info("search country: %s", country);
 			parse = mirrorlist_find_country(parse, country);
 		}
-		else{
-			parse = mirrorlist_country_next(parse);
-		}
 		char* url;
-		while( (url=mirrorlist_server_next(&parse, uncommented, type)) ){
+		while( (url=mirrorlist_server_next(&parse, uncommented, breakcountry, type)) ){
 			if( server_unique(mirrors, url) ){
 				mirrors = mem_upsize(mirrors, 1);
 				const unsigned id = mem_header(mirrors)->len++;
-				mirror_ctor(&mirrors[id], url, arch, str_dup(country, 0));
+				mirror_ctor(&mirrors[id], url, arch, mem_borrowed(cpcountry));
+				++count;
 			}
 			else{
 				mem_free(url);
 			}
 		}
-		
+		if( !breakcountry ) break;
 	}
 	if( !count ){
 		if( country ) die("country '%s' not exists", country);
@@ -629,9 +635,7 @@ mirror_s* mirror_add(mirror_s* mirrors, const char* mirrorlist, const char* coun
 	}
 	return mirrors;
 }
-*/
 
-/*
 void mirrors_country_check(mirror_s* mirrors, const char* remotemirrorlist){
 	mforeach(mirrors, i){
 		const char* country = mirrorlist_find_country_byurl(remotemirrorlist, mirrors[i].url);
@@ -640,9 +644,10 @@ void mirrors_country_check(mirror_s* mirrors, const char* remotemirrorlist){
 			mirrors[i].country = str_dup("Used Defined", 0);
 		}
 		else if( !mirrors[i].country ){
+			dbg_info("set country to unnamed mirror country");
 			mirrors[i].country = mirrorlist_country_dup(country);
 		}
-		else if( strcmp(mirrors[i].country, &country[3]) ){
+		else if( strncmp(mirrors[i].country, &country[3], strlen(mirrors[i].country)) ){
 			char* newcountry = mirrorlist_country_dup(country);
 			printf("mirror 'Server = %s' switch from country '%s' to country '%s'\n", mirrors[i].url, mirrors[i].country, newcountry);
 			mem_free(mirrors[i].country);
@@ -650,7 +655,7 @@ void mirrors_country_check(mirror_s* mirrors, const char* remotemirrorlist){
 		}
 	}
 }
-*/
+
 void country_list(const char* mirrorlist){
 	while( (mirrorlist=strstr(mirrorlist, "## ")) ){
 		mirrorlist += 3;

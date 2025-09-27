@@ -69,11 +69,12 @@ typedef struct mirror{
 	unsigned       total;
 }mirror_s;
 
-char* mirror_loading(const char* fname, const unsigned tos);
-mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type);
+//char* mirror_loading(const char* fname, const unsigned tos);
+//mirror_s* mirrors_country(mirror_s* mirrors, const char* mirrorlist, const char* safemirrorlist, const char* country, const char* arch, int uncommented, unsigned type);
+mirror_s* mirror_add(mirror_s* mirrors, const char* mirrorlist, const char* country, const char* arch, int uncommented, unsigned type);
+void mirrors_country_check(mirror_s* mirrors, const char* remotemirrorlist);
 void database_local(mirror_s* local, const char* arch);
 void mirrors_update(mirror_s* local, mirror_s* mirrors, const unsigned ndownload, const unsigned tos, unsigned speedType);
-//int mirrors_cmp_db(mirror_s* mirrors, const int progress);
 void mirrors_sort_reset(void);
 void add_sort_mode(const char* mode);
 void mirrors_sort(mirror_s* mirrors);
