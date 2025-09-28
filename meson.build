@@ -2,7 +2,7 @@
 # project #
 ###########
 
-project('ghostmirror', 'c', version: '0.17.0', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.17.1', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'merge pr18 fix retry sort; add unicode fix country column size'
+  'dsc': 'fix not check in validate utf8 size 0'
 }
 
 if get_option('eveloper')
