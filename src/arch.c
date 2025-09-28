@@ -27,7 +27,6 @@ __private const char* SORTNAME[] = {
 	"outofdate",
 	"uptodate",
 	"morerecent",
-	"retry",
 	"speed",
 	"ping",
 	"estimated"
