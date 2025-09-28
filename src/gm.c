@@ -1,5 +1,6 @@
 #include <notstd/core.h>
 #include <notstd/str.h>
+#include <notstd/utf8.h>
 #include <notstd/opt.h>
 
 #include <gm/www.h>
@@ -302,11 +303,11 @@ __private void print_cmp_mirrors(mirror_s* mirrors, int colors){
 			if( len > mlUrl ) mlUrl = len;
 		}
 		if( mirrors[i].country ){
-			const size_t len = strlen(mirrors[i].country);
+			const size_t len = utf8_grapheme_count((const utf8_t*)mirrors[i].country);
 			if( len > mlCountry ) mlCountry = len;
 		}
 	}
-
+	
 	colors = colors ? 0 : -1000;
 	char* tblname[]    = { "country", "mirror",  "proxy",  "state", "outofdate", "uptodate", "morerecent",  "speed",    "ping", "estimated" };
 	unsigned tblsize[] = { mlCountry,    mlUrl,        5,        9,           9,          9,           10,       12,         9,           9 };

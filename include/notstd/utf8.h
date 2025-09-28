@@ -77,13 +77,14 @@ typedef enum {
 	UTF8_GB_OTHER
 }utf8gbProperty_e;
 
-UNSAFE_BEGIN("-Wunused-function");
+__unsafe_begin;
+__unsafe_unused_fn;
 
 __private unsigned utf8_codepoint_nb(utf8_t u){
 	return UTF8_NB_MAP[u];
 }
 
-UNSAFE_END;
+__unsafe_end;
 
 size_t utf8_bytes_count(const utf8_t* u);
 const utf8_t* utf8_codepoint_next(const utf8_t* u);

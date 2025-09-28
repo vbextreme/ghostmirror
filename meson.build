@@ -2,7 +2,7 @@
 # project #
 ###########
 
-project('ghostmirror', 'c', version: '0.16.99', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.17.0', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'more sofisticated read mirror, more sofisticated check mirror now can show if mirror exists on remote or have change country, beta version if no issue for one week can clean and push v0.17'
+  'dsc': 'merge pr18 fix retry sort; add unicode fix country column size'
 }
 
 if get_option('eveloper')
@@ -47,6 +47,7 @@ src += [ 'notstd/memory.c' ]
 src += [ 'notstd/extras.c' ]
 src += [ 'notstd/futex.c' ]
 src += [ 'notstd/str.c' ]
+src += [ 'notstd/utf8.c' ]
 src += [ 'notstd/opt.c' ]
 src += [ 'notstd/delay.c' ]
 
