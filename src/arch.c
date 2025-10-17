@@ -367,8 +367,14 @@ __private void* get_tar_zst(mirror_s* mirror, const char* repo, const unsigned t
 	}
 	else{
 		__free char* url = str_printf("%s/%s/os/%s/%s.db", mirror->url, repo, mirror->arch, repo);
-		void* ret = www_download_gz(url, 0, tos, mirror->proxy ? NULL:  &mirror->proxy);
-		if( mirror->proxy && strcmp(url, mirror->proxy) ) mirror->isproxy = 1;
+		void* ret;
+		if( mirror->proxy ){
+			ret = www_download_gz(url, 0, tos, NULL);
+		}
+		else{
+			ret = www_download_gz(url, 0, tos, &mirror->proxy);
+			if( mirror->proxy && strcmp(url, mirror->proxy) ) mirror->isproxy = 1;
+		}
 		if( !ret ){
 			dbg_error("set error: %u", www_errno());
 			mirror->wwwerror = www_errno();
