@@ -2,7 +2,7 @@
 # project #
 ###########
 
-project('ghostmirror', 'c', version: '0.17.2', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.17.3', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix logic bug sort country, fix some memory leak, upgrade memory manager'
+  'dsc': 'remove unused header, fail build'
 }
 
 if get_option('eveloper')
