@@ -60,13 +60,13 @@ char* load_file(const char* fname, int txt, int exists){
 	}
 	char* buf = MANY(char, 4096);
 	ssize_t nr;
-	while( (nr=read(fd, &buf[mem_header(buf)->len], mem_available(buf))) > 0 ){
-		mem_header(buf)->len += nr;
-		buf = mem_upsize(buf, 4096);
+	while( (nr=read(fd, &buf[m_header(buf)->len], m_available(buf))) > 0 ){
+		m_header(buf)->len += nr;
+		buf = m_grow(buf, 4096);
 	}
 	close(fd);
 	if( nr < 0 ) die("unable to read file: %s, error: %m", fname);
-	if( txt ) mem_nullterm(buf);
+	if( txt ) m_nullterm(buf);
 	return buf;
 }
 

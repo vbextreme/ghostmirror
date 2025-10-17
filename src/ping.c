@@ -6,7 +6,7 @@
 #include <netdb.h>
 
 long www_ping(const char* host){
-	struct addrinfo* res;
+	struct addrinfo* res = NULL;
 	struct addrinfo  req;
 	memset(&req, 0, sizeof req);
 	req.ai_family   = AF_UNSPEC;
@@ -46,6 +46,7 @@ long www_ping(const char* host){
 	else{
 		dbg_error("wrong family");
 		errno = EPROTONOSUPPORT;
+		if( res ) freeaddrinfo(res);
 		return -1;
 	}
 	struct timeval tv = {
@@ -63,8 +64,10 @@ long www_ping(const char* host){
 	}
 	const delay_t end = time_us();
 	close(sck);
+	freeaddrinfo(res);
 	return end-start;
 ONERR:
 	close(sck);
+	if( res ) freeaddrinfo(res);
 	return -1;
 }

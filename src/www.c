@@ -70,9 +70,9 @@ unsigned www_gzstate(void){
 __private size_t www_curl_buffer_recv(void* ptr, size_t size, size_t nmemb, void* userctx){
 	void* ctx = *(void**)userctx;
 	const size_t sizein = size * nmemb;
-	uint8_t* data = mem_upsize(ctx, sizein);
-	memcpy(data + mem_header(data)->len, ptr, sizein);
-	mem_header(data)->len += sizein;
+	uint8_t* data = m_grow(ctx, sizein);
+	memcpy(data + m_header(data)->len, ptr, sizein);
+	m_header(data)->len += sizein;
 	*(void**)userctx = data;
 	return sizein;
 }
@@ -156,7 +156,7 @@ __private int www_curl_perform(CURL* ch, char** realurl){
 void www_begin(unsigned maxthr){
 	curl_global_init(CURL_GLOBAL_DEFAULT);
 	tlcurl = MANY(CURL*, maxthr);
-	mem_header(tlcurl)->len = maxthr;
+	m_header(tlcurl)->len = maxthr;
 	for( unsigned i = 0; i < maxthr; ++i ){
 		tlcurl[i] = www_curl_new();
 		www_curl_common_download_file(tlcurl[i]);
@@ -167,7 +167,7 @@ void www_end(void){
 	mforeach(tlcurl, i){
 		curl_easy_cleanup(tlcurl[i]);
 	}
-	mem_free(tlcurl);
+	m_free(tlcurl);
 	curl_global_cleanup();
 }
 
@@ -176,7 +176,7 @@ void* www_download(const char* url, unsigned onlyheader, unsigned touts, char** 
 	const unsigned tid = omp_get_thread_num();
 	CURL* ch = tlcurl[tid];
 	www_curl_url(ch, url);
-	__free uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
+	uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
 	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &data);
 	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv);
 	if( onlyheader ){
@@ -186,10 +186,11 @@ void* www_download(const char* url, unsigned onlyheader, unsigned touts, char** 
 	if( touts ) curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, touts);
 	if( www_curl_perform(ch, realurl) ){
 		dbg_error("curl perform");
+		m_free(data);
 		return NULL;
 	}
 	dbg_info("download and decompress successfull");
-	return mem_borrowed(data);
+	return data;
 }
 
 void* www_download_gz(const char* url, unsigned onlyheader, unsigned touts, char** realurl){
@@ -198,7 +199,7 @@ void* www_download_gz(const char* url, unsigned onlyheader, unsigned touts, char
 	wwwgzstate = 0;
 	CURL* ch = tlcurl[tid];
 	www_curl_url(ch, url);
-	__free uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
+	uint8_t* data = MANY(uint8_t, WWW_BUFFER_SIZE);
 	curl_easy_setopt(ch, CURLOPT_WRITEDATA, &data);
 	curl_easy_setopt(ch, CURLOPT_WRITEFUNCTION, www_curl_buffer_recv_decompress);
 	if( onlyheader ){
@@ -208,8 +209,11 @@ void* www_download_gz(const char* url, unsigned onlyheader, unsigned touts, char
 	if( touts ) curl_easy_setopt(ch, CURLOPT_CONNECTTIMEOUT, touts);
 	if( WWW_PREVENT_LONG_WAIT_SLOW_SERVER > 0 ) curl_easy_setopt(ch, CURLOPT_TIMEOUT, WWW_PREVENT_LONG_WAIT_SLOW_SERVER);
 	dbg_info("start download");
-	if( www_curl_perform(ch, realurl) ) return NULL;
-	return mem_borrowed(data);
+	if( www_curl_perform(ch, realurl) ){
+		m_free(data);
+		return NULL;
+	}
+	return data;
 }
 
 char* www_host_get(const char* url){

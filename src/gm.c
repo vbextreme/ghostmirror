@@ -23,13 +23,7 @@
 //TODO
 //  create generic term table 
 //	creating lock for protect
-//  try streaming curl and archive in one time (remove intermedie buffer)
 //  try --estimated-history
-//
-//	time:
-//	before 15.4 with retry TIMEOUT bug 12/13s
-//	without retry 6/8s
-//
 //
 //  systemd: false
 //    step1: ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
@@ -50,9 +44,6 @@
 //    step2: ghostmirror -PoDumlsS  ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mirrorlist light state,outofdate,morerecent,estimated,speed
 //    step3: forget about the mirrors.
 //
-//
-//1m27s
-//9.6s
 
 __private unsigned COLORS[][6] = { 
 	{   1, 196, 226, 190,  48,  46 }, // red to green
@@ -77,7 +68,6 @@ __private double CMAP[][6] = {
 __private unsigned CERR = 1;
 __private unsigned CSTATUS[] = { 230, 118, 1 };
 __private unsigned CBG = 238;
-
 
 option_s OPT[] = {
 	{'a', "--arch"           , "select arch, default 'x86_64'"                                      , OPT_STR  , 0, 0}, 
@@ -349,7 +339,7 @@ __private void print_list(mirror_s* mirrors, const char* where, unsigned max){
 	struct tm* sexpired = gmtime(&expired);
 	fprintf(out, "# lastsync<dd.mm.yyyy> %02u.%02u.%u\n", sexpired->tm_mday, sexpired->tm_mon+1, sexpired->tm_year + 1900);
 	const char* lastCountry = "";
-	const unsigned count = mem_header(mirrors)->len;
+	const unsigned count = m_header(mirrors)->len;
 	for(unsigned i = 0; i < count && i < max; ++i ){
 		if( strcmp(mirrors[i].country, lastCountry) ){
 			lastCountry = mirrors[i].country;
@@ -384,20 +374,19 @@ __private unsigned cast_speed_type(const char* name){
 __private char* merge_sort(optValue_u* value, const unsigned count){
 	char* out = MANY(char, 12*10);
 	for( unsigned i = 0; i < count; ++i ){
-		unsigned lenval = strlen(value[i].str);
-		dbg_info("value: %s[%u]", value[i].str, lenval);
-		out = mem_upsize(out, lenval + 1);
-		unsigned len = mem_header(out)->len;
+		size_t lenval = strlen(value[i].str);
+		dbg_info("value: %s[%lu]", value[i].str, lenval);
+		out = m_grow(out, lenval + 1);
+		size_t len = m_header(out)->len;
 		memcpy(&out[len], value[i].str, lenval);
 		out[len + lenval] = ',';
-		mem_header(out)->len += lenval + 1;
+		m_header(out)->len += lenval + 1;
 	}
-	out[--mem_header(out)->len] = 0;
+	out[--m_header(out)->len] = 0;
 	return out;
 }
 
-
-#include <notstd/delay.h>
+//#include <notstd/delay.h>
 int main(int argc, char** argv){
 	notstd_begin();
 	
@@ -418,8 +407,6 @@ int main(int argc, char** argv){
 	
 	www_begin(opt[O_d].value->ui);
 	gzip_init(opt[O_d].value->ui);
-	//__free char* mirrorlist     = mirror_loading(opt[O_m].value->str, opt[O_O].value->ui);
-	//__free char* safemirrorlist = opt[O_m].set ? mirror_loading(NULL, opt[O_O].value->ui) : str_dup(mirrorlist, 0);
 	__free char* remotemirrorlist = mirrorlist_download(opt[O_O].value->ui);
 	__free char* mirrorlist       = opt[O_m].set ? mirrorlist_load(opt[O_m].value->str): str_dup(remotemirrorlist, 0);
 	
@@ -438,7 +425,7 @@ int main(int argc, char** argv){
 	dbg_info("load local database");
 	database_local(&local, opt[O_a].value->str);
 	
-	if( mem_header(opt[O_c].value)->len < 1 ) {
+	if( m_header(opt[O_c].value)->len < 1 ) {
 		if( !opt[O_u].set ) die("you try to check all mirror in mirrorlist, this is not have much sense and required to much time, please select country or uncommented");
 		mirrors = mirror_add(mirrors, mirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
 	}
@@ -447,18 +434,8 @@ int main(int argc, char** argv){
 			mirrors = mirror_add(mirrors, mirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
 		}
 	}
-	if( mem_header(mirrors)->len < 1 ) die("not find any valid mirrors");
+	if( m_header(mirrors)->len < 1 ) die("not find any valid mirrors");
 	mirrors_country_check(mirrors, remotemirrorlist);
-	/*
-	if( mem_header(opt[O_c].value)->len < 1 ) {
-		mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, NULL, opt[O_a].value->str, opt[O_u].set, mirrorType);
-	}
-	else{
-		mforeach(opt[O_c].value, i){
-			mirrors = mirrors_country(mirrors, mirrorlist, safemirrorlist, opt[O_c].value[i].str, opt[O_a].value->str, opt[O_u].set, mirrorType);
-		}
-	}
-	*/
 	
 	if( opt[O_p].set ){
 		progress_enable(1+opt[O_P].set);
@@ -469,7 +446,7 @@ int main(int argc, char** argv){
 	term_status_line_end();
 	
 	mirrors_stability(mirrors);
-
+	
 	if( opt[O_o].set ){
 		mirrors_sort_reset();
 		if( opt[O_S].set ){
@@ -482,9 +459,6 @@ int main(int argc, char** argv){
 	}
 
 	if( opt[O_l].set ){
-		mirrors_sort_reset();
-		add_sort_mode("country");
-		mirrors_sort(mirrors);
 		print_list(mirrors, opt[O_l].value->str, opt[O_L].value->ui);
 	}
 
@@ -534,7 +508,17 @@ int main(int argc, char** argv){
 	}
 	
 	gzip_end();
-	www_end();
+	www_end();	
+	mforeach(mirrors, i){
+		m_free(mirrors[i].country);
+		m_free(mirrors[i].proxy);
+		m_free(mirrors[i].repo[0].speed);
+		m_free(mirrors[i].repo[1].speed);
+		m_free(mirrors[i].url);
+	}
+	m_free(mirrors);
+	m_free(local.repo[0].db);
+	m_free(local.repo[1].db);
 	return 0;
 }
 

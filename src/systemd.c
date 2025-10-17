@@ -360,31 +360,21 @@ __private char* merge_sort(optValue_u* value, const unsigned count){
 	for( unsigned i = 0; i < count; ++i ){
 		unsigned lenval = strlen(value[i].str);
 		dbg_info("value: %s[%u]", value[i].str, lenval);
-		out = mem_upsize(out, lenval + 1);
-		unsigned len = mem_header(out)->len;
+		out = m_grow(out, lenval + 1);
+		unsigned len = m_header(out)->len;
 		memcpy(&out[len], value[i].str, lenval);
 		out[len + lenval] = ',';
-		mem_header(out)->len += lenval + 1;
+		m_header(out)->len += lenval + 1;
 	}
-	out[--mem_header(out)->len] = 0;
+	out[--m_header(out)->len] = 0;
 	return out;
 }
-/*
-__private char* str_push(char* str, const char* restrict src){
-	const unsigned len = strlen(src);
-	mem_upsize(str, len+1);
-	const unsigned dlen = mem_header(str)->len;
-	memcpy(&str[dlen], src, len);
-	str[dlen+len] = 0;
-	mem_header(str)->len += len;
-	return str;
-}
-*/
+
 __private char* pusharg_str(char* str, const char* arg, const char* value){
 	const unsigned vlen = strlen(value);
 	const unsigned alen = strlen(arg);
-	str = mem_upsize(str, vlen+alen+4);
-	unsigned dlen = mem_header(str)->len;
+	str = m_grow(str, vlen+alen+4);
+	unsigned dlen = m_header(str)->len;
 	str[dlen++] = ' ';
 	memcpy(&str[dlen], arg, alen);
 	dlen += alen;
@@ -392,7 +382,7 @@ __private char* pusharg_str(char* str, const char* arg, const char* value){
 	memcpy(&str[dlen], value, vlen);
 	dlen += vlen;
 	str[dlen] = 0;
-	mem_header(str)->len = dlen;
+	m_header(str)->len = dlen;
 	return str;
 }
 

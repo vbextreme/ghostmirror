@@ -496,7 +496,7 @@ char* base64_encode(const void* src, const size_t size){
 	}
 	
 	*next = 0;
-	mem_header(ret)->len = next - ret;
+	m_header(ret)->len = next - ret;
 	return ret;
 }
 
@@ -539,7 +539,7 @@ void* base64_decode(size_t* size, const char* b64){
 		break;
 	}
 	
-	mem_header(data)->len = countali;
+	m_header(data)->len = countali;
 	return data;
 }
 

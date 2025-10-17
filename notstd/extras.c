@@ -36,8 +36,8 @@ __private void swap_(char* restrict a, char* restrict b, size_t size){
 	size_t fastsize = size / sizeof(unsigned long);
 	size -= (fastsize*sizeof(unsigned long));
 	dbg_info("mode ulong %lu", fastsize);
-	unsigned long* A = __isaligned(a, sizeof(unsigned long));
-	unsigned long* B = __isaligned(b, sizeof(unsigned long));
+	unsigned long* A = __assumealigned(a, sizeof(unsigned long));
+	unsigned long* B = __assumealigned(b, sizeof(unsigned long));
 	while( fastsize--> 0 ){
 		unsigned long tmp = *A;
 		*A = *B;
@@ -93,27 +93,4 @@ int memswap(void* restrict a, size_t sizeA, void* restrict b, size_t sizeB){
 	return 0;
 }
 
-int mem_swap(void* restrict a, size_t sza, void* restrict b, size_t szb){
-	void* ma = *(void**)a;
-	void* mb = *(void**)b;
-	size_t sa = mem_lenght(ma);
-	size_t sb = mem_lenght(mb);
-
-	dbg_info("sza: %lu sa:%lu szb:%lu sb:%lu",sza,sa,szb,sb);
-
-	if( sza > sb ){
-		dbg_info("b is small, resize");
-		mb = mem_realloc(mb, sza);
-	}
-
-	if( szb > sa ){
-		dbg_info("a is small, resize");
-		ma = mem_realloc(ma, szb);
-	}
-
-	*(void**)a = ma;
-	*(void**)b = mb;
-
-	return memswap(ma, sza, mb, szb);
-}
 

@@ -7,14 +7,13 @@
 char* mirrorlist_load(const char* fname){
 	char* buf = load_file(fname, 1, 1);
 	if( !buf ) die("unable to load mirrorlist from %s", fname);
-	buf = mem_nullterm(buf);
 	return buf;
 }
 
 char* mirrorlist_download(const unsigned tos){
 	char* buf = www_download(MIRROR_LIST_URL, 0, tos, NULL);
 	if( !buf ) die("unable to download mirrorlist from %s", MIRROR_LIST_URL);
-	buf = mem_nullterm(buf);
+	buf = m_nullterm(buf);
 	return buf;
 }
 

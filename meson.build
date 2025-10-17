@@ -2,7 +2,7 @@
 # project #
 ###########
 
-project('ghostmirror', 'c', version: '0.17.1', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.17.2', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ type = 'executable'
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix not check in validate utf8 size 0'
+  'dsc': 'fix logic bug sort country, fix some memory leak, upgrade memory manager'
 }
 
 if get_option('eveloper')
@@ -41,6 +41,7 @@ includeDir  = include_directories('include')
 ###############
 
 src  = [ 'notstd/core.c' ]
+#src += [ 'notstd/happycrash.c' ]
 src += [ 'notstd/err.c' ]
 src += [ 'notstd/math.c' ]
 src += [ 'notstd/memory.c' ]
@@ -60,6 +61,14 @@ src += [ 'src/arch.c' ]
 src += [ 'src/mirrorlist.c' ]
 src += [ 'src/investigation.c' ]
 src += [ 'src/systemd.c' ]
+
+##########################
+# libraries dependencies #
+##########################
+libDeps  = [ cc.find_library('m', required : true) ] # math
+libDeps += [ dependency('libcurl', required: true) ]
+libDeps += [ dependency('zlib-ng', required: true) ]
+libDeps += [ dependency('libsystemd', required: true) ]
 
 ##############
 # data files #
@@ -92,7 +101,6 @@ add_global_arguments('-Wfloat-equal', language: 'c')
 add_global_arguments('-Wvla', language: 'c')
 
 # unicode var name
-#add_global_arguments('-finput-charset=UTF-8', language: 'c')
 add_global_arguments('-fextended-identifiers', language: 'c')
 
 #reentrant malloc
@@ -133,6 +141,9 @@ elif( get_option('optimize') == 1 )
 else
   add_global_arguments('-O0', language: 'c') 
   add_global_arguments('-g', language: 'c')
+  add_global_arguments('-fsanitize=address', language: 'c')
+  add_global_arguments('-fno-omit-frame-pointer', language: 'c')
+  libDeps += [ cc.find_library('libasan', required : true) ]
 endif
 
 if get_option('autovectorization') > 0
@@ -152,14 +163,6 @@ add_global_arguments('-DVERSION_STR="' + version['str'] + '"', language: 'c')
 add_global_arguments('-DVERSION_MAJ="' + version['mmr'][0] + '"', language: 'c')
 add_global_arguments('-DVERSION_MIN="' + version['mmr'][1] + '"', language: 'c')
 add_global_arguments('-DVERSION_REV="' + version['mmr'][2] + '"', language: 'c')
-
-##########################
-# libraries dependencies #
-##########################
-libDeps  = [ cc.find_library('m', required : true) ] # math
-libDeps += [ dependency('libcurl', required: true) ]
-libDeps += [ dependency('zlib-ng', required: true) ]
-libDeps += [ dependency('libsystemd', required: true) ]
 
 #########################
 # software dependencies #

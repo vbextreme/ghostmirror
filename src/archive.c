@@ -12,7 +12,7 @@ static zng_stream* strm;
 
 void gzip_init(unsigned maxthr){
 	strm = MANY(zng_stream, maxthr);
-	mem_header(strm)->len = maxthr;
+	m_header(strm)->len = maxthr;
 	for (unsigned i = 0; i < maxthr; ++i) {
 		memset(&strm[i], 0, sizeof(zng_stream));
 		if (zng_inflateInit2(&strm[i], 16 + MAX_WBITS) != Z_OK) die("Unable to initialize zlib-ng");
@@ -23,25 +23,25 @@ void gzip_end(void){
 	mforeach(strm, i){
 		zng_inflateEnd(&strm[i]);
 	}
-	mem_free(strm);
+	m_free(strm);
 }
 
 int gzip_decompress_stream(void* ptrdec, void* data, size_t size){
 	const unsigned tid = omp_get_thread_num();
-	if( tid >= mem_header(strm)->len ) die("internal error, tid %u >= %u", tid, mem_header(strm)->len);
+	if( tid >= m_header(strm)->len ) die("internal error, tid %u >= %lu", tid, m_header(strm)->len);
 	uint8_t* dec = *(void**)ptrdec;
 	size_t framesize = size * 8;
-	dec = mem_upsize(dec, framesize);
+	dec = m_grow(dec, framesize);
 	zng_stream* s = &strm[tid];
 	s->avail_in  = size;
 	s->next_in   = (uint8_t*)data;
 	s->avail_out = framesize;
-	s->next_out  = (uint8_t*)(mem_addressing(dec, mem_header(dec)->len));
+	s->next_out  = (uint8_t*)(m_addressing(dec, m_header(dec)->len));
 	
 	while( 1 ){
 		//dbg_info("inflate %lu -> %lu", size, framesize);
 		int ret = zng_inflate(s, Z_NO_FLUSH);
-		mem_header(dec)->len += framesize - s->avail_out;
+		m_header(dec)->len += framesize - s->avail_out;
 		*((void**)ptrdec) = dec;
 		switch( ret ){
 			case Z_BUF_ERROR:
@@ -52,13 +52,13 @@ int gzip_decompress_stream(void* ptrdec, void* data, size_t size){
 				}
 				if( s->avail_out == 0 ){
 					//dbg_info("need more output data: framesize %lu", framesize);
-					dec = mem_upsize(dec, framesize);
-					framesize = mem_available(dec);
+					dec = m_grow(dec, framesize);
+					framesize = m_available(dec);
 					//dbg_info("available %lu", framesize);
 					s->avail_out = framesize;
 				}
 				//dbg_info("decompressed len: %u", mem_header(dec)->len);
-				s->next_out = (uint8_t*)(mem_addressing(dec, mem_header(dec)->len));
+				s->next_out = (uint8_t*)(m_addressing(dec, m_header(dec)->len));
 			break;
 			
 			case Z_STREAM_END  : dbg_info("stream end");    zng_inflateReset(s); return 1;
@@ -73,8 +73,8 @@ int gzip_decompress_stream(void* ptrdec, void* data, size_t size){
 
 void* gzip_decompress(void* data){
 	const unsigned tid = omp_get_thread_num();
-	if( tid >= mem_header(strm)->len ) die("internal error, tid %u >= %u", tid, mem_header(strm)->len);
-	size_t datasize = mem_header(data)->len;
+	if( tid >= m_header(strm)->len ) die("internal error, tid %u >= %lu", tid, m_header(strm)->len);
+	size_t datasize = m_header(data)->len;
 	size_t framesize = datasize * 4;
 	void* dec = MANY(char, framesize);
 	
@@ -92,17 +92,17 @@ void* gzip_decompress(void* data){
 				case Z_DATA_ERROR: errno = EBADMSG; break;
 				default          : errno = EINVAL; break;
 			}
-			mem_free(dec);
+			m_free(dec);
 			dbg_error("decompression failed %d", ret);
 			return NULL;
 		}
-		mem_header(dec)->len += framesize - s->avail_out;
+		m_header(dec)->len += framesize - s->avail_out;
 		if (s->avail_out == 0) {
-			dec = mem_upsize(dec, framesize);
-			framesize = mem_available(dec);
+			dec = m_grow(dec, framesize);
+			framesize = m_available(dec);
 			s->avail_out = framesize;
 		}
-		s->next_out = (uint8_t*)(mem_addressing(dec, mem_header(dec)->len));
+		s->next_out = (uint8_t*)(m_addressing(dec, m_header(dec)->len));
 	}while( ret != Z_STREAM_END );
 	zng_inflateReset(s);
 	return dec;
@@ -138,7 +138,7 @@ __private htar_s zerotar;
 void tar_mopen(tar_s* tar, void* data){
 	tar->start  = data;
 	tar->loaddr = (uintptr_t)data;
-	tar->end    = tar->loaddr + mem_header(data)->len;
+	tar->end    = tar->loaddr + m_header(data)->len;
 	tar->err    = 0;
 	//dbg_info("start: %lu end: %lu tot: %lu n: %lu", tar->loaddr, tar->end, tar->end-tar->loaddr, (tar->end-tar->loaddr)/512);
 	memset(&tar->global, 0, sizeof tar->global);
@@ -220,7 +220,7 @@ __private int htar_pax(tar_s* tar, htar_s* h, tarent_s* ent){
 			ent->size = strtoul(v, NULL, 10);
 		}
 		else if( !strncmp(k, "path", 4) ){
-			if( ent->path ) mem_free(ent->path);
+			if( ent->path ) m_free(ent->path);
 			ent->path = MANY(char, (ev-v) + 1);
 			memcpy(ent->path, v, ev - v);
 			ent->path[ev-v] = 0;
@@ -246,7 +246,7 @@ __private void htar_next_htar(tar_s* tar, htar_s* h){
 
 __private void ent_dtor(void* ent){
 	tarent_s* e = ent;
-	if( e->path ) mem_free(e->path);
+	if( e->path ) m_free(e->path);
 }
 
 tarent_s* tar_next(tar_s* tar){
@@ -268,7 +268,7 @@ tarent_s* tar_next(tar_s* tar){
 			
 			case '0' ... '9':
 				ent = NEW(tarent_s);
-				mem_header(ent)->cleanup = ent_dtor;
+				m_header(ent)->cleanup = ent_dtor;
 				memset(ent, 0, sizeof(tarent_s));
 				
 				ent->type = h->typeflag - '0';
@@ -318,13 +318,13 @@ tarent_s* tar_next(tar_s* tar){
 	}
 	
 ONERR:
-	if( pax.path ) mem_free(pax.path);
+	if( pax.path ) m_free(pax.path);
 	return NULL;
 }
 
 void tar_close(tar_s* tar){
 	if( tar->global.path ){
-		mem_free(tar->global.path);
+		m_free(tar->global.path);
 	}
 }
 

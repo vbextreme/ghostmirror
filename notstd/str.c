@@ -26,7 +26,7 @@ char* str_vprintf(const char* format, va_list va1, va_list va2){
 	size_t len = vsnprintf(NULL, 0, format, va1);
 	char* ret = MANY(char, len+1);
 	vsprintf(ret, format, va2);
-	mem_header(ret)->len = len;
+	m_header(ret)->len = len;
 	return ret;
 }
 
@@ -252,7 +252,7 @@ char* str_escape_decode(const char* str, unsigned len){
 	*o = 0;
 	return out;
 ONERR:
-	mem_free(out);
+	m_free(out);
 	return NULL;
 }
 

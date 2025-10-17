@@ -104,8 +104,8 @@ __private void kv_parse(kv_s* kv, const char* arg){
 }
 
 __private optValue_u* opt_value_new(option_s* opt, unsigned id){
-	opt[id].value = mem_upsize(opt[id].value, 1);
-	return &opt[id].value[mem_header(opt[id].value)->len++];
+	size_t i = m_ipush(&opt[id].value);
+	return &opt[id].value[i];
 }
 
 __private char* opt_array(const char** arr){
@@ -161,15 +161,15 @@ __private void opt_value(optctx_s* ctx, unsigned id, const char* value){
 		--ctx->opt[id].set;
 		while( (v=opt_array(&value)) ){
 			switch( ctx->opt[id].flags & OPT_TYPE ){
-				case OPT_STR : opt_value_new(ctx->opt, id)->str = mem_borrowed(v); break;
+				case OPT_STR : opt_value_new(ctx->opt, id)->str = m_borrowed(v); break;
 				case OPT_NUM : opt_value_new(ctx->opt, id)->ui  = opt_parse_num(ctx, v); break;
 				case OPT_INUM: opt_value_new(ctx->opt, id)->ui  = opt_parse_inum(ctx, v); break;
 				case OPT_FNUM: opt_value_new(ctx->opt, id)->ui  = opt_parse_fnum(ctx, v); break;
-				case OPT_PATH: opt_value_new(ctx->opt, id)->str = opt_parse_path(ctx, mem_borrowed(v), ctx->opt[id].flags); break;
+				case OPT_PATH: opt_value_new(ctx->opt, id)->str = opt_parse_path(ctx, m_borrowed(v), ctx->opt[id].flags); break;
 				default: die("internal error, unaspected option type, report this error"); break;
 			}
 			++ctx->opt[id].set;
-			mem_free(v);
+			m_free(v);
 		}
 	}
 	else{
@@ -217,7 +217,7 @@ __private void long_option(optctx_s* ctx){
 	kv_s kv;
 	kv_parse(&kv, ctx->argv[ctx->current]);
 	add_to_option(ctx, find_long(ctx, kv.name), &kv);
-	mem_free(kv.name);
+	m_free(kv.name);
 	++ctx->current;
 }
 
@@ -278,7 +278,7 @@ option_s* argv_dtor(option_s* opt){
 	if( !opt ) return NULL;
 	const unsigned count = opt_count(opt);
 	for( unsigned i = 0; i < count; ++i ){
-		if( opt[i].value ) mem_free(opt[i].value);
+		if( opt[i].value ) m_free(opt[i].value);
 	}
 	return opt;
 }
@@ -325,26 +325,26 @@ void argv_usage(option_s* opt, const char* argv0){
 
 void argv_default_str(option_s* opt, unsigned id, const char* str){
 	if( opt[id].set ) return;
-	opt[id].value = mem_upsize(opt[id].value, 1);
-	opt[id].value[mem_header(opt[id].value)->len++].str = str;
+	size_t i = m_ipush(&opt[id].value);
+	opt[id].value[i].str = str;
 }
 
 void argv_default_num(option_s* opt, unsigned id, unsigned long ui){
 	if( opt[id].set ) return;
-	opt[id].value = mem_upsize(opt[id].value, 1);
-	opt[id].value[mem_header(opt[id].value)->len++].ui = ui;
+	size_t i = m_ipush(&opt[id].value);
+	opt[id].value[i].ui = ui;
 }
 
 void argv_default_inum(option_s* opt, unsigned id, long i){
 	if( opt[id].set ) return;
-	opt[id].value = mem_upsize(opt[id].value, 1);
-	opt[id].value[mem_header(opt[id].value)->len++].ui = i;
+	size_t j = m_ipush(&opt[id].value);
+	opt[id].value[j].i = i;
 }
 
 void argv_default_fnum(option_s* opt, unsigned id, double f){
 	if( opt[id].set ) return;
-	opt[id].value = mem_upsize(opt[id].value, 1);
-	opt[id].value[mem_header(opt[id].value)->len++].f = f;
+	size_t i = m_ipush(&opt[id].value);
+	opt[id].value[i].f = f;
 }
 
 

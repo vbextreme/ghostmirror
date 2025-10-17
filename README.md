@@ -1,3 +1,6 @@
+ghostmirror v0.17.2
+==================
+
 <p align="center">
   <img src="screenshot/logo640.jpg" alt="ghostmirror logo" width="160">
 </p>
@@ -20,9 +23,6 @@ If you don't have time to update the mirror list manually, by adding a single co
 
 ![Alt text](screenshot/simple_progress.png?raw=true "GhostMirrorProgress")
 ![Alt text](screenshot/simple_output.png?raw=true "GhostMirrorOutput")
-
-ghostmirror v0.15.2
-==================
 
 Install:
 ========
