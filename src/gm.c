@@ -389,7 +389,7 @@ __private char* merge_sort(optValue_u* value, const unsigned count){
 //#include <notstd/delay.h>
 int main(int argc, char** argv){
 	notstd_begin();
-	
+
 	__argv option_s* opt = argv_parse(OPT, argc, argv);
 	if( opt[O_h].set ) argv_usage(opt, argv[0]);
 	

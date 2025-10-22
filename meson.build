@@ -2,17 +2,15 @@
 # project #
 ###########
 
-project('ghostmirror', 'c', version: '0.17.4', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.17.5', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
 
-type = 'executable'
-
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'fix always proxy'
+  'dsc': 'disable flags, optimization only if user is setted'
 }
 
 if get_option('eveloper')
@@ -41,7 +39,6 @@ includeDir  = include_directories('include')
 ###############
 
 src  = [ 'notstd/core.c' ]
-#src += [ 'notstd/happycrash.c' ]
 src += [ 'notstd/err.c' ]
 src += [ 'notstd/math.c' ]
 src += [ 'notstd/memory.c' ]
@@ -111,7 +108,7 @@ add_global_link_arguments('-pthread', language:'c')
 add_global_arguments('-std=gnu2x', language: 'c')
 
 # open mp
-if get_option('openmp') > 0
+if get_option('openmp')
   message('openmp enabled')
   add_global_arguments('-fopenmp', language:'c')
   add_global_link_arguments('-fopenmp', language:'c')
@@ -119,40 +116,34 @@ if get_option('openmp') > 0
 endif 
 
 # gprof
-if get_option('gprof') > 0
+if get_option('gprof')
   add_global_arguments('-pg', language:'c')
   add_global_link_arguments('-pg', language:'c')
 endif
 
+
 # optimization
-if( get_option('optimize') == 3 )
+optimize = get_option('optimize')
+if( optimize == 'heavy' )
   message('agressive optimization enabled')
-  add_global_arguments('-O3', language: 'c')
-  add_global_arguments('-march=native', language: 'c')
-  add_global_arguments('-mtune=native', language: 'c')
-elif( get_option('optimize') == 2 )
-  message('local optimization enabled')
   add_global_arguments('-O2', language: 'c')
   add_global_arguments('-march=native', language: 'c')
   add_global_arguments('-mtune=native', language: 'c')
-elif( get_option('optimize') == 1 )
-  message('generic optimization enabled')
+  if( get_option('autovectorization') )
+    message('vectorization enabled')
+    add_global_arguments('-ftree-vectorize', language:'c')
+    add_global_arguments('-DVECTORIZE=1', language:'c')
+  endif
+elif( optimize == 'normal' )
+  message('normal optimization enabled')
   add_global_arguments('-O2', language: 'c')
-else
+elif( optimize == 'debug' )
+  message('debug optimization enabled')
   add_global_arguments('-O0', language: 'c') 
-  add_global_arguments('-g', language: 'c')
   add_global_arguments('-fsanitize=address', language: 'c')
+  add_global_link_arguments('-fsanitize=address', language: 'c')
   add_global_arguments('-fno-omit-frame-pointer', language: 'c')
   libDeps += [ cc.find_library('libasan', required : true) ]
-endif
-
-if get_option('autovectorization') > 0
-  if( get_option('optimize') < 1 )
-	error('required option optimize > 0')
-  endif
-  message('vectorization enabled')
-  add_global_arguments('-ftree-vectorize', language:'c')
-  add_global_arguments('-DVECTORIZE=1', language:'c')
 endif
 
 ##########
@@ -186,17 +177,17 @@ if opt_debug > 0
   #add_global_arguments('-fopt-info-vec-missed', language:'c')
 endif
 
-if get_option('olor') > 0
+if get_option('olor')
   message('color debug enabled')
   add_global_arguments('-DDBG_COLOR=1', language: 'c')
 endif
 
-if get_option('shortpath') > 0
+if get_option('shortpath')
   message('shortpath debug enabled')
   add_global_arguments('-DDBG_SHORTPATH=1', language: 'c')
 endif
 
-if get_option('shortfn') > 0
+if get_option('shortfn')
   message('shortfn debug enabled')
   add_global_arguments('-DDBG_SHORTFN=1', language: 'c')
 endif
@@ -217,11 +208,5 @@ message('released under GPLv3')
 # build #
 #########
 
-if type == 'executable' 
-  executable(meson.project_name(), src, include_directories: includeDir, dependencies: libDeps, install: true)
-else
-  shared_library(meson.project_name(), src, include_directories: includeDir, dependencies: libDeps, install: true)
-endif
-
-
+executable(meson.project_name(), src, include_directories: includeDir, dependencies: libDeps, install: true)
 

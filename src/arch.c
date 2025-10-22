@@ -598,6 +598,7 @@ void mirrors_update(mirror_s* local, mirror_s* mirrors, const unsigned ndownload
 			mirror_store_speed_package(&mirrors[i], speedType);
 			for( unsigned r = 0; r < repocount; ++r ){
 				m_free(mirrors[i].repo[r].db);
+				mirrors[i].repo[r].db = NULL;
 			}
 		}
 		progress_status_refresh(
@@ -694,7 +695,7 @@ void mirrors_speed(mirror_s* mirrors, const char* arch){
 	__atomic unsigned pvalue = 0;
 	progress_begin("mirrors speed");
 	mforeach(mirrors, i){
-		if( mirrors[i].status != MIRROR_ERR ){
+		if( mirrors[i].status == MIRROR_UNKNOW ){
 			mirror_speed(&mirrors[i], arch);
 			char tmp[128];
 			sprintf(tmp, "%5.1fMiB/s", mirrors[i].speed);
