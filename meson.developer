@@ -268,7 +268,9 @@ my $versionmd  = readme_version($PRJPATH, $prjname);
 
 if( $prjversion ne $versionmd ){
 	my $sources = $mi->{'targets'}->[0]->{'target_sources'}->[0]->{'sources'};
+	print "meson introspect\n";
 	my $headers = meson_introspect_find_headers($mi);
+	print "lstree\n";
 	my $files = git_lstree($BRANCH, $PRJPATH);
 	#print Dumper($files);
 	print "update man page\n";
