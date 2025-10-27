@@ -3,7 +3,7 @@
 prj='ghostmirror'
 pkgname=($prj)
 pkgdesc='modern alternative to reflector, true check mirror status, mirror download speed and more.'
-pkgver='0.17.5'
+pkgver='0.17.6'
 pkgrel=1
 arch=('x86_64')
 url="https://github.com/vbextreme/${prj}.git"
@@ -16,7 +16,7 @@ depends=('curl' 'zlib-ng' 'systemd-libs')
 
 prepare() {
     cd "${prj}-${pkgver}"
-    meson setup build -Dprefix=/usr
+    meson setup build -Dprefix=/usr --buildtype=plain
 }
 
 build() {

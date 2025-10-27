@@ -2,7 +2,7 @@
 # project #
 ###########
 
-project('ghostmirror', 'c', version: '0.17.5', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.17.6', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -10,7 +10,7 @@ localPath = meson.current_source_dir()
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'disable flags, optimization only if user is setted'
+  'dsc': 'disable useless meson flags, I hate the auto meson flags'
 }
 
 if get_option('eveloper')
@@ -139,7 +139,8 @@ elif( optimize == 'normal' )
   add_global_arguments('-O2', language: 'c')
 elif( optimize == 'debug' )
   message('debug optimization enabled')
-  add_global_arguments('-O0', language: 'c') 
+  add_global_arguments('-g', language: 'c')
+  add_global_arguments('-O1', language: 'c') 
   add_global_arguments('-fsanitize=address', language: 'c')
   add_global_link_arguments('-fsanitize=address', language: 'c')
   add_global_arguments('-fno-omit-frame-pointer', language: 'c')
