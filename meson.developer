@@ -271,12 +271,19 @@ if( $prjversion ne $versionmd ){
 	my $headers = meson_introspect_find_headers($mi);
 	my $files = git_lstree($BRANCH, $PRJPATH);
 	#print Dumper($files);
+	print "update man page\n";
 	update_manpage($PRJPATH, $prjversion);
+	print "update readme\n";
 	readme_update_version($PRJPATH, $prjname, $prjversion);
+	print "update pkgbuild\n";
 	update_pkgbuild($PRJPATH, $prjversion, \@MAKEDEPENDS, \@DEPENDS);
+	print "git commit\n";
 	git_commit($PRJPATH, $DESC);
+	print "check commit\n";
 	check_commit_projects_file($files, $sources, $headers, \@EXTRAFILES);
+	print "push version\n";
 	git_push_newversion($PRJPATH, $prjversion);
+	print "aur update\n";
 	make_pkgbuild($PRJPATH, $prjname, $DESC);
 	print "meson.developer: update successfull\n";
 }
