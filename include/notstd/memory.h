@@ -120,9 +120,9 @@ __private void* hm_toaddr(hmem_s* hm){
 
 //return memory header
 __private hmem_s* m_header(void* addr){
-	if( !addr ) die("memory error, try to dereference NULL");
+	unlikely( !addr ) panic("memory error, try to dereference NULL");
 	hmem_s* hm = ((hmem_s*)(ADDR(addr)-sizeof(hmem_s)));
-	if( hm_check(hm) ) die("memory error, addr %p is not preallocated memory with m_alloc or memory is corrupted", addr);
+	unlikely( hm_check(hm) ) panic("memory error, addr %p is not preallocated memory with m_alloc or memory is corrupted", addr);
 	return hm;
 }
 
@@ -199,14 +199,14 @@ __private void* m_push(void* arr, void* src){
 //WARNING return address memory out of len or NULL
 __private void* m_pop(void* restrict mem){
 	hmem_s* hm = m_header(mem);
-	if( !hm->len ) return NULL;
+	unlikely( !hm->len ) return NULL;
 	return (void*)ADDRTO(mem, hm->sof, --hm->len);
 }
 
 //WARNING return index memory out of len or NULL
 __private long m_ipop(void* restrict mem){
 	hmem_s* hm = m_header(mem);
-	if( !hm->len ) return -1;
+	unlikely( !hm->len ) return -1;
 	return --hm->len;
 }
 

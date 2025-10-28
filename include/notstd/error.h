@@ -51,6 +51,14 @@
 	if( __tty__ ) fputs(ERR_COLOR_RESET, stderr);\
 	exit(1);\
 }while(0)
+
+#endif
+
+#ifdef HAPPYCRASH_ENABLE
+#include <happycrash.h>
+#define panic(FORMAT, arg...) happycrash_panic(FORMAT, ## arg)
+#else
+#define panic(FORMAT, arg...) die(FORMAT, ##arg)
 #endif
 
 void err_showline(const char* begin, const char* err, unsigned nch);

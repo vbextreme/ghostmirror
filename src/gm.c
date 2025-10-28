@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <notstd/core.h>
 #include <notstd/str.h>
 #include <notstd/utf8.h>
@@ -11,6 +12,8 @@
 #include <gm/systemd.h>
 #include <gm/gm.h>
 #include <gm/inutility.h>
+
+#include <happycrash.h>
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -389,7 +392,8 @@ __private char* merge_sort(optValue_u* value, const unsigned count){
 //#include <notstd/delay.h>
 int main(int argc, char** argv){
 	notstd_begin();
-
+	happycrash_begin(~0U);
+	
 	__argv option_s* opt = argv_parse(OPT, argc, argv);
 	if( opt[O_h].set ) argv_usage(opt, argv[0]);
 	

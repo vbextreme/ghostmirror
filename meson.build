@@ -2,7 +2,9 @@
 # project #
 ###########
 
-project('ghostmirror', 'c', version: '0.17.10', meson_version: '>= 1.1')
+#--buildtype=plain
+
+project('ghostmirror', 'c', version: '0.18.0', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -10,7 +12,7 @@ localPath = meson.current_source_dir()
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'meson sugar'
+  'dsc': 'enable happycrash'
 }
 
 if get_option('eveloper')
@@ -22,11 +24,18 @@ if get_option('eveloper')
       '-d', 'curl',
       '-d', 'zlib-ng',
       '-d', 'systemd-libs',
+      '-d', 'elfutils',
       '-D', version['dsc'],
     ],
     output: 'xrelease'
   )
 endif
+
+##############
+# subproject #
+##############
+
+happycrash = subproject('happycrash')
 
 ###########
 # include #
@@ -66,6 +75,8 @@ libDeps  = [ cc.find_library('m', required : true) ] # math
 libDeps += [ dependency('libcurl', required: true) ]
 libDeps += [ dependency('zlib-ng', required: true) ]
 libDeps += [ dependency('libsystemd', required: true) ]
+libDeps += [ dependency('libelf', required: true) ]
+libDeps += [ dependency('libhappycrash', fallback: 'libhappycrash', required: true) ]
 
 ##############
 # data files #
@@ -97,16 +108,14 @@ add_project_arguments('-Wstrict-aliasing=2', language: 'c')
 add_project_arguments('-Wstrict-overflow', language: 'c')
 add_project_arguments('-Wfloat-equal', language: 'c')
 add_project_arguments('-Wvla', language: 'c')
-
-# unicode var name
 add_project_arguments('-fextended-identifiers', language: 'c')
-
-#reentrant malloc
 add_project_arguments('-pthread', language: 'c')
-add_project_link_arguments('-pthread', language:'c')
-
-# standard
 add_project_arguments('-std=gnu2x', language: 'c')
+
+add_project_arguments(happycrash.get_variable('project_arguments'), language: 'c')
+add_project_arguments('-DHAPPYCRASH_ENABLE', language: 'c')
+
+add_project_link_arguments('-pthread', language:'c')
 
 # open mp
 if get_option('openmp')
@@ -160,6 +169,7 @@ add_project_arguments('-DVERSION_REV="' + version['mmr'][2] + '"', language: 'c'
 #########################
 # software dependencies #
 #########################
+hc = find_program('happycrash', required: true)
 
 #################
 # Custom Target #
@@ -210,5 +220,11 @@ message('released under GPLv3')
 # build #
 #########
 
-executable(meson.project_name(), src, include_directories: includeDir, dependencies: libDeps, install: true)
+elf = executable('@0@.elf'.format(meson.project_name()), src, include_directories: includeDir, dependencies: libDeps, install: true)
+custom_target('happycrash',
+  build_by_default: true,
+  input: elf,
+  output: meson.project_name(),
+  command: [ hc, '--version', version['str'], '-s', '-e' , '@INPUT@', '-o', '@OUTPUT@' ]
+)
 

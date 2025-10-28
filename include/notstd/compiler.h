@@ -48,8 +48,13 @@
 #define __resolver(NAME)    __attribute__((ifunc(#NAME)))
 #define __ctor_priority(P)  __attribute__((constructor(P)))
 #define __dtor_priority(P)  __attribute__((destructor(P)))
+#define __likely(X)         __builtin_expect(!!(X), 1)
+#define __unlikely(X)       __builtin_expect(!!(X), 0)
+#define likely(X)           if( __likely(X) )
+#define unlikely(X)         if(__unlikely(X) )
 #define __compatible_type(A,B) __builtin_types_compatible_p(A,B)
 #define __assumealigned(PTR, N) __builtin_assume_aligned(PTR, N)
+
 
 #define _TOR_PRIORITY        101
 #define _TOR_PRIORITY_CORE   64

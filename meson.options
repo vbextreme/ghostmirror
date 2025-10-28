@@ -7,5 +7,5 @@ option('assert', type: 'boolean', value: true, description: 'enable assertion')
 option('optimize', type: 'string', value: 'none', description: 'optimization: none/debug/normal/heavy')
 option('openmp', type: 'boolean', value: true, description: 'enable openmp')
 option('gprof', type: 'boolean', value: false, description: 'enable gprof')
-option('autovectorization', type: 'boolean', value: true, description: 'enable vectorization')
+option('autovectorization', type: 'boolean', value: false, description: 'enable vectorization')
 
