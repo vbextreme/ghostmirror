@@ -4,7 +4,7 @@
 
 #--buildtype=plain
 
-project('ghostmirror', 'c', version: '0.18.0', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.18.1', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ localPath = meson.current_source_dir()
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'enable happycrash'
+  'dsc': 'install wrong file'
 }
 
 if get_option('eveloper')
@@ -220,11 +220,13 @@ message('released under GPLv3')
 # build #
 #########
 
-elf = executable('@0@.elf'.format(meson.project_name()), src, include_directories: includeDir, dependencies: libDeps, install: true)
+elf = executable('@0@.elf'.format(meson.project_name()), src, include_directories: includeDir, dependencies: libDeps, install: false)
 custom_target('happycrash',
   build_by_default: true,
   input: elf,
   output: meson.project_name(),
+  install: true,
+  install_dir: get_option('bindir'),
   command: [ hc, '--version', version['str'], '-s', '-e' , '@INPUT@', '-o', '@OUTPUT@' ]
 )
 
