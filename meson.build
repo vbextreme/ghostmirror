@@ -4,7 +4,7 @@
 
 #--buildtype=plain
 
-project('ghostmirror', 'c', version: '0.18.1', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.18.2', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ localPath = meson.current_source_dir()
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'install wrong file'
+  'dsc': 'restore make depends, update subprojects only for end user not clean after install'
 }
 
 if get_option('eveloper')
