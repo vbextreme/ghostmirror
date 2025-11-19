@@ -4,7 +4,7 @@
 
 #--buildtype=plain
 
-project('ghostmirror', 'c', version: '0.18.4', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.18.5', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ localPath = meson.current_source_dir()
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'speed fail; meson.developer bug need to solve this'
+  'dsc': 'add flags for import makedepends'
 }
 
 if get_option('eveloper')
@@ -25,6 +25,7 @@ if get_option('eveloper')
       '-d', 'zlib-ng',
       '-d', 'systemd-libs',
       '-d', 'elfutils',
+      '-m', 'git',
       '-D', version['dsc'],
     ],
     output: 'xrelease'
