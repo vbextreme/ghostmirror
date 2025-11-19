@@ -4,7 +4,7 @@
 
 #--buildtype=plain
 
-project('ghostmirror', 'c', version: '0.18.3', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.18.4', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()
@@ -12,7 +12,7 @@ localPath = meson.current_source_dir()
 version = {
   'mmr': meson.project_version().split('.'),
   'str': meson.project_version(),
-  'dsc': 'restore make depends, update subprojects only for end user not clean after install'
+  'dsc': 'speed fail; meson.developer bug need to solve this'
 }
 
 if get_option('eveloper')

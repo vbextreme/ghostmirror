@@ -11,7 +11,7 @@ source=("${pkgname}-${pkgver}.tar.gz"::"https://github.com/vbextreme/${prj}/arch
 license=('GPL3')
 sha256sums=('SKIP')
 
-makedepends=('meson' 'perl' 'ninja')
+makedepends=('meson' 'perl' 'ninja' 'git')
 depends=('curl' 'zlib-ng' 'systemd-libs' 'elfutils')
 
 prepare() {
