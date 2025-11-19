@@ -4,7 +4,7 @@
 
 #--buildtype=plain
 
-project('ghostmirror', 'c', version: '0.18.2', meson_version: '>= 1.1')
+project('ghostmirror', 'c', version: '0.18.3', meson_version: '>= 1.1')
 
 cc = meson.get_compiler('c')
 localPath = meson.current_source_dir()

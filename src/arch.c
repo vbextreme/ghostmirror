@@ -684,8 +684,16 @@ __private void mirror_speed(mirror_s* mirror, const char* arch){
 		double start = time_sec();
 		__free void* buf = www_download(url, 0, 0, NULL);
 		double stop  = time_sec();
-		size_t size = m_header(buf)->len;
-		mirror->speed += (size / (1024.0*1024.0)) / (stop-start);
+		if( !buf ){
+			mirror->status   = MIRROR_ERR;
+			mirror->wwwerror = www_errno();
+			mirror->error    = 0;
+			mirror->speed    = 0;
+		}
+		else{
+			size_t size = m_header(buf)->len;
+			mirror->speed += (size / (1024.0*1024.0)) / (stop-start);
+		}
 	}
 	mirror->speed /= (double)(m_header(mirror->repo[1].speed)->len);
 }
@@ -697,13 +705,14 @@ void mirrors_speed(mirror_s* mirrors, const char* arch){
 	mforeach(mirrors, i){
 		if( mirrors[i].status == MIRROR_UNKNOW ){
 			mirror_speed(&mirrors[i], arch);
-			char tmp[128];
-			sprintf(tmp, "%5.1fMiB/s", mirrors[i].speed);
-			progress_status_refresh(tmp, COLOR_OK, mirrors[i].url, ++pvalue, count);
+			if( mirrors[i].status != MIRROR_ERR ){
+				char tmp[128];
+				sprintf(tmp, "%5.1fMiB/s", mirrors[i].speed);
+				progress_status_refresh(tmp, COLOR_OK, mirrors[i].url, ++pvalue, count);
+				continue;
+			}
 		}
-		else{
-			progress_status_refresh("     error", COLOR_ERR, mirrors[i].url, ++pvalue, count);
-		}
+		progress_status_refresh("     error", COLOR_ERR, mirrors[i].url, ++pvalue, count);
 	}
 	progress_end();
 }

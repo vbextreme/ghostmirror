@@ -1,4 +1,4 @@
-ghostmirror v0.18.2
+ghostmirror v0.18.3
 ==================
 
 <p align="center">
