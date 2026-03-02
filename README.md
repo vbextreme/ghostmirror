@@ -167,7 +167,7 @@ Now you can forget about mirrors forever.
 Simply add the "-i " to the options and it will show the server list, the server error and the cause.
 
 # Reference
-==============
+----------------------
 the software accept long options with "--" and you assign values without space but with "=" See the examples below.
 
 ```bash
