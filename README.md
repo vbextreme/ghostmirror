@@ -5,7 +5,7 @@
   <img src="screenshot/logo640.jpg" alt="ghostmirror logo" width="160">
 </p>
 
-## Introduction:
+## * **Introduction:**
 ---------------
 We've all experienced moments when there seemed to be no packages to update, only to realize days later that the issue was an out-of-sync mirror.
 Despite the numerous tools available on Arch Linux for managing mirrors, none of them fully met my expectations.
