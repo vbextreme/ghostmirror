@@ -142,7 +142,7 @@ sudo systemctl --user start ghostmirror.service
 
 ### End - Now you can forget about mirrors forever
 
-# Investigation Mode
+## Investigation Mode
 Simply add the "-i " to the options and it will show the server list, the server error and the cause.
 
 ## Reference
