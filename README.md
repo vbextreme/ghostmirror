@@ -233,32 +233,24 @@ accept short option with - or multiple option, followed by value
     -h --help <not required argument>
 	     Display this file
 
-### Developers
+### Developers section:
 This section is for developers:
-
-**Requires:**
-libcurl, zlib, systemd-libs
-
-**Build:**
-
+- **Requires:**
+	libcurl, zlib, systemd-libs
+#### Build:
 ```bash
 meson setup build
 cd build
 ninja
 ```
-
 **Debug:**
 Enable very verbose output
-
 ```bash
 meson configure -Debug=4
 ```
-
-**warning this is only for contributors, enable auto versioning and auto push**
-
+> ⚠️ **Warning this is only for contributors, enable auto versioning and auto push**
 ```bash
 meson configure -Developer=true
 ```
-
-### Bug
+## Bug
 'empty'
