@@ -5,7 +5,6 @@
 </p>
 
 ## **Introduction:**
-
 We've all experienced moments when there seemed to be no packages to update, only to realize days later that the issue was an out-of-sync mirror.
 Despite the numerous tools available on Arch Linux for managing mirrors, none of them fully met my expectations.
 So, I set out to solve this problem.
@@ -13,7 +12,6 @@ While writing the software, I realized that by continuously adding features, gho
 In fact, besides displaying mirrors that have errors, it can investigate and show the possible causes that generated the error.
 
 ## **Description:**
-
 What does GhostMirror do?
 It compares the mirror databases with the local database and provides a detailed description of whether the mirror's packages are more or less up-to-date compared to our local database.
 It can analyze the mirrors and display in-depth errors or the names of packages that are not updated.
@@ -31,7 +29,6 @@ yay -S ghostmirror
 ```
 
 Otherwise you can find PKGBUILD in the distro directory and copy PKGBUILD to a local directory like ~/build
-
 cd into that directory and run:
 
 ```bash
@@ -44,7 +41,6 @@ You can use the software in three ways: manually, automatically, or for investig
 ## Manually
 In this mode, you will perform all the steps manually.
 ### First step
-
 In the first step you need to generate a larger (global) list of mirrors.
 -P for get progress and output colors, -o to output as a table
 -c for select country, for example Italy,Germany,France,"United States"
@@ -57,7 +53,6 @@ ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,mor
 ```
 
 ### Second step
-
 Now, working from the saved list from the above command, we will further evaluate the mirrors.
 While the first step will be performed only once or rarely, this step will be the one you repeat periodically.
 -P -o -l is same the previous step
@@ -70,7 +65,6 @@ ghostmirror -PmuolsS  ./mirrorlist.new ./mirrorlist.new light state,outofdate,mo
 ```
 
 ### Last step
-
 Now backup your old mirrorlist and move the temporary mirrorlist to /etc/pacman.d/mirrorlist
 
 ```bash
@@ -80,9 +74,7 @@ cp ./mirrorlist.new /etc/pacman.d/mirrorlist
 
 ## Directly replace mirrorlist
 If you don't want to create a temporary file, you can run ghostmirror with sudo copying over the mirrorlist itself.
-
 The first and second step are same as above, but adding sudo permissions and referencing /etc/pacman.d/mirrorlist directly.
-
 Run once, the first time, to generate the larger (global) mirrorlist.
 
 ```bash
@@ -105,7 +97,6 @@ mkdir ~/.config/ghostmirror
 ```
 
 Now you need to inform pacman where you have stored the mirrorlist.
-
 Edit the file /etc/pacman.conf
 
 ```bash
