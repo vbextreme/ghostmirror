@@ -42,11 +42,11 @@ You can use the software in three ways: manually, automatically, or for investig
 In this mode, you will perform all the steps manually.
 ### First step
 In the first step you need to generate a larger (global) list of mirrors.
--P for get progress and output colors, -o to output as a table
--c for select country, for example Italy,Germany,France,"United States"
--l where to save the list
--L max number of output (mirrors in list)
--S sort mode: state - in this mode remove mirrors with errors, outofdate - in this mode display first the mirror sync, morerecent - to ensure you never go out of sync, and ping - to prioritize the closest ones
+* -P to get progress and output colors, -o to output as a table
+* -c to select country, for example Italy,Germany,France,"United States" (no spaces, just comma between names)
+* -l for location of the file, where to save the list
+* -L max number of output (mirrors in list)
+* -S sort mode: can be combined (see example below), state - in this mode remove mirrors with errors, outofdate - in this mode display first the mirror sync, morerecent - to ensure you never go out of sync, ping - to prioritize the closest ones
 
 ```bash
 ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,morerecent,ping
@@ -55,10 +55,10 @@ ghostmirror -PoclLS Italy,Germany,France ./mirrorlist.new 30 state,outofdate,mor
 ### Second step
 Now, working from the saved list from the above command, we will further evaluate the mirrors.
 While the first step will be performed only once or rarely, this step will be the one you repeat periodically.
--P -o -l is same the previous step
--m tell software to use a local mirror list, and -u for use only uncommented mirror
--s to apply a real test for mirror speed
--S change sort mode, remove ping, add estimated - to get a more stable mirror, add speed - to reorder by speed
+* -P -o -l is same the previous step
+* -m tell software to use a local mirror list, and -u when using an uncommented mirrorlist
+* -s to apply a real test for mirror speed (see All Options below)
+* -S change sort mode, remove ping, add estimated - to get a more stable mirror, add speed - to reorder by speed
 
 ```bash
 ghostmirror -PmuolsS  ./mirrorlist.new ./mirrorlist.new light state,outofdate,morerecent,estimated,speed
@@ -140,7 +140,7 @@ Force-start ghostmirror before timer ellapsed
 sudo systemctl --user start ghostmirror.service
 ```
 
-### End - Now you can forget about mirrors forever.
+### End - Now you can forget about mirrors forever
 
 # Investigation Mode
 Simply add the "-i " to the options and it will show the server list, the server error and the cause.
