@@ -1,20 +1,19 @@
 # ghostmirror v0.18.5
---------------
 
 <p align="center">
   <img src="screenshot/logo640.jpg" alt="ghostmirror logo" width="160">
 </p>
 
-## * **Introduction:**
----------------
+## **Introduction:**
+
 We've all experienced moments when there seemed to be no packages to update, only to realize days later that the issue was an out-of-sync mirror.
 Despite the numerous tools available on Arch Linux for managing mirrors, none of them fully met my expectations.
 So, I set out to solve this problem.
 While writing the software, I realized that by continuously adding features, ghostmirror has become a great tool for the mirror maintainers themselves.
 In fact, besides displaying mirrors that have errors, it can investigate and show the possible causes that generated the error.
 
-## Description:
-----------------
+## **Description:**
+
 What does GhostMirror do?
 It compares the mirror databases with the local database and provides a detailed description of whether the mirror's packages are more or less up-to-date compared to our local database.
 It can analyze the mirrors and display in-depth errors or the names of packages that are not updated.
@@ -25,7 +24,6 @@ If you don't have time to update the mirror list manually, by adding a single co
 ![Alt text](screenshot/simple_output.png?raw=true "GhostMirrorOutput")
 
 # Install:
-------------------
 Use your favorite AUR helper to install it.
 
 ```bash
@@ -41,11 +39,9 @@ makepkg -sirc
 ```
 
 # Usage:
-------------------
 You can use the software in three ways: manually, automatically, or for investigation.
 
 ## Manually
-------------------
 In this mode, you will perform all the steps manually.
 ### First step
 
@@ -83,7 +79,6 @@ cp ./mirrorlist.new /etc/pacman.d/mirrorlist
 ```
 
 ## Directly replace mirrorlist
-----------------------------
 If you don't want to create a temporary file, you can run ghostmirror with sudo copying over the mirrorlist itself.
 
 The first and second step are same as above, but adding sudo permissions and referencing /etc/pacman.d/mirrorlist directly.
@@ -100,10 +95,9 @@ sudo ghostmirror -PmuolsS  /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist lig
 ```
 
 ## Automatic Operation
-------------------------
 In this mode, the above step is performed automatically.
+
 ### Prepare
--------------------
 Now you need to make a directory for the new mirrorlist, this location needs to be where a user can edit it without root privilege
 
 ```bash
@@ -128,9 +122,7 @@ Include = /home/<username>/.config/ghostmirror/mirrorlist
 Include = /home/<username>/.config/ghostmirror/mirrorlist
 ```
 
-
 ### Last steps
--------------
 Doing the same as was done in the manual mode, create a large (global) mirrorlist
 
 ```bash
@@ -145,7 +137,6 @@ ghostmirror -PoDumlsS  ~/.config/ghostmirror/mirrorlist ~/.config/ghostmirror/mi
 ```
 
 ### Systemd commands
---------------
 Show the timer - this shows what timers are present in systemd and time left
 
 ```bash
@@ -158,16 +149,12 @@ Force-start ghostmirror before timer ellapsed
 sudo systemctl --user start ghostmirror.service
 ```
 
-### End
-----------------
-Now you can forget about mirrors forever.
+### End - Now you can forget about mirrors forever.
 
 # Investigation Mode
--------------------------
 Simply add the "-i " to the options and it will show the server list, the server error and the cause.
 
-# Reference
-----------------------
+## Reference
 the software accept long options with "--" and you assign values without space but with "=" See the examples below.
 
 ```bash
@@ -185,85 +172,83 @@ accept short option with - or multiple option, followed by value
 ```
 
 ## All Options
--------------------
-    -a --arch `<required string>`
+    -a --arch <required string>
 	    Select arch, default 'x86_64'
-    -m --mirrorfile `<required string>`
+    -m --mirrorfile <required string>
 	    Use a mirror file instead of downloading mirrorlist. 
         Without -m and -u ghostmirror downloads mirrorlist and searches everything in the mirror.
 	    You can use -m /etc/pacman.d/mirrorlist.pacnew if you not want to download a mirrorlist but used a local list.
-    -c --country `<required string>`
+    -c --country <required string>
 	    Select country from mirrorlist.
 	    If the mirrorlist is not same as the default mirrorlist and ##Country is not set, command will fail.
         If country name is not in the proper format, or it's a mixed mirror, the command will fail.
-    -C --country-list `<not required argument>`
+    -C --country-list <not required argument>
 	    List all possibile countries.
-    -u --uncommented `<not required argument>`
+    -u --uncommented <not required argument>
 	    Use only with an uncommented mirror, by default use commented mirrors.
 	    When used with "-m" it will check the local mirrolist  -mu /etc/pacman.d/mirrorlist.
-    -d --downloads `<required unsigned integer>`
+    -d --downloads <required unsigned integer>
 	     Set numbers of parallel download, default '4'.
 	     Too many parallel downloads and it will likely fail: 1,4,8,16 are good values, >16 can cause problems of failures.
-    -O --timeout `<required unsigned integer>`
+    -O --timeout <required unsigned integer>
 	     Set connection timeout in seconds for the cutoff of the mirror to reply.
-    -p --progress `<not required argument>`
+    -p --progress <not required argument>
 	     Show progress, default false
-    -P --progress-colors `<not required argument>`
+    -P --progress-colors <not required argument>
 	    Same as -p but with -o will add a color table of results at the end.
-    -o --output `<not required argument>`
+    -o --output <not required argument>
 	    Enable the table output, with -P to display with colors.
-    -s --speed `<required string>`
+    -s --speed <required string>
 	    Test speed for downloading:
 	        light: download one small package ~6MiB
 	        normal: download light + normal package ~250Mib
 	        heavy: download light+normal+heavy packege ~350MiB, total download >500Mib
-    -S --sort `<required string>`
+    -S --sort <required string>
 	    Sort result for any of fields display in table, multiple fields supported.
 		    country and mirror is sorted by name
 		    proxy first false, last true
 		    state first success, last error
 		    outofdate, retry and ping, display first less value.
 		    uptodate, morerecent, sync, speed and estimated, display first with value.
-    -l --list `<required string>`
+    -l --list <required string>
 	    Save new mirrorlist in file passed as argument.
 	    Special name, stdout, can be used for write to stdout file.
-    -L --max-list `<required unsigned integer>`
+    -L --max-list <required unsigned integer>
 	    Set max numbers of output mirrors
-    -T --type `<required string>`
+    -T --type <required string>
 	    Select mirrors type, http,https,all
-    -i --investigate `<required string>`
+    -i --investigate <required string>
 	    Search mirror errors to detect the problem.
 	    Can select mode: error, outofdate, all.
 		    error: investigate only on error.
 		    outofdate: investigate only on outofdate package.
 		    all: same as passing -i error,outofdate
-    -D --systemd `<not required argument>`
+    -D --systemd <not required argument>
 	     Auto manage systemd.timer
 	     When you pass this option the software activate loginctl linger if not enabled.
 	     Auto creates ghostmirror.service and ghostmirror.timer
 	     The config.service starts ghostmirror in the same mode you haved executed it, with only differences that need -l
-	     For example: if you execute ghostmirror -DmuldsS `<mirrorlist>` `<mirrorlist>` 16 light estimated,speed
-	     The service will always start with `<mirrorlist>` 16 parallel downloads, speed light and estimated,speed sort
+	     For example: if you execute ghostmirror -DmuldsS <mirrorlist> <mirrorlist> 16 light estimated,speed
+	     The service will always start with <mirrorlist> 16 parallel downloads, speed light and estimated,speed sort
 	     To change you can simply repeat the command with new options and mirrorlist names
 	     The expire timer is the first element in table and is dynamic, and should change every time counting down to next sync
-    -t --time `<required string>`
+    -t --time <required string>
 	     In systemd timer, when estimate date has elapsed, you can set a time. 
 	     You can set a specific time using format hh:mm:ss when starting the service, default is 00:00:00
 	     Validate input with systemd-analyzer calendar hh:mm:ss before use.
-    -f --fixed-time `<required string>`
+    -f --fixed-time <required string>
 	     In systemd timer use a fixed time instead of estimated time.
 	     Validate input with systemd-analyzer calendar hh:mm:ss before use
-    -h --help `<not required argument>`
+    -h --help <not required argument>
 	     Display this file
 
 ### Developers
------------------
 This section is for developers:
 
-#### Require:
+**Requires:**
 libcurl, zlib, systemd-libs
 
-#### Build:
+**Build:**
 
 ```bash
 meson setup build
@@ -271,19 +256,18 @@ cd build
 ninja
 ```
 
-#### Debug:
+**Debug:**
 Enable very verbose output
 
 ```bash
 meson configure -Debug=4
 ```
 
-**warning this is only for contributor, enable auto versioning and auto push**
+**warning this is only for contributors, enable auto versioning and auto push**
 
 ```bash
 meson configure -Developer=true
 ```
 
-#### Bug
-----
+### Bug
 'empty'
