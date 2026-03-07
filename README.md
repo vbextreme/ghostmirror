@@ -195,12 +195,14 @@ accept short option with - or multiple option, followed by value
 	        normal: download light + normal package ~250Mib
 	        heavy: download light+normal+heavy packege ~350MiB, total download >500Mib
     -S --sort <required string>
-	    Sort result for any of fields display in table, multiple fields supported.
-		    country and mirror is sorted by name
-		    proxy first false, last true
-		    state first success, last error
-		    outofdate, retry and ping, display first less value.
-		    uptodate, morerecent, sync, speed and estimated, display first with value.
+	    Sort the results for the mirrorlist, combine and list in order of priority 
+		{Example:} state,speed,estimated - will build your mirrorlist prioritizing success, then speed of download, then estimated in that order.
+		    country and mirror - sorted by name.
+		    proxy  - sorted from false to true.
+		    state  - sorted from success to error.
+		    outofdate, retry and ping - sorted by value.
+		    uptodate, morerecent, sync - sorts by times corresponding to Arch broadcast mirrorlist.
+			speed and estimated - sorted with value.
     -l --list <required string>
 	    Save new mirrorlist in file passed as argument.
 	    Special name, stdout, can be used for write to stdout file.
